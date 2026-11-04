@@ -3,7 +3,15 @@
 Welcome to **Antigravity Video Studio v2**! This guide walks you through your complete end-to-end workflow—from writing a 5-line rough draft and dropping raw camera files into `~/Movies/2026/`, to co-developing `Storyboard.md` (with Section 5 YouTube Publishing & Composite Thumbnail specs), rendering GPX route maps & telemetry HUDs, synthesizing warm replicated voice-over (`EN` / `UA` / `RU`), building a broadcast-balanced 4-track timeline in **FilmCraft** (or **DaVinci Resolve**), and publishing 1 or 3 localized 4K editions to YouTube via the YouTube Data API v3.
 
 > **Environment Setup (Bring Your Own Env Manager):**
-> Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET` using whichever method you prefer (`direnv` + 1Password, `.zshrc`, or a local git-ignored `.env` file in the studio root), then launch Google Antigravity from that shell session (e.g., `agy .` or `open -a "Google Antigravity"`) so all skills and scripts inherit your environment variables automatically with zero wrapper dependencies. Once you authorize YouTube once, `~/.config/antigravity_youtube/token.json` caches your OAuth refresh token for all future uploads.
+> Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET` using whichever method you prefer (`direnv` + 1Password, `.zshrc`, or a local git-ignored `.env` file in the studio root), then launch **Gemini** or **Antigravity** from that shell session so all skills and scripts inherit your environment variables automatically with zero wrapper dependencies:
+> ```bash
+> open -a Gemini
+> # or
+> open -a Antigravity
+> # or launch the CLI directly:
+> agy .
+> ```
+> Once you authorize YouTube once, `~/.config/antigravity_youtube/token.json` caches your OAuth refresh token for all future uploads.
 
 ---
 
@@ -161,3 +169,31 @@ thumbnail:
 | **`/ingest-media <path>`** | Standalone media pre-processor (`ranger-sync`, `.HEIC` $\rightarrow$ `.jpg`, `.proxies/`, GPX sync). |
 | **`/interview-brain [topic]`** | Interactive Q&A session to enrich `my_digital_brain.md` (`1977+ B&W`, `1980–1984 University`, Mallorca/California cycling). |
 | **`/relink-archive <path>`** | Rewrites media paths in `.fcproj` & `project_manifest.json` when moving folders between `~/Movies/` and `/Volumes/Crucial-4T/Movies/`. |
+
+---
+
+## 7. For BleeqUP Ranger AI Glasses Users (`bleequp-ranger-sync`)
+
+If you shoot POV cycling or outdoor footage with [**BleeqUP Ranger AI Sports Camera Glasses**](https://www.bleequp.com/products/bleequp-ranger-ai-sports-camera-glasses) alongside an iPhone and a Garmin `.gpx` computer, [`ingest_and_sync_media.py`](./.agents/skills/ingest-media/scripts/ingest_and_sync_media.py) (used by `/storyboard`, `/ingest-media`, and `/magic-movie`) automatically integrates with the companion open-source utility:
+
+- **Repository:** [**`akomlik/bleequp-ranger-sync`**](https://github.com/akomlik/bleequp-ranger-sync) (`ranger-sync` CLI)
+- **What It Solves:**
+  1. **Restores True Capture Timestamps & EXIF/QuickTime Metadata:** BleeqUP `.MP4` exports overwrite `CreationDate` with the iOS transfer time while storing the true millisecond UTC epoch in the filename (`VIDEO_1793434415483.MP4`, `IMG_1793437400537.JPG`), and `.JPG` stills lack `DateTimeOriginal`, camera/lens EXIF tags, and GPS coordinates.
+  2. **Recovers Pre-Sync RTC Clock Drift (~11.3 min/day):** When the glasses sit in standby without opening Camera Settings in the mobile app, the internal sleep oscillator drifts ~11.3 minutes/day. `ranger-sync` detects timeline skew against your iPhone reference shots and `.gpx` track, shifts timestamps & filenames (`--shift-files ... --rename-shifted`), and injects exact GPX coordinates into every clip and photo.
+- **How Studio v2 Uses It:**
+  - If `ranger-sync` is installed on your `PATH`, Step 0a of `ingest_and_sync_media.py` runs `ranger-sync <project_dir>` automatically whenever `VIDEO_*` or `IMG_17*` files are present (and writes a `.bleequp_synced` marker so it only runs once).
+  - If you already ran `ranger-sync apply` manually on a ride folder before starting, pass `--skip-bleequp-sync` (or touch `.bleequp_synced`).
+
+---
+
+## 8. Credits, Inspiration & Populating the SFX Audio Library
+
+This workflow was inspired by the AI-driven video editing architecture and *Digital Brain* + *Editing Constitution* methodology shared by:
+
+1. **Igor Brehov (`@igor_brehov`) — [«Как смонтировать с ИИ даже сложное видео. Полный гайд по AI Claude Code»](https://www.youtube.com/watch?v=l30VMUhaff0)**
+   - **Original *Конституция монтажа* & Free 209-Sound SFX Package (Google Drive):** [`https://drive.google.com/drive/folders/1QJ5PFyerFwdyHY_K9luzCn26-TsH4lly`](https://drive.google.com/drive/folders/1QJ5PFyerFwdyHY_K9luzCn26-TsH4lly)
+   - **How to Populate `03_Audio_Library/02_SFX/` (Optional):**
+     To keep this Git repository lightweight, `.wav` audio files are excluded via `.gitignore`, while the translated English catalog with exact `duration_ms` and `peak_ms` peak-alignment metadata is tracked in [`03_Audio_Library/02_SFX/catalog.json`](./03_Audio_Library/02_SFX/catalog.json) and documented in [`03_Audio_Library/02_SFX/README.md`](./03_Audio_Library/02_SFX/README.md). If you want to use Igor's 209 cinematic sound effects on Audio Track `A3`, download *«Звуки для саунд-дизайна»* from his [Google Drive folder](https://drive.google.com/drive/folders/1QJ5PFyerFwdyHY_K9luzCn26-TsH4lly) and drop the `.wav` files into the corresponding `03_Audio_Library/02_SFX/01_Whooshes_Soft/` .. `19_Ambient_Pads/` folders.
+2. **Additional MCP Video Editing Showcases:**
+   - **Applorable (`@applorable`):** [Why ArtCraft Beats Adobe for AI Workflows (With MCP)](https://www.youtube.com/watch?v=DBLJZ44TWEg) (FilmCraft & LightCraft MCP integration)
+   - **Team 2 Films (`@team2films`):** [DaVinci Resolve 21.1 BEST New Feature TESTED - AI Editing with Claude and ChatGPT](https://www.youtube.com/watch?v=yRxmdTUh7GU)

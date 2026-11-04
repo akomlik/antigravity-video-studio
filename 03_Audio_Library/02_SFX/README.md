@@ -1,6 +1,9 @@
 # Sound Design Library (`03_Audio_Library/02_SFX/`)
 
-Curated and translated from Igor Brehov's 209-sound cinematic SFX package (*«Звуки для саунд-дизайна»*). All 209 `.wav` files are 48 kHz, 24-bit stereo, normalized to `-1.0 dBFS` (`-6.0 dBFS` for ambient pads), and indexed in [`catalog.json`](./03_Audio_Library/02_SFX/catalog.json) with exact **`duration_ms`** and **`peak_ms`** (the exact millisecond of peak loudness).
+Curated and translated from **Igor Brehov's** ([`@igor_brehov`](https://www.youtube.com/watch?v=l30VMUhaff0)) 209-sound cinematic SFX package (*«Звуки для саунд-дизайна»*). All 209 `.wav` files are 48 kHz, 24-bit stereo, normalized to `-1.0 dBFS` (`-6.0 dBFS` for ambient pads), and indexed in [`catalog.json`](./catalog.json) with exact **`duration_ms`** and **`peak_ms`** (the exact millisecond of peak loudness).
+
+> **How to Populate `.wav` Files (After Cloning the Repo):**
+> Since binary `.wav` files are excluded from Git via `.gitignore`, download Igor Brehov's free 209-sound package from his [Google Drive folder](https://drive.google.com/drive/folders/1QJ5PFyerFwdyHY_K9luzCn26-TsH4lly) (shared in the description of [«Как смонтировать с ИИ даже сложное видео. Полный гайд по AI Claude Code»](https://www.youtube.com/watch?v=l30VMUhaff0)) and place the `.wav` files into the matching numbered folders (`01_Whooshes_Soft/` .. `19_Ambient_Pads/`) below.
 
 ## Peak-Alignment Rule for AI Timeline Placement (`Track A3`)
 When placing any SFX on Audio Track **`A3`**:
