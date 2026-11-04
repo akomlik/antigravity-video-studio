@@ -3,18 +3,20 @@
 save_music_track.py
 Watches or grabs the latest downloaded MP3/WAV/M4A from ~/Downloads (or a specified file path),
 renames it to the standardized [BPM]_[Mood]_[TrackName]_[Artist].mp3 taxonomy from
-"Music for Video Workflow", moves it into ~/Music/Cycling_BGM/<category>/ (which syncs to
-Google Drive 03_Audio_Library/01_Curated_BGM/<category>/), and logs it in music_catalog.json.
+"Music for Video Workflow", moves it into 03_Audio_Library/01_Curated_BGM/<category>/,
+and logs it in music_catalog.json.
 """
 
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import shutil
 from pathlib import Path
 
-CYCLING_BGM_ROOT = Path("~/Music/Cycling_BGM").expanduser()
+STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+BGM_ROOT = STUDIO_ROOT / "03_Audio_Library/01_Curated_BGM"
 DOWNLOADS_DIR = Path("~/Downloads").expanduser()
 
 CATEGORIES = [
@@ -48,13 +50,13 @@ def find_latest_download(downloads_dir: Path, since_minutes: int = 30) -> Path:
 
 
 def main():
-    p = argparse.ArgumentParser(description="Auto-rename and save downloaded YouTube Audio Library / CreatorMix track into ~/Music/Cycling_BGM/")
+    p = argparse.ArgumentParser(description="Auto-rename and save downloaded YouTube Audio Library / CreatorMix track into 03_Audio_Library/01_Curated_BGM/")
     p.add_argument("--source", default="latest", help="Path to downloaded file, or 'latest' to grab newest audio file in ~/Downloads")
     p.add_argument("--bpm", type=int, required=True, help="Track BPM (e.g. 118)")
     p.add_argument("--mood", required=True, help="Short mood descriptor (e.g. ChillBeat, AmbientWonder, DrivingEnergy, WarmAcoustic)")
     p.add_argument("--title", required=True, help="Track title (e.g. 'Circuit Rush')")
     p.add_argument("--artist", required=True, help="Artist or source (e.g. 'The Mini Vandals' or 'CreatorMix')")
-    p.add_argument("--category", choices=CATEGORIES, required=True, help="Target mood folder inside ~/Music/Cycling_BGM/")
+    p.add_argument("--category", choices=CATEGORIES, required=True, help="Target mood folder inside 03_Audio_Library/01_Curated_BGM/")
     p.add_argument("--source-site", choices=["YouTube_Audio_Library", "CreatorMix", "Other"], default="CreatorMix")
     p.add_argument("--notes", default="", help="Optional notes on what video scenes this track fits best")
     args = p.parse_args()
@@ -69,14 +71,14 @@ def main():
     artist_clean = camel_clean(args.artist)
 
     new_filename = f"{args.bpm:03d}bpm_{mood_clean}_{title_clean}_{artist_clean}{ext}"
-    dest_dir = CYCLING_BGM_ROOT / args.category
+    dest_dir = BGM_ROOT / args.category
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest_path = dest_dir / new_filename
 
     shutil.move(str(src_path), str(dest_path))
 
     # Update music_catalog.json index
-    catalog_json = CYCLING_BGM_ROOT / "music_catalog.json"
+    catalog_json = BGM_ROOT / "music_catalog.json"
     catalog = {"tracks": []}
     if catalog_json.exists():
         try:

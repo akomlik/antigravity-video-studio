@@ -174,6 +174,51 @@ def generate_composite_thumbnail(
     return False
 
 
+def localize_existing_thumbnail(
+    base_jpg: Path,
+    out_jpg: Path,
+    lang_label: str,
+    original_headline: str,
+    localized_headline: str,
+) -> bool:
+    """
+    Takes an existing English composite thumbnail.jpg and generates a pixel-matched
+    localized edition (thumbnail_ua.jpg / thumbnail_ru.jpg) by replacing ONLY the top
+    headline text while keeping the portrait, background, and prop cutout identical.
+    """
+    import os
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key or not base_jpg.exists():
+        return False
+    try:
+        from google import genai
+        from google.genai import types
+        from PIL import Image
+
+        client = genai.Client(api_key=api_key)
+        prompt = (
+            f"Keep this exact image, cyclist portrait, background, and prop cutout 100% identical, "
+            f"and ONLY replace the top text \"{original_headline}\" with the {lang_label} text "
+            f"\"{localized_headline}\" in the exact same bold uppercase sans-serif font, size, "
+            f"drop shadow, and yellow-white-yellow word color pattern."
+        )
+        resp = client.models.generate_content(
+            model="gemini-3-pro-image-preview",
+            contents=[Image.open(base_jpg), prompt],
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+                image_config=types.ImageConfig(aspect_ratio="16:9"),
+            ),
+        )
+        for part in resp.candidates[0].content.parts:
+            if part.inline_data:
+                out_jpg.write_bytes(part.inline_data.data)
+                return out_jpg.exists()
+    except Exception as e:
+        print(f"Warning: Localized thumbnail generation ({lang_label}) failed: {e}")
+    return False
+
+
 def main():
     p = argparse.ArgumentParser(description="Generate Imperial YouTube metadata, ua/ru localizations & .srt files")
     p.add_argument("--project-dir", required=True, help="Path to 04_Project_Catalog/YEAR/<project_name>")
@@ -181,7 +226,9 @@ def main():
     p.add_argument("--thumb-sec", type=float, default=56.5, help="Timestamp in seconds for custom thumbnail")
     p.add_argument("--thumb-mode", choices=["preserve", "composite_ai", "frame"], default="preserve",
                    help="Thumbnail mode: preserve existing thumbnail.jpg, generate composite_ai, or extract frame")
-    p.add_argument("--thumb-text", default="SAVED AT THE GATE", help="3-4 word ALL-CAPS headline for composite thumbnail")
+    p.add_argument("--thumb-text", default="SAVED AT THE GATE", help="3-4 word ALL-CAPS headline for EN composite thumbnail")
+    p.add_argument("--thumb-text-ua", default="ВРЯТОВАНИЙ БІЛЯ ВОРІТ", help="3-4 word ALL-CAPS headline for UA composite thumbnail")
+    p.add_argument("--thumb-text-ru", default="СПАСЁН У ВОРОТ", help="3-4 word ALL-CAPS headline for RU composite thumbnail")
     p.add_argument("--thumb-hero", default=None, help="Hero image path for composite thumbnail")
     p.add_argument("--thumb-prop", default=None, help="Prop image path for composite thumbnail (white-bordered cutout)")
     args = p.parse_args()
@@ -423,6 +470,13 @@ def main():
             thumb_ok = extract_thumbnail(mp4_path, thumb_path, args.thumb_sec)
     else:
         thumb_ok = extract_thumbnail(mp4_path, thumb_path, args.thumb_sec)
+
+    thumb_ua_path = proj_dir / "thumbnail_ua.jpg"
+    thumb_ru_path = proj_dir / "thumbnail_ru.jpg"
+    if thumb_ok and not thumb_ua_path.exists() and args.thumb_text_ua:
+        localize_existing_thumbnail(thumb_path, thumb_ua_path, "Ukrainian", args.thumb_text, args.thumb_text_ua)
+    if thumb_ok and not thumb_ru_path.exists() and args.thumb_text_ru:
+        localize_existing_thumbnail(thumb_path, thumb_ru_path, "Russian", args.thumb_text, args.thumb_text_ru)
 
     metadata = {
         "project_name": project_name,

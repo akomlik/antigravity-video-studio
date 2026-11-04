@@ -9,7 +9,7 @@ description: Conducts an interactive Q&A interview session to build and enrich m
 Always run this conversational skill on **Gemini 3.8 Flash** so multi-turn Q&A interviews consume **0%** of the 5-hour Gemini 4 Argon quota.
 
 ## Interview Protocol
-1. Read `~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/my_digital_brain.md` to see which life chapters or project domains already have notes and which have open placeholders.
+1. Read `./my_digital_brain.md` to see which life chapters or project domains already have notes and which have open placeholders.
 2. Ask Alexander which memory domain he wants to expand today (or use the argument passed to `/interview-brain`), choosing from:
    - **1977+ Photography & B&W Film Era:** First cameras, darkroom/scanning stories, favorite 1970s/1980s rolls, and where they sit on `Crucial-4T`.
    - **1980–1984 University Classmates:** University/faculty name, key classmates and inside stories, memorable excursions, and which Lightroom folders/collections hold those scans.

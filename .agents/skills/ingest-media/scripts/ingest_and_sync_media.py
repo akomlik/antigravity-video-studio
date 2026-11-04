@@ -3,12 +3,12 @@
 ingest_and_sync_media.py
 Universal pre-processor for Google Antigravity video workflows:
 - Step 0a: Runs ranger-sync (https://github.com/akomlik/bleequp-ranger-sync) if needed
-- Step 0b: Migrates Context.md -> Storyboard.md (or creates an initial Storyboard.md draft if missing)
+- Step 0b: Ensures Storyboard.md exists (or creates an initial Storyboard.md draft if missing)
 - Step 0c: Converts iPhone .HEIC to .jpg via macOS sips & extracts .proxies/ video thumbnails
 - Auto-detects genre: cycling_ride | hike_outdoor | social_event | archival_slideshow
 - Extracts QuickTime ISO6709 GPS tags from iPhone .MOV clips and syncs Garmin .gpx when present
-- Scans ~/Music/Cycling_BGM/ (03_Audio_Library/01_Curated_BGM/) for [BPM]_[Mood]_[TrackName]_[Artist].mp3 tracks
-- Saves project_manifest.json and syncs Storyboard.md to Google Drive 04_Project_Catalog/YEAR/
+- Scans 03_Audio_Library/01_Curated_BGM/ for [BPM]_[Mood]_[TrackName]_[Artist].mp3 tracks
+- Saves project_manifest.json and syncs Storyboard.md to 04_Project_Catalog/YEAR/
 """
 
 import argparse
@@ -24,8 +24,8 @@ from pathlib import Path
 
 os.environ["PATH"] = f"/opt/homebrew/bin:/usr/local/bin:{Path.home() / '.local/bin'}:{os.environ.get('PATH', '')}"
 
-STUDIO_ROOT = Path("~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio").expanduser()
-CYCLING_BGM_ROOT = Path("~/Music/Cycling_BGM").expanduser()
+STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+BGM_ROOT = STUDIO_ROOT / "03_Audio_Library" / "01_Curated_BGM"
 
 
 def run_bleequp_ranger_sync_if_needed(project_dir: Path, skip_sync: bool):
@@ -305,19 +305,13 @@ def probe_media_file(filepath: Path, proxy_dir: Path):
 def ensure_or_migrate_storyboard(project_dir: Path, catalog_dir: Path, genre: str, media_items: list):
     """
     Step 0b: Ensures Storyboard.md exists.
-    - If Context.md exists (legacy name), migrates/copies it to Storyboard.md.
-    - If neither exists, creates a chronological Storyboard.md skeleton from the probed media inventory
+    - If missing, creates a chronological Storyboard.md skeleton from the probed media inventory
       so the agent can immediately enrich it and ask the user for story refinements.
     """
     storyboard_path = project_dir / "Storyboard.md"
-    legacy_context_path = project_dir / "Context.md"
     status = "existing"
 
-    if not storyboard_path.exists() and legacy_context_path.exists():
-        shutil.copy2(legacy_context_path, storyboard_path)
-        status = "migrated_from_Context_md"
-        print(f"Migrated existing {legacy_context_path.name} -> {storyboard_path.name}")
-    elif not storyboard_path.exists():
+    if not storyboard_path.exists():
         status = "created_skeleton_needs_refinement"
         lines = [
             f"# Storyboard: {project_dir.name}",
@@ -341,7 +335,7 @@ def ensure_or_migrate_storyboard(project_dir: Path, catalog_dir: Path, genre: st
         storyboard_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
         print(f"Created initial {storyboard_path.name} draft for AI visual inspection.")
 
-    # Always keep a synced copy inside Google Drive 04_Project_Catalog/YEAR/<project_name>/Storyboard.md
+    # Always keep a synced copy inside 04_Project_Catalog/YEAR/<project_name>/Storyboard.md
     shutil.copy2(storyboard_path, catalog_dir / "Storyboard.md")
     return str(storyboard_path), status
 
@@ -362,10 +356,10 @@ def detect_genre(requested_genre: str, gpx_points: list, media_items: list):
 
 def recommend_music_tracks(genre: str, studio_root: Path):
     """
-    Scans ~/Music/Cycling_BGM/ (or 03_Audio_Library/01_Curated_BGM/) and parses
-    [BPM]_[Mood]_[TrackName]_[Artist].mp3 taxonomy from Music for Video Workflow.
+    Scans 03_Audio_Library/01_Curated_BGM/ and parses
+    [BPM]_[Mood]_[TrackName]_[Artist].mp3 taxonomy.
     """
-    music_root = CYCLING_BGM_ROOT if CYCLING_BGM_ROOT.exists() else (studio_root / "03_Audio_Library" / "01_Curated_BGM")
+    music_root = studio_root / "03_Audio_Library" / "01_Curated_BGM"
     genre_folder_map = {
         "cycling_ride": ["01_Rolling_Cadence", "03_Punchy_Climbs"],
         "hike_outdoor": ["02_Scenic_Wonder", "04_Warm_Social_And_Retro"],
@@ -609,7 +603,7 @@ def main():
         "proxy_thumbnails_dir": str(proxy_dir),
         "detected_genre": genre,
         "gpx_file": gpx_files[0].name if gpx_files else None,
-        "music_library_root": str(CYCLING_BGM_ROOT),
+        "music_library_root": str(studio_root / "03_Audio_Library" / "01_Curated_BGM"),
         "recommended_music_candidates": recommend_music_tracks(genre, studio_root),
         "project_summary": {
             "total_distance_mi": round(total_km * 0.621371, 1),

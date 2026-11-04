@@ -17,23 +17,27 @@ Upgrades 2026-11-02_Nina_Pollenca_Loop (Full 4K UHD 3840x2160) with:
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+
+STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+MOVIES_ROOT = Path(os.environ.get("LOCAL_MOVIES_ROOT", "~/Movies")).expanduser()
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gpx_widgets import load_gpx_stream, render_corner_map_widget, render_telemetry_hud_widget
 
 TICKS_PER_SEC = 254016000000
 
-CATALOG_DIR = Path("/Users/akomlik/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/04_Project_Catalog/2026/2026-11-02_Nina_Pollenca_Loop")
-RAW_DIR = Path("/Users/akomlik/Movies/2026/2026-11-02_Nina_Pollenca_Loop")
+CATALOG_DIR = STUDIO_ROOT / "04_Project_Catalog/2026/2026-11-02_Nina_Pollenca_Loop")
+RAW_DIR = MOVIES_ROOT / "2026/2026-11-02_Nina_Pollenca_Loop")
 PROJECT_PATH = CATALOG_DIR / "2026-11-02_Nina_Pollenca_Loop.fcproj"
 GPX_PATH = RAW_DIR / "Ride_with_Nina_to_her_Zumba_location_and_loop_over_Pollenca_back_home_with_Eroski_stop.gpx"
 ZUMBA_MP4 = RAW_DIR / "2026-11-02_Zumba.mp4"
-BGM_PHASE1 = Path("/Users/akomlik/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/03_Audio_Library/01_Curated_BGM/04_Warm_Social_And_Retro/083bpm_Playfullofi_EasyPeasy_Creatormix.mp3")
-BGM_PHASE2 = Path("/Users/akomlik/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/03_Audio_Library/01_Curated_BGM/01_Rolling_Cadence/127bpm_Coastalgroove_OceanDrive_Creatormix.mp3")
-EXPORT_PATH = Path("/Users/akomlik/Movies/Exports/2026/2026-11-02_Nina_Pollenca_Loop.mp4")
+BGM_PHASE1 = STUDIO_ROOT / "03_Audio_Library/01_Curated_BGM/04_Warm_Social_And_Retro/083bpm_Playfullofi_EasyPeasy_Creatormix.mp3")
+BGM_PHASE2 = STUDIO_ROOT / "03_Audio_Library/01_Curated_BGM/01_Rolling_Cadence/127bpm_Coastalgroove_OceanDrive_Creatormix.mp3")
+EXPORT_PATH = MOVIES_ROOT / "Exports/2026/2026-11-02_Nina_Pollenca_Loop.mp4")
 
 CAPTIONS = [
     (0.0, 3.1, "2026-11-02 · Escorting Nina to Zumba & Pollença Loop (21.5 mi · 531 ft)"),

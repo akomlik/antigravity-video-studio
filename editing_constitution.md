@@ -1,15 +1,15 @@
 ## UNIVERSAL EDITING CONSTITUTION (editing_constitution.md)
 
 **System:** Google Antigravity Desktop App (Gemini 3.8 Flash + Gemini 4 Argon)  
-**Studio Root:** `~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/`  
+**Studio Root:** `./`  
 **Media Tiers:** `~/Movies/YEAR/YYYY-MM-DD_<name>/` (Hot) & `/Volumes/Crucial-4T/Movies/YEAR/` (Cold Archive)  
-**Curated Music Pool:** `~/Music/Cycling_BGM/` $\leftrightarrow$ `03_Audio_Library/01_Curated_BGM/` (YouTube Audio Library + `creatormix.com`)  
+**Curated Music Pool:** `03_Audio_Library/01_Curated_BGM/` (YouTube Audio Library + `creatormix.com`)  
 **Target NLEs:** FilmCraft MCP (`127.0.0.1:9876`) & DaVinci Resolve Studio 21.1 MCP
 
 ### ARTICLE I: STAGE 0 COLLABORATIVE Storyboard.md & AUTOMATIC MEMORY HARVESTING
 
-- **Stage 0 — `Storyboard.md` First (With `Context.md` Compatibility):**
-    - Every project folder must have a **`Storyboard.md`** file (if a legacy `Context.md` file is present, automatically copy/migrate it to `Storyboard.md` and sync a copy to `04_Project_Catalog/YEAR/<project_name>/Storyboard.md`).
+- **Stage 0 — `Storyboard.md` First:**
+    - Every project folder must have a **`Storyboard.md`** file (synced to `04_Project_Catalog/YEAR/<project_name>/Storyboard.md`).
     - If `Storyboard.md` is missing or is an unpopulated skeleton, the agent MUST first run `ingest_and_sync_media.py` (which converts `.HEIC` to `.jpg`, extracts `.proxies/` video thumbnails, and reads EXIF/QuickTime GPS/timestamps), visually inspect the proxy thumbnails, and populate `Storyboard.md` with:
         - **Narrative Overview & Comedic/Emotional Arc**
         - **Scene-by-Scene Breakdown (`Scene 00` $\rightarrow$ `Scene N`)** with exact file ranges, timestamps, GPS coordinates, and visual descriptions.
@@ -17,9 +17,9 @@
         - **Archival & Flashback Links** (any throwback photos or YouTube video URLs to slice via `fetch_yt_broll_clip.py`).
     - In interactive `/storyboard` mode, present the drafted `Storyboard.md` and ask the user if they want to refine any scene or add historical media before moving to video production.
 - **Mandatory Automatic Memory Harvesting into `my_digital_brain.md`:**
-    - Whenever `Storyboard.md` is created or updated with user context, immediately extract any newly mentioned **people/companions**, **landmarks/restaurants/markets**, **recurring wardrobe/gear items**, and **cross-year archival links**, and append them under the appropriate section of `~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/my_digital_brain.md`.
+    - Whenever `Storyboard.md` is created or updated with user context, immediately extract any newly mentioned **people/companions**, **landmarks/restaurants/markets**, **recurring wardrobe/gear items**, and **cross-year archival links**, and append them under the appropriate section of `./my_digital_brain.md`.
 - **The Two-Gear Execution Dial (Fed by `Storyboard.md`):**
-    - **Gear 1 — Express `/magic-movie` Mode (Hands-Off Auto-Pilot):** Reads `Storyboard.md` (or auto-generates it on the fly if missing), picks Candidate #1 from `recommended_music_candidates` in `~/Music/Cycling_BGM/`, writes `cut_table.md` to `04_Project_Catalog/YEAR/<project_name>/`, immediately builds the timeline via MCP (`command_batch` in FilmCraft) without pausing for "OK", saves the `.fcproj`, verifies 3 rendered frames, and exports the `.mp4` to `~/Movies/Exports/YEAR/`.
+    - **Gear 1 — Express `/magic-movie` Mode (Hands-Off Auto-Pilot):** Reads `Storyboard.md` (or auto-generates it on the fly if missing), picks Candidate #1 from `recommended_music_candidates` in `03_Audio_Library/01_Curated_BGM/`, writes `cut_table.md` to `04_Project_Catalog/YEAR/<project_name>/`, immediately builds the timeline via MCP (`command_batch` in FilmCraft) without pausing for "OK", saves the `.fcproj`, verifies 3 rendered frames, and exports the `.mp4` to `~/Movies/Exports/YEAR/`.
     - **Gear 2 — Supervised `/build-cut-table` Mode (Brehov Approval Gate):** Translates `Storyboard.md` (`Scene 00` $\rightarrow$ `Scene N`) directly into the Markdown **Cut Table** (`cut_table.md`), displays the top 3 recommended music tracks (or offers to run `/find-music` on your open YouTube Audio Library / `creatormix.com` tabs), and waits for the user to reply **"OK"** before calling any mutating MCP timeline tools.
 
 ### ARTICLE II: GENRE-ADAPTIVE NARRATIVE PROFILES (WHEN Storyboard.md HAS NO CUSTOM SCENES)
@@ -57,16 +57,16 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
     - **YouTube Publishing Standard (`/publish-youtube`):** Default to the channel's archival title format (`YYYY-MM-DD · <Title>`) and automatically assign regional/topic playlists (e.g., `Mallorca`).
     - **Rule for Group & Archival Photos:** Never zoom-crop a 4:3 or vertical (9:16 / 3:4) photograph to fill 16:9 if doing so clips people's heads or classmates standing on the edges. Instead, place a scaled-up copy (`180%`) on `V1` with `Gaussian Blur` (`amount: 45`) and `60%` opacity, and animate the uncropped original photo centered on `V2`.
 
-### ARTICLE V: CURATED FREE MUSIC POOL (`~/Music/Cycling_BGM/`), MIXING & TRACK SWAPPING
+### ARTICLE V: CURATED FREE MUSIC POOL (`03_Audio_Library/01_Curated_BGM/`), MIXING & TRACK SWAPPING
 
 - **Track Assignment Standard:**
     - `V1`: Primary Video & Background Blur Fill Track
     - `V2`: Foreground Uncropped Stills, Archival B-Roll & Storyboard Caption Overlays
     - `A1`: Native Camera Audio (Tire roll, freewheel clicks, speech, market punchlines, toasts, café banter)
-    - `A2`: Dedicated Background Music Track (`~/Music/Cycling_BGM/` $\leftrightarrow$ `03_Audio_Library/01_Curated_BGM/`) — **kept completely separate on `A2` for one-command swapping (`/swap-music`)**
+    - `A2`: Dedicated Background Music Track (`03_Audio_Library/01_Curated_BGM/`) — **kept completely separate on `A2` for one-command swapping (`/swap-music`)**
     - `A3`: Subtle Contextual Sound Effects (`03_Audio_Library/02_SFX/catalog.json` — 209 Brehov cinematic WAVs across `01_Whooshes_Soft` through `19_Ambient_Pads`, aligned by `peak_ms` so the sound peak lands on the exact frame of motion/caption reveal)
 - **Music Taxonomy & Pool Mapping (`Music for Video Workflow` Standard):**
-    - All tracks in `~/Music/Cycling_BGM/` follow `[BPM]_[Mood]_[TrackName]_[Artist].mp3` (sourced from **YouTube Audio Library** and **Creator Mix `creatormix.com`**, filtered to `< 3:00` duration):
+    - All tracks in `03_Audio_Library/01_Curated_BGM/` follow `[BPM]_[Mood]_[TrackName]_[Artist].mp3` (sourced from **YouTube Audio Library** and **Creator Mix `creatormix.com`**, filtered to `< 3:00` duration):
         - `01_Rolling_Cadence/` (110–125 BPM): Steady pedaling, flat roads, coastal lanes (`cycling_ride` default).
         - `02_Scenic_Wonder/` (80–105 BPM): Ambient / Melodic vistas, summits, rainbows, coastal hikes (`hike_outdoor` default).
         - `03_Punchy_Climbs/` (120–140 BPM): Upbeat / Driving out-of-the-saddle efforts, fast descents.
@@ -140,5 +140,5 @@ Before assembling any timeline in Supervised Mode (or when logging the auto-plan
     3. **`option_b` (All 3 Locales — Special Occasions / Family Voice-Over Editions):**
         - Generates balanced stereo mixes `full_audio_en.m4a`, `full_audio_ua.m4a`, and `full_audio_ru.m4a`, and remuxes `_UA.mp4` and `_RU.mp4` in **`0.2 seconds`** via `ffmpeg -c:v copy` (zero video re-encoding!).
         - Uploads `_UA.mp4` and `_RU.mp4` as **Unlisted** (avoiding channel feed clutter), automatically embeds their clickable links (`🔊 Повна версія з українською озвучкою` / `🔊 Полная версия с русской озвучкой`) at the top of the `🇺🇦` / `🇷🇺` sections in the **Private** English master description, and cross-links the English master URL back into the `_UA` and `_RU` descriptions.
-- **YouTube Studio Composite Thumbnail Standard (`thumbnail.mode: "composite_ai"`):**
-    - Co-design a high-impact 1920×1080 thumbnail in Section 5 of `Storyboard.md` combining: (1) a softly blurred scenic background + sharp hero portrait on the left (e.g., Alexander in SJBC kit), (2) a white-outlined sticker cutout of the key story prop/action on the right (e.g., the blue Reynolds brake pad in the Dura-Ace caliper), and (3) a bold 3–4 word yellow-and-white headline across the top (e.g., **`SAVED AT THE GATE`**).
+- **YouTube Studio Composite Thumbnail Standard (`thumbnail.mode: "composite_ai"` — Localized per Edition):**
+    - Co-design a high-impact 1920×1080 thumbnail in Section 5 of `Storyboard.md` combining: (1) a softly blurred scenic background + sharp hero portrait on the left, (2) a white-outlined sticker cutout of the key story prop/action on the right, and (3) a bold 3–4 word yellow-and-white headline across the top (`headline_text` for `thumbnail.jpg`, plus localized `headline_text_ua` $\rightarrow$ `thumbnail_ua.jpg` and `headline_text_ru` $\rightarrow$ `thumbnail_ru.jpg` for `option_b` editions).

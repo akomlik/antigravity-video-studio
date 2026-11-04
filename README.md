@@ -22,7 +22,7 @@ Then run just **two commands**:
    ```text
    /storyboard ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
    ```
-   - Converts `.HEIC` $\rightarrow$ `.jpg`, extracts `.proxies/` video thumbnails, syncs Garmin `.gpx` telemetry (`mi`, `ft`, `mph`), inspects live camera audio levels, drafts the full `Storyboard.md` (including **Section 5: Production & YouTube Publishing Spec** and the **Composite Thumbnail** layout), and harvests new people/places into [`my_digital_brain.md`](file:///Users/akomlik/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/my_digital_brain.md).
+   - Converts `.HEIC` $\rightarrow$ `.jpg`, extracts `.proxies/` video thumbnails, syncs Garmin `.gpx` telemetry (`mi`, `ft`, `mph`), inspects live camera audio levels, drafts the full `Storyboard.md` (including **Section 5: Production & YouTube Publishing Spec** and the **Composite Thumbnail** layout), and harvests new people/places into [`my_digital_brain.md`](./my_digital_brain.md).
 2. **Build, Render & Publish End-to-End:**
    ```text
    /magic-movie ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
@@ -99,12 +99,14 @@ playlists:
   - "Mallorca"
   - "2026 Mallorca Cycling"
 
-# Custom Thumbnail Spec (YouTube Studio "Ask Suggestions" Composite Style)
+# Custom Thumbnail Spec (YouTube Studio "Ask Suggestions" Composite Style — Localized per Edition)
 thumbnail:
-  mode: "composite_ai"                # "composite_ai" (Hero portrait + Prop sticker cutout + 3-4 word hook) | "preserve" | "frame"
-  headline_text: "SAVED AT THE GATE"  # Bold ALL-CAPS yellow + white top banner
-  hero_image: "IMG_8744.jpg"          # Left: Smiling rider portrait over blurred scenic backdrop
-  prop_cutout: "IMG_8775.jpg"         # Right: White-outlined sticker cutout of the story's key prop
+  mode: "composite_ai"                        # "composite_ai" (Hero portrait + Prop sticker cutout + 3-4 word hook) | "preserve" | "frame"
+  headline_text: "SAVED AT THE GATE"          # English top banner (thumbnail.jpg)
+  headline_text_ua: "ВРЯТОВАНИЙ БІЛЯ ВОРІТ"   # Ukrainian top banner (thumbnail_ua.jpg)
+  headline_text_ru: "СПАСЁН У ВОРОТ"          # Russian top banner (thumbnail_ru.jpg)
+  hero_image: "IMG_8744.jpg"                  # Left: Smiling rider portrait over blurred scenic backdrop
+  prop_cutout: "IMG_8775.jpg"                 # Right: White-outlined sticker cutout of the story's key prop
   fallback_timestamp_sec: 56.5
 ```
 
@@ -132,10 +134,10 @@ thumbnail:
 
 | Folder / File | Location | Purpose |
 | :--- | :--- | :--- |
-| **Workspace Root** | `~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/` | Contains `README.md`, `editing_constitution.md`, `my_digital_brain.md`, and `.venv` (`google-genai`, `google-api-python-client`, `pillow`). |
-| **Agent Skills** | `~/Gdrive-gmail/hobbies/Photo_Video/.agents/skills/` *(and `Video/Antigravity_Video_Studio/.agents/skills/`)* | All 10 slash-command skills (`storyboard`, `magic-movie`, `publish-youtube`, `assemble-timeline`, `build-cut-table`, `find-music`, `swap-music`, `ingest-media`, `interview-brain`, `relink-archive`). |
+| **Workspace Root** | `./` | Contains `README.md`, `editing_constitution.md`, `my_digital_brain.md`, and `.venv` (`google-genai`, `google-api-python-client`, `pillow`). |
+| **Agent Skills** | `.agents/skills/` | All 10 slash-command skills (`storyboard`, `magic-movie`, `publish-youtube`, `assemble-timeline`, `build-cut-table`, `find-music`, `swap-music`, `ingest-media`, `interview-brain`, `relink-archive`). |
 | **Voice Profile** | `03_Audio_Library/03_Voice_Profile/` | Reference voice audio (`alexander_komlik_reference_24k.wav`) & persistent Gemini TTS persona ID (`voice_id.json` $\rightarrow$ `voice_jntybwupjc1s`). |
-| **Curated Music Pool** | `~/Music/Cycling_BGM/` *(symlinked to `03_Audio_Library/01_Curated_BGM/`)* | Reusable copyright-safe music (`[BPM]_[Mood]_[TrackName]_[Artist].mp3`). |
+| **Curated Music Pool** | `03_Audio_Library/01_Curated_BGM/` | Reusable copyright-safe music (`[BPM]_[Mood]_[TrackName]_[Artist].mp3`). |
 | **Hot Raw Media** | `~/Movies/2026/YYYY-MM-DD_<Name>/` | Raw `.MP4`/`.MOV`/`.HEIC`/`.gpx` files, `.proxies/`, and synced `Storyboard.md`. |
 | **Cloud Project Catalog** | `04_Project_Catalog/2026/YYYY-MM-DD_<Name>/` | `Storyboard.md`, `.fcproj`, `youtube_metadata.json`, `captions.{en,ua,ru}.srt`, `thumbnail.jpg`, and voiceover WAVs. |
 | **Final 4K Exports** | `~/Movies/Exports/2026/` | Finished `<project>.mp4`, `<project>_UA.mp4`, and `<project>_RU.mp4` masters. |
@@ -149,7 +151,7 @@ thumbnail:
 | **`/storyboard <path>`** | Stage 0: Converts `.HEIC` $\rightarrow$ `.jpg`, generates `.proxies/`, co-develops `Storyboard.md` (with Section 5 Publishing & Thumbnail Spec), and updates `my_digital_brain.md`. |
 | **`/magic-movie <path>`** | Gear 1: One-command build from `Storyboard.md` $\rightarrow$ GPX overlays + replicated VO + 4-track broadcast audio mix $\rightarrow$ clean 4K MP4(s) + optional YouTube upload. |
 | **`/publish-youtube <path>`** | Stage 4: Generates Imperial metadata, `00:00` chapters, `.srt` subtitles (`en`, `ua`, `ru`), and Composite Thumbnail, then uploads (`en_only`, `option_a`, or `option_b`) to `@akomlik`. |
-| **`/find-music <path>`** | Curates & auto-saves matching `< 3:00` tracks from YouTube Audio Library / `creatormix.com` into `~/Music/Cycling_BGM/`. |
+| **`/find-music <path>`** | Curates & auto-saves matching `< 3:00` tracks from YouTube Audio Library / `creatormix.com` into `03_Audio_Library/01_Curated_BGM/`. |
 | **`/swap-music [track]`** | Swaps the background music track on `A2` while preserving all video cuts and audio ducking. |
 | **`/build-cut-table <path>`** | Gear 2: Generates the scene-by-scene Markdown Cut Table (`cut_table.md`) and waits for your `"OK"`. |
 | **`/assemble-timeline`** | Executes an approved `cut_table.md` in FilmCraft or DaVinci Resolve. |

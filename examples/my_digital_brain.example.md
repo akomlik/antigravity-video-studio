@@ -8,8 +8,8 @@ When you run `/storyboard` or `/interview-brain`, the agent automatically harves
 - **Key People & Companions:**
   - **<Partner / Friend Name>:** Notes on recurring activities, inside jokes, and shared trips.
 - **Storage Architecture:**
-  - **Studio Root:** `~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/`
-  - **Curated Free Music Pool:** `~/Music/Cycling_BGM/` (`01_Rolling_Cadence`, `02_Scenic_Wonder`, `03_Punchy_Climbs`, `04_Warm_Social_And_Retro`, `05_Short_Transitions`)
+  - **Studio Root:** `./`
+  - **Curated Free Music Pool:** `03_Audio_Library/01_Curated_BGM/` (`01_Rolling_Cadence`, `02_Scenic_Wonder`, `03_Punchy_Climbs`, `04_Warm_Social_And_Retro`, `05_Short_Transitions`)
   - **Hot Raw Media:** `~/Movies/YEAR/YYYY-MM-DD_<project_name>/`
   - **Final Exports:** `~/Movies/Exports/YEAR/`
 

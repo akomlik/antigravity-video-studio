@@ -20,8 +20,9 @@ import os
 import sys
 from pathlib import Path
 
-DIRENV_MCP = Path("~/src/ai-workflow/scripts/direnv-mcp").expanduser()
-VOICE_DIR = Path("~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/03_Audio_Library/03_Voice_Profile").expanduser()
+STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+DIRENV_MCP = Path(os.environ.get("DIRENV_MCP_BIN", "~/src/ai-workflow/scripts/direnv-mcp")).expanduser()
+VOICE_DIR = STUDIO_ROOT / "03_Audio_Library/03_Voice_Profile"
 REF_WAV = VOICE_DIR / "alexander_komlik_reference_24k.wav"
 CONSENT_WAV = VOICE_DIR / "alexander_komlik_consent_24k.wav"
 VOICE_ID_FILE = VOICE_DIR / "voice_id.json"

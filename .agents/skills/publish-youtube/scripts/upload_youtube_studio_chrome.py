@@ -196,7 +196,7 @@ def main():
     parser = argparse.ArgumentParser(description="Upload 4K video and metadata to YouTube Studio via Chrome")
     parser.add_argument(
         "--metadata",
-        default="/Users/akomlik/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/04_Project_Catalog/2026/2026-11-02_Nina_Pollenca_Loop/youtube_metadata.json",
+        required=True,
         help="Path to youtube_metadata.json",
     )
     args = parser.parse_args()

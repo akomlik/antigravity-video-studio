@@ -9,8 +9,8 @@ description: Automatically updates media paths in FilmCraft (.fcproj), project_m
 Whenever an older `~/Movies/YEAR/YYYY-MM-DD_<name>` folder is moved to `/Volumes/Crucial-4T/Movies/YEAR/YYYY-MM-DD_<name>` to free local SSD space (or moved back to local disk for editing), run:
 
 ```bash
-python3 ~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/.agents/skills/relink-archive/scripts/relink_project_media.py \
-  --project-catalog-dir "~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/04_Project_Catalog/YEAR/YYYY-MM-DD_<name>" \
+python3 ./.agents/skills/relink-archive/scripts/relink_project_media.py \
+  --project-catalog-dir "./04_Project_Catalog/YEAR/YYYY-MM-DD_<name>" \
   --media-subfolder "YEAR/YYYY-MM-DD_<name>" \
   --direction to-external
 ```

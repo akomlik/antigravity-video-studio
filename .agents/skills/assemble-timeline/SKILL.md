@@ -11,7 +11,7 @@ description: Executes an approved Cut Table (after the user replies OK) in eithe
    mkdir -p ~/Movies/Cache_And_Previews && cd ~/Movies/Cache_And_Previews
    open -a FilmCraft --args --control 9876
    ```
-2. Call `media_import` with the absolute file paths of all selected clips, stills, archival pulls, and the chosen `~/Music/Cycling_BGM/` music track (`A2`).
+2. Call `media_import` with the absolute file paths of all selected clips, stills, archival pulls, and the chosen `03_Audio_Library/01_Curated_BGM/` music track (`A2`).
 3. Call `doc_inspect` once to map filenames to internal FilmCraft `item_id` values.
 4. Build and execute the timeline assembly via `assemble_engine.py` or MCP commands adhering strictly to the **Antigravity Production Standards**:
    - **Visuals & Ken Burns:** Place video clips and stills on `V1`. Still photos automatically receive Ken Burns `EaseIn`/`EaseOut` scale keyframing (100% -> 107.5% or 107.5% -> 100%).
@@ -19,7 +19,7 @@ description: Executes an approved Cut Table (after the user replies OK) in eithe
    - **Captions:** Native `caption_tracks` (C1) in Inter font with semi-transparent dark rounded background pills (`background_color: [0, 0, 0, 195]`, `margin: 0.08`), all emojis sanitized for clean typography.
    - **Ending:** Native `dip_to_black` (1.5s) transition on the closing visual clip.
    - **Burn-In Export:** Always export via `filmcraft-cli` with `--settings '{"burnCaptions": true}'` to `~/Movies/Exports/YEAR/<project_name>.mp4`.
-5. Save the reopenable `.fcproj` file to `~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/04_Project_Catalog/YEAR/<project_name>/<project_name>.fcproj` and ALWAYS call `command_run` (`{"id": "file.open", "params": {"path": "<fcproj_path>"}}`) via the `filmcraft` MCP server so the live FilmCraft GUI immediately reflects all timeline changes.
+5. Save the reopenable `.fcproj` file to `./04_Project_Catalog/YEAR/<project_name>/<project_name>.fcproj` and ALWAYS call `command_run` (`{"id": "file.open", "params": {"path": "<fcproj_path>"}}`) via the `filmcraft` MCP server so the live FilmCraft GUI immediately reflects all timeline changes.
 6. **Visual Verification Loop:** Call `render_frame` at three timestamps (Act 1/Scene 00 intro, midpoint, epilogue). Inspect the returned PNGs to confirm zero cropped heads on 4:3 photos and clean title legibility. Export the final `.mp4` to `~/Movies/Exports/YEAR/<project_name>.mp4`.
 
 ## Option B: DaVinci Resolve Studio MCP Execution (`davinci-resolve`)

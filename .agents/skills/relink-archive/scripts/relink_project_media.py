@@ -8,12 +8,13 @@ is moved between local ~/Movies/YEAR/ and external /Volumes/Crucial-4T/Movies/YE
 
 import argparse
 import json
+import os
 import shutil
 import sys
 from pathlib import Path
 
-LOCAL_MOVIES_ROOT = "/Users/akomlik/Movies"
-EXTERNAL_MOVIES_ROOT = "/Volumes/Crucial-4T/Movies"
+LOCAL_MOVIES_ROOT = str(Path(os.environ.get("LOCAL_MOVIES_ROOT", "~/Movies")).expanduser())
+EXTERNAL_MOVIES_ROOT = os.environ.get("EXTERNAL_MOVIES_ROOT", "/Volumes/Crucial-4T/Movies")
 
 
 def relink_json_file(file_path: Path, old_prefix: str, new_prefix: str):

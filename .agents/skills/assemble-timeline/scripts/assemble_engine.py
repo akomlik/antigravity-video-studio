@@ -23,8 +23,8 @@ from pathlib import Path
 
 TICKS_PER_SEC = 254016000000
 
-STUDIO_ROOT = Path("~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio").expanduser()
-EXPORTS_ROOT = Path("~/Movies/Exports").expanduser()
+STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+EXPORTS_ROOT = Path(os.environ.get("EXPORTS_ROOT", "~/Movies/Exports")).expanduser()
 
 
 def sanitize_caption_text(text: str) -> str:

@@ -73,6 +73,8 @@ def index_lrcat(lrcat_path: Path, out_json: Path):
 
 
 if __name__ == "__main__":
+    import os
+    studio_root = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
     p = argparse.ArgumentParser()
     p.add_argument(
         "--lrcat",
@@ -81,7 +83,7 @@ if __name__ == "__main__":
     )
     p.add_argument(
         "--out",
-        default="~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/00_Archive_Indexes/lightroom_stock_index.json"
+        default=str(studio_root / "00_Archive_Indexes/lightroom_stock_index.json")
     )
     args = p.parse_args()
     index_lrcat(Path(args.lrcat).expanduser(), Path(args.out).expanduser())

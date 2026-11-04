@@ -91,12 +91,14 @@ playlists:
   - "Mallorca"
   - "2026 Mallorca Cycling"
 
-# Custom Thumbnail Spec (YouTube Studio Composite Style)
+# Custom Thumbnail Spec (YouTube Studio Composite Style — Localized per Edition)
 thumbnail:
-  mode: "composite_ai"                # "composite_ai" (Hero cutout + Prop sticker cutout + 3-4 word hook) | "frame_extract"
-  headline_text: "SAVED AT THE GATE"  # Bold yellow + white top banner
-  hero_image: "IMG_8744.jpg"          # Left: Alexander in SJBC kit along Badia de Pollença
-  prop_cutout: "IMG_8775.jpg"         # Right: White-outlined sticker cutout of blue Reynolds pad in Dura-Ace caliper
+  mode: "composite_ai"                        # "composite_ai" (Hero cutout + Prop sticker cutout + 3-4 word hook) | "preserve" | "frame"
+  headline_text: "SAVED AT THE GATE"          # English top banner (thumbnail.jpg)
+  headline_text_ua: "ВРЯТОВАНИЙ БІЛЯ ВОРІТ"   # Ukrainian top banner (thumbnail_ua.jpg)
+  headline_text_ru: "СПАСЁН У ВОРОТ"          # Russian top banner (thumbnail_ru.jpg)
+  hero_image: "IMG_8744.jpg"                  # Left: Cyclist in SJBC kit along Badia de Pollença
+  prop_cutout: "IMG_8775.jpg"                 # Right: White-outlined sticker cutout of blue Reynolds pad in Dura-Ace caliper
   fallback_timestamp_sec: 56.5
 ```
 

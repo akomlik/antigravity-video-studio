@@ -23,8 +23,8 @@ import re
 import sys
 from pathlib import Path
 
-DIRENV_MCP = Path("~/src/ai-workflow/scripts/direnv-mcp").expanduser()
-STUDIO_ROOT = Path("~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio").expanduser()
+DIRENV_MCP = Path(os.environ.get("DIRENV_MCP_BIN", "~/src/ai-workflow/scripts/direnv-mcp")).expanduser()
+STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
 YT_INDEX_PATH = STUDIO_ROOT / "00_Archive_Indexes/youtube_motion_index.jsonl"
 OAUTH_DIR = Path("~/.config/antigravity_youtube").expanduser()
 TOKEN_FILE = OAUTH_DIR / "token.json"
@@ -309,6 +309,10 @@ def upload_option_b_multilingual(
     ua_mp4 = primary_mp4.with_name(f"{primary_mp4.stem}_UA.mp4")
     ru_mp4 = primary_mp4.with_name(f"{primary_mp4.stem}_RU.mp4")
 
+    proj_dir = meta_path.parent
+    ua_thumb = proj_dir / "thumbnail_ua.jpg"
+    ru_thumb = proj_dir / "thumbnail_ru.jpg"
+
     edition_urls = {}
 
     # 1. Upload Ukrainian Edition
@@ -333,7 +337,7 @@ def upload_option_b_multilingual(
             default_lang="uk",
             tags=tags + ["Майорка", "велоспорт", "Зумба"],
             category_id=cat_id,
-            thumbnail_path=thumb_path,
+            thumbnail_path=ua_thumb if ua_thumb.exists() else thumb_path,
             playlists=playlists,
             srt_files=ua_srts,
         )
@@ -362,7 +366,7 @@ def upload_option_b_multilingual(
             default_lang="ru",
             tags=tags + ["Майорка", "велосипед", "Зумба"],
             category_id=cat_id,
-            thumbnail_path=thumb_path,
+            thumbnail_path=ru_thumb if ru_thumb.exists() else thumb_path,
             playlists=playlists,
             srt_files=ru_srts,
         )

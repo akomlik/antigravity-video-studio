@@ -16,8 +16,8 @@ Turns any finished 4K `.mp4` export and `.fcproj` project into a complete YouTub
 ## Step 1: Generate Metadata Package, `.srt` Tracks & Composite Thumbnail
 Run `generate_youtube_metadata.py`:
 ```bash
-~/src/ai-workflow/scripts/direnv-mcp python3 ~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/.agents/skills/publish-youtube/scripts/generate_youtube_metadata.py \
-  --project-dir "~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/04_Project_Catalog/YEAR/<project_name>" \
+~/src/ai-workflow/scripts/direnv-mcp python3 ./.agents/skills/publish-youtube/scripts/generate_youtube_metadata.py \
+  --project-dir "./04_Project_Catalog/YEAR/<project_name>" \
   --mp4 "~/Movies/Exports/YEAR/<project_name>.mp4" \
   --thumb-mode preserve \
   --thumb-text "SAVED AT THE GATE"
@@ -31,8 +31,8 @@ Run `generate_youtube_metadata.py`:
 ### Mode 1: Single Video Upload (`en_only` or `option_a` — Everyday Default)
 Uploads the 4K English Master (`private`), sets localized `EN`/`UA`/`RU` Titles & Descriptions, uploads `captions.en.srt`, `captions.ua.srt`, and `captions.ru.srt`, and sets `thumbnail.jpg`:
 ```bash
-~/src/ai-workflow/scripts/direnv-mcp python3 ~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/.agents/skills/publish-youtube/scripts/upload_youtube_api.py \
-  --metadata "~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/04_Project_Catalog/YEAR/<project_name>/youtube_metadata.json" \
+~/src/ai-workflow/scripts/direnv-mcp python3 ./.agents/skills/publish-youtube/scripts/upload_youtube_api.py \
+  --metadata "./04_Project_Catalog/YEAR/<project_name>/youtube_metadata.json" \
   --privacy private
 ```
 *(To update metadata/captions/thumbnail on an already-uploaded video without re-uploading the MP4, add `--update-existing <VIDEO_ID>`).*
@@ -40,8 +40,8 @@ Uploads the 4K English Master (`private`), sets localized `EN`/`UA`/`RU` Titles 
 ### Mode 2: Full 3-Edition Multi-Language Upload (`option_b` — Special Occasions & Family Stories)
 Uploads the 4K **🇺🇦 Ukrainian Edition** (`_UA.mp4`, **Unlisted**) and **🇷🇺 Russian Edition** (`_RU.mp4`, **Unlisted**) with their native replicated voice-over tracks and `.srt` captions, then uploads/updates the 4K **🇺🇸 English Master** (**Private**) with prominent clickable `▶️ Дивитися з українською озвучкою` and `▶️ Смотреть с русской озвучкой` links injected into the description, and applies `thumbnail.jpg` to all 3 videos:
 ```bash
-~/src/ai-workflow/scripts/direnv-mcp python3 ~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/.agents/skills/publish-youtube/scripts/upload_youtube_api.py \
-  --metadata "~/Gdrive-gmail/hobbies/Photo_Video/Video/Antigravity_Video_Studio/04_Project_Catalog/YEAR/<project_name>/youtube_metadata.json" \
+~/src/ai-workflow/scripts/direnv-mcp python3 ./.agents/skills/publish-youtube/scripts/upload_youtube_api.py \
+  --metadata "./04_Project_Catalog/YEAR/<project_name>/youtube_metadata.json" \
   --privacy private \
   --option-b
 ```
