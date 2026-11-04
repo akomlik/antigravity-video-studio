@@ -1,0 +1,210 @@
+folder,file,relpath,role,description,duration_ms,peak_ms,peak_dbfs,recommended_level_vs_voice
+01_Whooshes_Soft,whoosh_soft_01.wav,01_Whooshes_Soft/whoosh_soft_01.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",551,174,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_02.wav,01_Whooshes_Soft/whoosh_soft_02.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",547,198,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_03.wav,01_Whooshes_Soft/whoosh_soft_03.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",604,221,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_04.wav,01_Whooshes_Soft/whoosh_soft_04.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",608,243,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_05.wav,01_Whooshes_Soft/whoosh_soft_05.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",645,269,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_06.wav,01_Whooshes_Soft/whoosh_soft_06.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",646,254,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_07.wav,01_Whooshes_Soft/whoosh_soft_07.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",672,283,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_08.wav,01_Whooshes_Soft/whoosh_soft_08.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",719,315,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_09.wav,01_Whooshes_Soft/whoosh_soft_09.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",553,194,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_10.wav,01_Whooshes_Soft/whoosh_soft_10.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",559,216,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_11.wav,01_Whooshes_Soft/whoosh_soft_11.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",592,204,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_12.wav,01_Whooshes_Soft/whoosh_soft_12.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",616,241,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_13.wav,01_Whooshes_Soft/whoosh_soft_13.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",647,256,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_14.wav,01_Whooshes_Soft/whoosh_soft_14.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",667,289,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_15.wav,01_Whooshes_Soft/whoosh_soft_15.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",694,322,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_16.wav,01_Whooshes_Soft/whoosh_soft_16.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",720,311,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_17.wav,01_Whooshes_Soft/whoosh_soft_17.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",520,184,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_18.wav,01_Whooshes_Soft/whoosh_soft_18.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",571,201,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_19.wav,01_Whooshes_Soft/whoosh_soft_19.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",603,227,-1.0,-6 to -10 dB below voice
+01_Whooshes_Soft,whoosh_soft_20.wav,01_Whooshes_Soft/whoosh_soft_20.wav,whoosh_soft,"Short airy fly-by; small object fly-ins, lower-thirds, and exits",632,252,-1.0,-6 to -10 dB below voice
+02_Whooshes_Medium,whoosh_medium_01.wav,02_Whooshes_Medium/whoosh_medium_01.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",960,381,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_02.wav,02_Whooshes_Medium/whoosh_medium_02.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",974,366,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_03.wav,02_Whooshes_Medium/whoosh_medium_03.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1017,385,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_04.wav,02_Whooshes_Medium/whoosh_medium_04.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1045,419,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_05.wav,02_Whooshes_Medium/whoosh_medium_05.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1087,451,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_06.wav,02_Whooshes_Medium/whoosh_medium_06.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1113,471,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_07.wav,02_Whooshes_Medium/whoosh_medium_07.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1145,499,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_08.wav,02_Whooshes_Medium/whoosh_medium_08.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1180,507,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_09.wav,02_Whooshes_Medium/whoosh_medium_09.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1224,532,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_10.wav,02_Whooshes_Medium/whoosh_medium_10.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1257,563,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_11.wav,02_Whooshes_Medium/whoosh_medium_11.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",932,354,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_12.wav,02_Whooshes_Medium/whoosh_medium_12.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",995,372,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_13.wav,02_Whooshes_Medium/whoosh_medium_13.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1008,408,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_14.wav,02_Whooshes_Medium/whoosh_medium_14.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1044,401,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_15.wav,02_Whooshes_Medium/whoosh_medium_15.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1090,441,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_16.wav,02_Whooshes_Medium/whoosh_medium_16.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1119,463,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_17.wav,02_Whooshes_Medium/whoosh_medium_17.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1139,466,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_18.wav,02_Whooshes_Medium/whoosh_medium_18.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1183,509,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_19.wav,02_Whooshes_Medium/whoosh_medium_19.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1202,531,-1.0,-4 to -7 dB below voice
+02_Whooshes_Medium,whoosh_medium_20.wav,02_Whooshes_Medium/whoosh_medium_20.wav,whoosh_medium,"Dense whoosh; medium movements, caption cards, and scene changes",1242,553,-1.0,-4 to -7 dB below voice
+03_Whooshes_Cinematic,whoosh_cinematic_01.wav,03_Whooshes_Cinematic/whoosh_cinematic_01.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1446,605,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_02.wav,03_Whooshes_Cinematic/whoosh_cinematic_02.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1519,680,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_03.wav,03_Whooshes_Cinematic/whoosh_cinematic_03.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1582,692,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_04.wav,03_Whooshes_Cinematic/whoosh_cinematic_04.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1634,747,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_05.wav,03_Whooshes_Cinematic/whoosh_cinematic_05.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1696,785,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_06.wav,03_Whooshes_Cinematic/whoosh_cinematic_06.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1759,825,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_07.wav,03_Whooshes_Cinematic/whoosh_cinematic_07.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1820,875,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_08.wav,03_Whooshes_Cinematic/whoosh_cinematic_08.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1873,919,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_09.wav,03_Whooshes_Cinematic/whoosh_cinematic_09.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1936,988,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_10.wav,03_Whooshes_Cinematic/whoosh_cinematic_10.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",1998,1001,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_11.wav,03_Whooshes_Cinematic/whoosh_cinematic_11.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",2060,1072,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_12.wav,03_Whooshes_Cinematic/whoosh_cinematic_12.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",2111,1082,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_13.wav,03_Whooshes_Cinematic/whoosh_cinematic_13.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",2145,1134,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_14.wav,03_Whooshes_Cinematic/whoosh_cinematic_14.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",2196,1185,-1.0,Near voice level
+03_Whooshes_Cinematic,whoosh_cinematic_15.wav,03_Whooshes_Cinematic/whoosh_cinematic_15.wav,whoosh_cinematic,"Deep cinematic low-end whoosh; major frame transitions, intro hook",2256,1244,-1.0,Near voice level
+04_Drops_Falls,drop_fall_01.wav,04_Drops_Falls/drop_fall_01.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1129,435,-1.0,-4 to -7 dB below voice
+04_Drops_Falls,drop_fall_02.wav,04_Drops_Falls/drop_fall_02.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1168,481,-1.0,-4 to -7 dB below voice
+04_Drops_Falls,drop_fall_03.wav,04_Drops_Falls/drop_fall_03.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1206,512,-1.0,-4 to -7 dB below voice
+04_Drops_Falls,drop_fall_04.wav,04_Drops_Falls/drop_fall_04.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1246,559,-1.0,-4 to -7 dB below voice
+04_Drops_Falls,drop_fall_05.wav,04_Drops_Falls/drop_fall_05.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1284,605,-1.0,-4 to -7 dB below voice
+04_Drops_Falls,drop_fall_06.wav,04_Drops_Falls/drop_fall_06.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1324,636,-1.0,-4 to -7 dB below voice
+04_Drops_Falls,drop_fall_07.wav,04_Drops_Falls/drop_fall_07.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1363,668,-1.0,-4 to -7 dB below voice
+04_Drops_Falls,drop_fall_08.wav,04_Drops_Falls/drop_fall_08.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1402,717,-1.0,-4 to -7 dB below voice
+04_Drops_Falls,drop_fall_09.wav,04_Drops_Falls/drop_fall_09.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1441,746,-1.0,-4 to -7 dB below voice
+04_Drops_Falls,drop_fall_10.wav,04_Drops_Falls/drop_fall_10.wav,drop_fall,Downward drop with soft impact; object falling or exiting off-screen,1480,801,-1.0,-4 to -7 dB below voice
+05_Risers,riser_01.wav,05_Risers/riser_01.wav,riser,Building riser before a title or punchline; peak is at the very end,2371,1563,-1.0,-3 to -6 dB below voice
+05_Risers,riser_02.wav,05_Risers/riser_02.wav,riser,Building riser before a title or punchline; peak is at the very end,2617,1815,-1.0,-3 to -6 dB below voice
+05_Risers,riser_03.wav,05_Risers/riser_03.wav,riser,Building riser before a title or punchline; peak is at the very end,2855,2061,-1.0,-3 to -6 dB below voice
+05_Risers,riser_04.wav,05_Risers/riser_04.wav,riser,Building riser before a title or punchline; peak is at the very end,3118,2290,-1.0,-3 to -6 dB below voice
+05_Risers,riser_05.wav,05_Risers/riser_05.wav,riser,Building riser before a title or punchline; peak is at the very end,3357,2549,-1.0,-3 to -6 dB below voice
+05_Risers,riser_06.wav,05_Risers/riser_06.wav,riser,Building riser before a title or punchline; peak is at the very end,3604,2810,-1.0,-3 to -6 dB below voice
+05_Risers,riser_07.wav,05_Risers/riser_07.wav,riser,Building riser before a title or punchline; peak is at the very end,3858,3059,-1.0,-3 to -6 dB below voice
+05_Risers,riser_08.wav,05_Risers/riser_08.wav,riser,Building riser before a title or punchline; peak is at the very end,4086,3271,-1.0,-3 to -6 dB below voice
+05_Risers,riser_09.wav,05_Risers/riser_09.wav,riser,Building riser before a title or punchline; peak is at the very end,4355,3565,-1.0,-3 to -6 dB below voice
+05_Risers,riser_10.wav,05_Risers/riser_10.wav,riser,Building riser before a title or punchline; peak is at the very end,4606,3812,-1.0,-3 to -6 dB below voice
+05_Risers,riser_11.wav,05_Risers/riser_11.wav,riser,Building riser before a title or punchline; peak is at the very end,4847,4012,-1.0,-3 to -6 dB below voice
+05_Risers,riser_12.wav,05_Risers/riser_12.wav,riser,Building riser before a title or punchline; peak is at the very end,5104,4305,-1.0,-3 to -6 dB below voice
+06_Reverse_Swells,reverse_swell_01.wav,06_Reverse_Swells/reverse_swell_01.wav,reverse_swell,Inhale reverse swell; align end to coincide with impact or reveal,2732,2625,-1.0,-4 to -8 dB below voice
+06_Reverse_Swells,reverse_swell_02.wav,06_Reverse_Swells/reverse_swell_02.wav,reverse_swell,Inhale reverse swell; align end to coincide with impact or reveal,2813,2703,-1.0,-4 to -8 dB below voice
+06_Reverse_Swells,reverse_swell_03.wav,06_Reverse_Swells/reverse_swell_03.wav,reverse_swell,Inhale reverse swell; align end to coincide with impact or reveal,2840,2726,-1.0,-4 to -8 dB below voice
+06_Reverse_Swells,reverse_swell_04.wav,06_Reverse_Swells/reverse_swell_04.wav,reverse_swell,Inhale reverse swell; align end to coincide with impact or reveal,2897,2781,-1.0,-4 to -8 dB below voice
+06_Reverse_Swells,reverse_swell_05.wav,06_Reverse_Swells/reverse_swell_05.wav,reverse_swell,Inhale reverse swell; align end to coincide with impact or reveal,2965,2847,-1.0,-4 to -8 dB below voice
+06_Reverse_Swells,reverse_swell_06.wav,06_Reverse_Swells/reverse_swell_06.wav,reverse_swell,Inhale reverse swell; align end to coincide with impact or reveal,2936,2815,-1.0,-4 to -8 dB below voice
+06_Reverse_Swells,reverse_swell_07.wav,06_Reverse_Swells/reverse_swell_07.wav,reverse_swell,Inhale reverse swell; align end to coincide with impact or reveal,3016,2893,-1.0,-4 to -8 dB below voice
+06_Reverse_Swells,reverse_swell_08.wav,06_Reverse_Swells/reverse_swell_08.wav,reverse_swell,Inhale reverse swell; align end to coincide with impact or reveal,3029,2903,-1.0,-4 to -8 dB below voice
+07_Impacts,impact_01.wav,07_Impacts/impact_01.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",2442,28,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_02.wav,07_Impacts/impact_02.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",1030,12,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_03.wav,07_Impacts/impact_03.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",622,7,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_04.wav,07_Impacts/impact_04.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",2442,47,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_05.wav,07_Impacts/impact_05.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",1026,18,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_06.wav,07_Impacts/impact_06.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",632,6,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_07.wav,07_Impacts/impact_07.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",2443,9,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_08.wav,07_Impacts/impact_08.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",1023,23,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_09.wav,07_Impacts/impact_09.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",633,7,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_10.wav,07_Impacts/impact_10.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",2445,9,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_11.wav,07_Impacts/impact_11.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",1019,28,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_12.wav,07_Impacts/impact_12.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",627,6,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_13.wav,07_Impacts/impact_13.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",2446,12,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_14.wav,07_Impacts/impact_14.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",1025,6,-1.0,At or slightly above voice on main titles
+07_Impacts,impact_15.wav,07_Impacts/impact_15.wav,impact,"Accent hit, chapter title, key punchline; sub, deep, or punchy impact",636,7,-1.0,At or slightly above voice on main titles
+08_Sub_Drops,sub_drop_01.wav,08_Sub_Drops/sub_drop_01.wav,sub_drop,"Low downward bass rumble; under a strong thought, flashback, or black screen",1473,11,-1.0,-3 to -6 dB below voice
+08_Sub_Drops,sub_drop_02.wav,08_Sub_Drops/sub_drop_02.wav,sub_drop,"Low downward bass rumble; under a strong thought, flashback, or black screen",1680,12,-1.0,-3 to -6 dB below voice
+08_Sub_Drops,sub_drop_03.wav,08_Sub_Drops/sub_drop_03.wav,sub_drop,"Low downward bass rumble; under a strong thought, flashback, or black screen",1886,12,-1.0,-3 to -6 dB below voice
+08_Sub_Drops,sub_drop_04.wav,08_Sub_Drops/sub_drop_04.wav,sub_drop,"Low downward bass rumble; under a strong thought, flashback, or black screen",2091,13,-1.0,-3 to -6 dB below voice
+08_Sub_Drops,sub_drop_05.wav,08_Sub_Drops/sub_drop_05.wav,sub_drop,"Low downward bass rumble; under a strong thought, flashback, or black screen",2280,13,-1.0,-3 to -6 dB below voice
+08_Sub_Drops,sub_drop_06.wav,08_Sub_Drops/sub_drop_06.wav,sub_drop,"Low downward bass rumble; under a strong thought, flashback, or black screen",2497,14,-1.0,-3 to -6 dB below voice
+09_UI_Appears,ui_appear_01.wav,09_UI_Appears/ui_appear_01.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",386,103,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_02.wav,09_UI_Appears/ui_appear_02.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",475,7,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_03.wav,09_UI_Appears/ui_appear_03.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",318,49,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_04.wav,09_UI_Appears/ui_appear_04.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",423,128,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_05.wav,09_UI_Appears/ui_appear_05.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",512,7,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_06.wav,09_UI_Appears/ui_appear_06.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",322,48,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_07.wav,09_UI_Appears/ui_appear_07.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",383,109,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_08.wav,09_UI_Appears/ui_appear_08.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",561,7,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_09.wav,09_UI_Appears/ui_appear_09.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",327,44,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_10.wav,09_UI_Appears/ui_appear_10.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",431,145,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_11.wav,09_UI_Appears/ui_appear_11.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",491,7,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_12.wav,09_UI_Appears/ui_appear_12.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",315,45,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_13.wav,09_UI_Appears/ui_appear_13.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",399,114,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_14.wav,09_UI_Appears/ui_appear_14.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",515,7,-1.0,-6 to -10 dB below voice
+09_UI_Appears,ui_appear_15.wav,09_UI_Appears/ui_appear_15.wav,ui_appear,"Panel slide, card pop-up, lower-third caption, or telemetry overlay",315,48,-1.0,-6 to -10 dB below voice
+10_Ticks_Clicks,tick_click_01.wav,10_Ticks_Clicks/tick_click_01.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",183,5,-5.9,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_02.wav,10_Ticks_Clicks/tick_click_02.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",181,5,-4.4,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_03.wav,10_Ticks_Clicks/tick_click_03.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",189,5,-9.8,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_04.wav,10_Ticks_Clicks/tick_click_04.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",181,5,-9.0,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_05.wav,10_Ticks_Clicks/tick_click_05.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",189,5,-9.1,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_06.wav,10_Ticks_Clicks/tick_click_06.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",192,5,-5.3,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_07.wav,10_Ticks_Clicks/tick_click_07.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",182,5,-10.7,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_08.wav,10_Ticks_Clicks/tick_click_08.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",181,5,-10.0,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_09.wav,10_Ticks_Clicks/tick_click_09.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",183,5,-6.5,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_10.wav,10_Ticks_Clicks/tick_click_10.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",201,5,-5.1,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_11.wav,10_Ticks_Clicks/tick_click_11.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",183,5,-9.5,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_12.wav,10_Ticks_Clicks/tick_click_12.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",183,5,-3.9,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_13.wav,10_Ticks_Clicks/tick_click_13.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",182,5,-9.6,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_14.wav,10_Ticks_Clicks/tick_click_14.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",190,5,-7.9,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_15.wav,10_Ticks_Clicks/tick_click_15.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",188,5,-8.4,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_16.wav,10_Ticks_Clicks/tick_click_16.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",186,5,-9.5,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_17.wav,10_Ticks_Clicks/tick_click_17.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",189,5,-8.3,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_18.wav,10_Ticks_Clicks/tick_click_18.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",182,5,-8.7,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_19.wav,10_Ticks_Clicks/tick_click_19.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",182,5,-8.7,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_click_20.wav,10_Ticks_Clicks/tick_click_20.wav,tick_click,"Single subtle tick/click: scales, selection, subtle UI markers",198,5,-7.8,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_counter_01.wav,10_Ticks_Clicks/tick_counter_01.wav,tick_counter,"Rapid series of ticks: rolling numbers, speed/distance/price counters",668,145,-1.0,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_counter_02.wav,10_Ticks_Clicks/tick_counter_02.wav,tick_counter,"Rapid series of ticks: rolling numbers, speed/distance/price counters",842,501,-1.0,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_counter_03.wav,10_Ticks_Clicks/tick_counter_03.wav,tick_counter,"Rapid series of ticks: rolling numbers, speed/distance/price counters",987,815,-1.0,-10 to -12 dB below voice
+10_Ticks_Clicks,tick_counter_04.wav,10_Ticks_Clicks/tick_counter_04.wav,tick_counter,"Rapid series of ticks: rolling numbers, speed/distance/price counters",1046,833,-1.0,-10 to -12 dB below voice
+11_Screen_Taps,tap_01.wav,11_Screen_Taps/tap_01.wav,screen_tap,Phone screen tap; mobile UI animations,140,5,-4.6,-8 to -10 dB below voice
+11_Screen_Taps,tap_02.wav,11_Screen_Taps/tap_02.wav,screen_tap,Phone screen tap; mobile UI animations,140,5,-10.3,-8 to -10 dB below voice
+11_Screen_Taps,tap_03.wav,11_Screen_Taps/tap_03.wav,screen_tap,Phone screen tap; mobile UI animations,154,5,-7.2,-8 to -10 dB below voice
+11_Screen_Taps,tap_04.wav,11_Screen_Taps/tap_04.wav,screen_tap,Phone screen tap; mobile UI animations,153,5,-4.2,-8 to -10 dB below voice
+11_Screen_Taps,tap_05.wav,11_Screen_Taps/tap_05.wav,screen_tap,Phone screen tap; mobile UI animations,149,5,-7.2,-8 to -10 dB below voice
+11_Screen_Taps,tap_06.wav,11_Screen_Taps/tap_06.wav,screen_tap,Phone screen tap; mobile UI animations,153,5,-10.2,-8 to -10 dB below voice
+11_Screen_Taps,tap_07.wav,11_Screen_Taps/tap_07.wav,screen_tap,Phone screen tap; mobile UI animations,154,5,-11.6,-8 to -10 dB below voice
+11_Screen_Taps,tap_08.wav,11_Screen_Taps/tap_08.wav,screen_tap,Phone screen tap; mobile UI animations,154,5,-7.1,-8 to -10 dB below voice
+12_Camera_Shutter,shutter_01.wav,12_Camera_Shutter/shutter_01.wav,camera_shutter,Camera shutter click; still photo freeze-frame or Lightroom throwback snapshot,276,5,-5.2,-6 to -8 dB below voice
+12_Camera_Shutter,shutter_02.wav,12_Camera_Shutter/shutter_02.wav,camera_shutter,Camera shutter click; still photo freeze-frame or Lightroom throwback snapshot,300,65,-1.9,-6 to -8 dB below voice
+12_Camera_Shutter,shutter_03.wav,12_Camera_Shutter/shutter_03.wav,camera_shutter,Camera shutter click; still photo freeze-frame or Lightroom throwback snapshot,313,80,-1.0,-6 to -8 dB below voice
+12_Camera_Shutter,shutter_04.wav,12_Camera_Shutter/shutter_04.wav,camera_shutter,Camera shutter click; still photo freeze-frame or Lightroom throwback snapshot,299,5,-2.9,-6 to -8 dB below voice
+13_Notifications,notification_01.wav,13_Notifications/notification_01.wav,notification,"Message, like, or soft alert chime",1550,31,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_02.wav,13_Notifications/notification_02.wav,notification,"Message, like, or soft alert chime",1666,118,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_03.wav,13_Notifications/notification_03.wav,notification,"Message, like, or soft alert chime",1508,120,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_04.wav,13_Notifications/notification_04.wav,notification,"Message, like, or soft alert chime",1478,8,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_05.wav,13_Notifications/notification_05.wav,notification,"Message, like, or soft alert chime",1573,141,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_06.wav,13_Notifications/notification_06.wav,notification,"Message, like, or soft alert chime",1615,120,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_07.wav,13_Notifications/notification_07.wav,notification,"Message, like, or soft alert chime",1550,31,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_08.wav,13_Notifications/notification_08.wav,notification,"Message, like, or soft alert chime",1666,118,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_09.wav,13_Notifications/notification_09.wav,notification,"Message, like, or soft alert chime",1508,120,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_10.wav,13_Notifications/notification_10.wav,notification,"Message, like, or soft alert chime",1478,8,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_11.wav,13_Notifications/notification_11.wav,notification,"Message, like, or soft alert chime",1573,141,-1.0,-6 to -10 dB below voice
+13_Notifications,notification_12.wav,13_Notifications/notification_12.wav,notification,"Message, like, or soft alert chime",1615,120,-1.0,-6 to -10 dB below voice
+14_Success_Done,success_01.wav,14_Success_Done/success_01.wav,success_chime,"Ascending completion chime; mission accomplished, jacket found, dish redeemed",2022,217,-1.0,-4 to -8 dB below voice
+14_Success_Done,success_02.wav,14_Success_Done/success_02.wav,success_chime,"Ascending completion chime; mission accomplished, jacket found, dish redeemed",2151,250,-1.0,-4 to -8 dB below voice
+14_Success_Done,success_03.wav,14_Success_Done/success_03.wav,success_chime,"Ascending completion chime; mission accomplished, jacket found, dish redeemed",2092,277,-1.0,-4 to -8 dB below voice
+14_Success_Done,success_04.wav,14_Success_Done/success_04.wav,success_chime,"Ascending completion chime; mission accomplished, jacket found, dish redeemed",2046,219,-1.0,-4 to -8 dB below voice
+14_Success_Done,success_05.wav,14_Success_Done/success_05.wav,success_chime,"Ascending completion chime; mission accomplished, jacket found, dish redeemed",2129,249,-1.0,-4 to -8 dB below voice
+14_Success_Done,success_06.wav,14_Success_Done/success_06.wav,success_chime,"Ascending completion chime; mission accomplished, jacket found, dish redeemed",2174,280,-1.0,-4 to -8 dB below voice
+14_Success_Done,success_07.wav,14_Success_Done/success_07.wav,success_chime,"Ascending completion chime; mission accomplished, jacket found, dish redeemed",2137,226,-1.0,-4 to -8 dB below voice
+14_Success_Done,success_08.wav,14_Success_Done/success_08.wav,success_chime,"Ascending completion chime; mission accomplished, jacket found, dish redeemed",2062,253,-1.0,-4 to -8 dB below voice
+15_Error_Wrong,error_01.wav,15_Error_Wrong/error_01.wav,error_tone,"Muted descending tone; crossed out, wrong turn, un-chewable steak, brake pad fell out!",724,168,-1.0,-6 to -10 dB below voice
+15_Error_Wrong,error_02.wav,15_Error_Wrong/error_02.wav,error_tone,"Muted descending tone; crossed out, wrong turn, un-chewable steak, brake pad fell out!",692,169,-1.0,-6 to -10 dB below voice
+15_Error_Wrong,error_03.wav,15_Error_Wrong/error_03.wav,error_tone,"Muted descending tone; crossed out, wrong turn, un-chewable steak, brake pad fell out!",687,168,-1.0,-6 to -10 dB below voice
+15_Error_Wrong,error_04.wav,15_Error_Wrong/error_04.wav,error_tone,"Muted descending tone; crossed out, wrong turn, un-chewable steak, brake pad fell out!",682,168,-1.0,-6 to -10 dB below voice
+15_Error_Wrong,error_05.wav,15_Error_Wrong/error_05.wav,error_tone,"Muted descending tone; crossed out, wrong turn, un-chewable steak, brake pad fell out!",687,168,-1.0,-6 to -10 dB below voice
+15_Error_Wrong,error_06.wav,15_Error_Wrong/error_06.wav,error_tone,"Muted descending tone; crossed out, wrong turn, un-chewable steak, brake pad fell out!",689,9,-1.0,-6 to -10 dB below voice
+16_Shimmer_Sparkle,shimmer_01.wav,16_Shimmer_Sparkle/shimmer_01.wav,shimmer,"Sparkle/shimmer; highlight moment, checkmark, 'wow' reveal",1609,319,-1.0,-10 to -12 dB below voice
+16_Shimmer_Sparkle,shimmer_02.wav,16_Shimmer_Sparkle/shimmer_02.wav,shimmer,"Sparkle/shimmer; highlight moment, checkmark, 'wow' reveal",1649,213,-1.0,-10 to -12 dB below voice
+16_Shimmer_Sparkle,shimmer_03.wav,16_Shimmer_Sparkle/shimmer_03.wav,shimmer,"Sparkle/shimmer; highlight moment, checkmark, 'wow' reveal",1722,415,-1.0,-10 to -12 dB below voice
+16_Shimmer_Sparkle,shimmer_04.wav,16_Shimmer_Sparkle/shimmer_04.wav,shimmer,"Sparkle/shimmer; highlight moment, checkmark, 'wow' reveal",1728,397,-1.0,-10 to -12 dB below voice
+16_Shimmer_Sparkle,shimmer_05.wav,16_Shimmer_Sparkle/shimmer_05.wav,shimmer,"Sparkle/shimmer; highlight moment, checkmark, 'wow' reveal",1788,382,-1.0,-10 to -12 dB below voice
+16_Shimmer_Sparkle,shimmer_06.wav,16_Shimmer_Sparkle/shimmer_06.wav,shimmer,"Sparkle/shimmer; highlight moment, checkmark, 'wow' reveal",1812,300,-1.0,-10 to -12 dB below voice
+16_Shimmer_Sparkle,shimmer_07.wav,16_Shimmer_Sparkle/shimmer_07.wav,shimmer,"Sparkle/shimmer; highlight moment, checkmark, 'wow' reveal",1841,388,-1.0,-10 to -12 dB below voice
+16_Shimmer_Sparkle,shimmer_08.wav,16_Shimmer_Sparkle/shimmer_08.wav,shimmer,"Sparkle/shimmer; highlight moment, checkmark, 'wow' reveal",1974,443,-1.0,-10 to -12 dB below voice
+17_Keyboard_Typing,typing_01.wav,17_Keyboard_Typing/typing_01.wav,keyboard_typing,Text typing sound: on-screen text or search bar typing,1183,79,-1.0,-10 to -12 dB below voice
+17_Keyboard_Typing,typing_02.wav,17_Keyboard_Typing/typing_02.wav,keyboard_typing,Text typing sound: on-screen text or search bar typing,1872,1108,-1.0,-10 to -12 dB below voice
+17_Keyboard_Typing,typing_03.wav,17_Keyboard_Typing/typing_03.wav,keyboard_typing,Text typing sound: on-screen text or search bar typing,1995,565,-1.0,-10 to -12 dB below voice
+17_Keyboard_Typing,typing_04.wav,17_Keyboard_Typing/typing_04.wav,keyboard_typing,Text typing sound: on-screen text or search bar typing,2397,1495,-1.0,-10 to -12 dB below voice
+18_Transitions,transition_01.wav,18_Transitions/transition_01.wav,transition_hit,"Riser into impact; chapter change, Scene 00 flashback boundary",2060,792,-1.0,Near voice level
+18_Transitions,transition_02.wav,18_Transitions/transition_02.wav,transition_hit,"Riser into impact; chapter change, Scene 00 flashback boundary",2136,872,-1.0,Near voice level
+18_Transitions,transition_03.wav,18_Transitions/transition_03.wav,transition_hit,"Riser into impact; chapter change, Scene 00 flashback boundary",2212,917,-1.0,Near voice level
+18_Transitions,transition_04.wav,18_Transitions/transition_04.wav,transition_hit,"Riser into impact; chapter change, Scene 00 flashback boundary",2288,993,-1.0,Near voice level
+18_Transitions,transition_05.wav,18_Transitions/transition_05.wav,transition_hit,"Riser into impact; chapter change, Scene 00 flashback boundary",2364,1106,-1.0,Near voice level
+18_Transitions,transition_06.wav,18_Transitions/transition_06.wav,transition_hit,"Riser into impact; chapter change, Scene 00 flashback boundary",2440,1144,-1.0,Near voice level
+18_Transitions,transition_07.wav,18_Transitions/transition_07.wav,transition_hit,"Riser into impact; chapter change, Scene 00 flashback boundary",2516,1227,-1.0,Near voice level
+18_Transitions,transition_08.wav,18_Transitions/transition_08.wav,transition_hit,"Riser into impact; chapter change, Scene 00 flashback boundary",2592,1297,-1.0,Near voice level
+19_Ambient_Pads,ambient_pad_01.wav,19_Ambient_Pads/ambient_pad_01.wav,ambient_pad,Subtle 30s ambient pad under voice when no music is playing,31414,3232,-6.0,-20 dB below voice
+19_Ambient_Pads,ambient_pad_02.wav,19_Ambient_Pads/ambient_pad_02.wav,ambient_pad,Subtle 30s ambient pad under voice when no music is playing,31598,7387,-6.0,-20 dB below voice
+19_Ambient_Pads,ambient_pad_03.wav,19_Ambient_Pads/ambient_pad_03.wav,ambient_pad,Subtle 30s ambient pad under voice when no music is playing,31149,15063,-6.0,-20 dB below voice
+19_Ambient_Pads,ambient_pad_04.wav,19_Ambient_Pads/ambient_pad_04.wav,ambient_pad,Subtle 30s ambient pad under voice when no music is playing,31220,6040,-6.0,-20 dB below voice
+19_Ambient_Pads,ambient_pad_05.wav,19_Ambient_Pads/ambient_pad_05.wav,ambient_pad,Subtle 30s ambient pad under voice when no music is playing,31425,16160,-6.0,-20 dB below voice
+19_Ambient_Pads,ambient_pad_06.wav,19_Ambient_Pads/ambient_pad_06.wav,ambient_pad,Subtle 30s ambient pad under voice when no music is playing,31598,25899,-6.0,-20 dB below voice

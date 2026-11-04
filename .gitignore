@@ -1,0 +1,33 @@
+# System & IDE
+.DS_Store
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+
+# Virtual Environment & Local Agent Bindings
+.venv/
+.agents/notebook.json
+
+# Private Personal Digital Brain (see examples/my_digital_brain.example.md)
+my_digital_brain.md
+
+# Archive Indexes (keep directory via .placeholder)
+00_Archive_Indexes/*
+!00_Archive_Indexes/.placeholder
+
+# Audio Library (keep directory structure & SFX catalog.json, ignore MP3/WAV/Voice samples)
+03_Audio_Library/01_Curated_BGM/*/*
+!03_Audio_Library/01_Curated_BGM/*/.placeholder
+03_Audio_Library/01_Curated_BGM/music_catalog.json
+
+03_Audio_Library/02_SFX/*/*
+!03_Audio_Library/02_SFX/*/.placeholder
+!03_Audio_Library/02_SFX/catalog.json
+
+03_Audio_Library/03_Voice_Profile/*
+!03_Audio_Library/03_Voice_Profile/.placeholder
+
+# Project Catalog (keep directory via .placeholder, ignore personal project folders)
+04_Project_Catalog/*
+!04_Project_Catalog/.placeholder
