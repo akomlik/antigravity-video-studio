@@ -42,41 +42,57 @@ Then run just **two commands**:
 
 ---
 
-## 2. End-to-End Studio v2 Architecture Diagram
+## 2. End-to-End Studio v2 Architecture Diagram (Gear 1 Express & Gear 2 Supervised)
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ STEP 0: Drop Raw Media + 5-Line Draft into ~/Movies/2026/YYYY-MM-DD_<Name>/  │
-│ (iPhone .MOV/.HEIC, BleeqUP Ranger .MP4/.JPG, Garmin .gpx, 5-line rough note)│
-└──────────────────────────────────────┬───────────────────────────────────────┘
-                                       ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ STAGE 0: Run  /storyboard ~/Movies/2026/YYYY-MM-DD_<Name>                    │
-│ • Converts .HEIC -> .jpg, extracts .proxies/, syncs .gpx (Imperial mi/ft/mph)│
-│ • Co-develops Storyboard.md (Scenes + Section 5 Publishing & Thumbnail Spec) │
-│ • Harvests new people, landmarks & gear lore into my_digital_brain.md        │
-└──────────────────────────────────────┬───────────────────────────────────────┘
-                                       ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ GEAR 1: Run  /magic-movie ~/Movies/2026/YYYY-MM-DD_<Name>                    │
-│ • V1: 4K video cuts, Ken Burns stills, 62% PiP card for low-res B-roll       │
-│ • V2: Translucent GPX Corner Route Maps + conditional Telemetry HUD          │
-│ • A1: Speech-boosted live camera dialog (-22 dB mean, 120 Hz HPF + dynaudnorm)│
-│ • A2: Multi-phase BGM (-7.5 dB under VO, swelling +3.5 dB during pure riding)│
-│ • A3: Tamed PiP B-roll audio (-6.5 dB) / subtle SFX (never over speech)      │
-│ • A4: Replicated warm Voice-Over (voice_jntybwupjc1s, -16 LUFS, EN / UA / RU)│
-│ • Exports clean 4K MP4 (burnCaptions: false) + 0.2s remuxed _UA.mp4 & _RU.mp4│
-└──────────────────────────────────────┬───────────────────────────────────────┘
-                                       ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ STAGE 4: YouTube Publishing (/publish-youtube or auto via /magic-movie)      │
-│ • Generates Imperial titles, clean 00:00 chapters, .srt tracks (en, ua, ru)  │
-│ • Generates or applies YouTube-Studio-style Composite Thumbnail (1920x1080)  │
-│ • Uploads via YouTube Data API v3 (inherited env vars + cached OAuth token): │
-│   - en_only : 1 English 4K video (Private) + captions.en.srt                 │
-│   - option_a: 1 English 4K video (Private) + EN/UA/RU titles, descs & .srts  │
-│   - option_b: All 3 4K editions (EN Private + UA & RU Unlisted cross-linked) │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STEP 0: Drop Raw Media + 5-Line Draft into ~/Movies/2026/YYYY-MM-DD_<Name>/                   │
+│ (iPhone .MOV/.HEIC, BleeqUP Ranger .MP4/.JPG, Garmin .gpx, 5-line rough note)                 │
+└───────────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                                ▼
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STAGE 0: Run  /storyboard ~/Movies/2026/YYYY-MM-DD_<Name>                                     │
+│ • Enforces FilmCraft >= v0.17.0 (auto-syncs filmcraft-cli) & runs ranger-sync if needed       │
+│ • Converts .HEIC -> .jpg, extracts .proxies/, syncs .gpx (Imperial mi/ft/mph + 40m grade)     │
+│ • Co-develops Storyboard.md (Scenes 00..N + Section 5 Publishing & Composite Thumbnail Spec)  │
+│ • Harvests new people, landmarks & gear lore into my_digital_brain.md                         │
+└──────────────────────┬─────────────────────────────────────────────────┬──────────────────────┘
+                       │                                                 │
+       [GEAR 1: Express Auto-Pilot]                      [GEAR 2: Supervised Precision]
+                       ▼                                                 ▼
+┌─────────────────────────────────────────────┐   ┌─────────────────────────────────────────────┐
+│ Run  /magic-movie <path>                    │   │ 1. Run  /build-cut-table <path>             │
+│ • Zero-pause build straight from            │   │    • Uses Argon 95% Implicit Context Cache  │
+│   Storyboard.md (auto-logs cut_table.md)    │   │    • Generates scene-by-scene cut_table.md  │
+│                                             │   │      with beat-quantized cuts & top 3 BGM   │
+│                                             │   │    • PAUSES for human "OK" (or row tweaks   │
+│                                             │   │      / "/swap-music to #2")                 │
+│                                             │   │ 2. Run  /assemble-timeline                  │
+│                                             │   │    • Executes approved cut_table.md in      │
+│                                             │   │      FilmCraft MCP or DaVinci Resolve MCP   │
+└──────────────────────┬──────────────────────┘   └──────────────────────┬──────────────────────┘
+                       └────────────────────────┬────────────────────────┘
+                                                ▼
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ TIMELINE ENGINE & BROADCAST AUDIO MIX (assemble_engine.py + FilmCraft v0.17.0+ / Resolve)     │
+│ • V1: 4K video cuts, Ken Burns stills, 62% PiP card over blurred 4K backdrop for <1080p clips │
+│ • V2: Translucent GPX Corner Route Maps + conditional smoothed Telemetry HUD                  │
+│ • A1: Speech-boosted live camera dialog (-22 dB mean, 120 Hz HPF + dynaudnorm) / Ambience     │
+│ • A2: Multi-phase BGM (-7.5 dB under VO, native Essential Sound auto-ducking & +3.5 dB swell) │
+│ • A3: Tamed PiP B-roll audio (-6.5 dB) / peak_ms-aligned Brehov SFX (never over speech)       │
+│ • A4: Replicated warm Voice-Over (voice_jntybwupjc1s, -16 LUFS, EN / UA / RU)                 │
+│ • Exports clean 4K MP4 (burnCaptions: false) + 0.2s remuxed _UA.mp4 & _RU.mp4 (ffmpeg copy)   │
+└───────────────────────────────────────────────┬───────────────────────────────────────────────┘
+                                                ▼
+┌───────────────────────────────────────────────────────────────────────────────────────────────┐
+│ STAGE 4: YouTube Publishing (/publish-youtube or auto via /magic-movie)                       │
+│ • Generates Imperial titles, clean 00:00 chapters, .srt tracks (en, ua -> uk, ru)             │
+│ • Generates localized 1920x1080 Composite Thumbnails (thumbnail.jpg, _ua.jpg, _ru.jpg)        │
+│ • Uploads via YouTube Data API v3 (inherited env vars + cached OAuth token):                  │
+│   - en_only : 1 English 4K video (Private) + captions.en.srt                                  │
+│   - option_a: 1 English 4K video (Private) + EN/UA/RU titles, descs & .srts                   │
+│   - option_b: All 3 4K editions (EN Private + UA & RU Unlisted cross-linked)                  │
+└───────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
