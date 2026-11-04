@@ -172,6 +172,50 @@ def master_outro_fade_filter(total_dur_s: float, fade_dur_s: float = 2.2) -> str
     return f"afade=t=out:st={st:.2f}:d={fade_dur_s:.2f}:curve=hsin"
 
 
+def measure_mean_volume_db(audio_path: Path) -> float:
+    """Measures RMS mean_volume in dB via ffmpeg volumedetect so hot-mastered music never overpowers narration."""
+    out = subprocess.check_output(
+        ["/opt/homebrew/bin/ffmpeg", "-i", str(audio_path), "-af", "volumedetect", "-f", "null", "-"],
+        stderr=subprocess.STDOUT,
+    ).decode("utf-8", errors="replace")
+    for line in out.splitlines():
+        if "mean_volume:" in line:
+            try:
+                return float(line.split("mean_volume:")[1].split("dB")[0].strip())
+            except ValueError:
+                pass
+    return -16.0
+
+
+def compute_bgm_ducked_gain_db(bgm_path: Path, target_ducked_mean_db: float = -28.5) -> float:
+    """
+    Computes the exact fader gain (dB) required so a music track sits at `target_ducked_mean_db` (-28.5 dB mean)
+    underneath Voice-Over / Live Dialogue (-16.0 dB mean), guaranteeing >= 12.5 dB of speech-to-music headroom
+    even on loud upbeat tracks (-10 dB to -12 dB raw RMS).
+    """
+    raw_mean = measure_mean_volume_db(bgm_path)
+    return round(target_ducked_mean_db - raw_mean, 1)
+
+
+def filter_vo_cues_for_same_language_dialog(vo_cues: list, dialog_windows_by_lang: dict, lang: str) -> list:
+    """
+    Same-Language Live Dialogue Honor Law:
+    Removes any voice-over cue in `lang` that overlaps a live on-camera dialogue window in the SAME language (`lang`),
+    so synthetic narration never covers live speech in the same language (e.g., EN VO honors live EN speech;
+    RU VO honors live RU speech).
+    """
+    same_lang_windows = dialog_windows_by_lang.get(lang, [])
+    if not same_lang_windows:
+        return vo_cues
+    filtered = []
+    for cue in vo_cues:
+        cue_key, st, ed = cue[0], cue[1], cue[2]
+        overlaps = any(max(st, d_st) < min(ed, d_ed) - 0.15 for d_st, d_ed in same_lang_windows)
+        if not overlaps:
+            filtered.append(cue)
+    return filtered
+
+
 def apply_v017_essential_sound_via_cli(cli_bin: str, fcproj_path: Path, seq: dict):
     """
     Uses FilmCraft v0.17.0+ native `essentialSound.*` commands via `filmcraft-cli run` to:
@@ -217,7 +261,7 @@ def apply_v017_essential_sound_via_cli(cli_bin: str, fcproj_path: Path, seq: dic
                 "clips": music_ids,
                 "values": {
                     "ducking.enabled": True,
-                    "ducking.reduceDb": -3.5,
+                    "ducking.reduceDb": -6.0,
                     "ducking.fadeS": 0.45,
                     "ducking.sensitivity": 6.0,
                 },

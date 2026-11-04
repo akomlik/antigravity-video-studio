@@ -29,8 +29,9 @@ Watching the timeline assemble live in the open FilmCraft GUI adds less than 1.5
    - `audio.append`: Drops `A2` background music with 1.5s fade-in and swells.
    - `voiceover.insert`: Drops `A4` voice-over segments onto the live timeline as each audio cue finishes synthesizing.
 4. **Broadcast Polish:**
-   - Tag `A4` voiceover and `A1` dialog as `Dialogue` (`clarity.eqPreset: "Balanced Voice"`).
-   - Execute native `essentialSound.generateDucking` (`reduceDb: -3.5`, `fadeS: 0.45`) on `A2` Music so BGM ducks automatically.
+   - **Same-Language Live Dialogue Honor Law:** Never place `A4` Voice-Over in language $L$ over `A1` live camera dialogue spoken in that same language $L$ (`EN` VO honors live `EN` dialogue; `RU` VO honors live `RU` dialogue; `UA` VO honors live `UA` dialogue). When `A4` VO translates a clip containing foreign-language camera dialogue (`edition_lang != clip_dialog_lang`), duck `A1` by `-12 dB` during active VO cues.
+   - **RMS-Calibrated Music Ducking (`-28.5 dB` Mean Under Speech):** Measure each `A2` music track's `mean_volume` via `ffmpeg volumedetect` (`compute_bgm_ducked_gain_db`) and set `gain_db = -28.5 - raw_mean_db` so ducked BGM sits at **`-28.5 dB` mean** — a full `12.5 dB` quieter than normalized `-16.0 dB` mean Voice-Over and Live Dialogue, even on hot-mastered upbeat tracks.
+   - Tag `A4` voiceover and `A1` dialog as `Dialogue` (`clarity.eqPreset: "Balanced Voice"`), and execute `essentialSound.generateDucking` (`reduceDb: -6.0`, `fadeS: 0.45`) on `A2` Music.
    - Apply native 1.5s to 2.0s `dip_to_black` transition on the closing visual clip.
    - **Mandatory Synchronized Outro Audio Fade:** The master audio output (`[fullout]`) and music on `A2` MUST execute a synchronized `2.0s–2.5s` half-sine fade-out (`afade=t=out:st=<TOTAL_DUR - FADE_DUR>:d=<FADE_DUR>:curve=hsin`) so all audio (music, camera noise, SFX tails) reaches complete silence (`-infinity dB`) at or before the final frame. In `.fcproj`, track `A2` MUST carry an `EndAtCut` audio fade transition (`from: Some(clip.id), to: None, align: "EndAtCut"`). Sound must NEVER cut off abruptly.
    - Write multi-language subtitle tracks to `caption_tracks` (C1) with `enabled: false` (`burnCaptions: false` default).

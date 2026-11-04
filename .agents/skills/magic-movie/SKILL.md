@@ -30,10 +30,10 @@ You can invoke `/magic-movie` on a folder and optionally pass inline overrides (
    - Assemble the `.fcproj` timeline with:
      - `V1`: Video clips and Ken Burns (`EaseInOut` `1.0 -> 1.075`) still photos (including prop/repair detail photos synchronized to the dialog/VO).
      - `V2`: GPX Corner Maps & Telemetry HUD overlays.
-     - `A1 (Native / Live Dialog)`: Boosted live dialog (`0 dB`, `-22 dB` mean) during speech; muted or `-6 dB` during pure riding.
-     - `A2 (BGM)`: Multi-phase music at `-7.5 dB` under VO, swelling `+3.5 dB` (`-4.0 dB`, `-22.9 dB` mean) during riding-only intervals, muted during live camera dialog, with mandatory `2.0s–2.5s` half-sine outro fade (`curve=hsin`) matching the visual dip-to-black.
+     - `A1 (Native / Live Dialog)`: Normalized live dialog (`-16.0 dB` mean) when `edition_lang == clip_dialog_lang` (never covered by same-language VO!); ducked by `-12 dB` under cross-language VO when `edition_lang != clip_dialog_lang`.
+     - `A2 (BGM)`: RMS-calibrated (`gain_db = -28.5 - raw_mean_db`) so music sits at `-28.5 dB` mean under VO/live dialogue (`12.5 dB` below speech), swelling `+5.0 dB` (`-23.5 dB` mean) only during non-speech intervals, with mandatory `2.0s–2.5s` half-sine outro fade (`curve=hsin`) matching the visual dip-to-black.
      - `A3 (SFX / B-Roll Audio)`: PiP B-roll music trimmed to `-6.5 dB` (`-30.3 dB` mean) with `0.8s` fades; zero SFX overlapping live speech.
-     - `A4 (Voice-Over)`: Warm replicated voice-over (`+2.0 dB`, `-16 LUFS`).
+     - `A4 (Voice-Over)`: Warm replicated voice-over normalized to `-16.0 dB` mean (`-1.0 dB` peak), automatically suppressed over same-language live dialogue sections (`filter_vo_cues_for_same_language_dialog`).
      - `Master Outro Audio Fade`: All master audio outputs (`[fullout]`) MUST apply `afade=t=out:st=<TOTAL_DUR - FADE_DUR>:d=<FADE_DUR>:curve=hsin` reaching complete silence (`-infinity dB`) as the video dips to black (never cutting abruptly).
      - `C1 (Captions)`: Stored in `.fcproj` for `.srt` extraction, with `enabled: False` and `--settings '{"burnCaptions": false}'` so the exported 4K video has **zero burned-in bottom titles**.
    - Export `~/Movies/Exports/YEAR/<project_name>.mp4` (`3840x2160`, `H.264`, `AAC 192k`) and refresh the live FilmCraft GUI via `file.open`.
