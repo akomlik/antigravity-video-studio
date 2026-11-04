@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -26,6 +27,24 @@ os.environ["PATH"] = f"/opt/homebrew/bin:/usr/local/bin:{Path.home() / '.local/b
 
 STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
 BGM_ROOT = STUDIO_ROOT / "03_Audio_Library" / "01_Curated_BGM"
+
+
+def run_filmcraft_version_check(studio_root: Path):
+    """Step 0a-pre: Enforces FilmCraft >= v0.17.0, auto-syncs filmcraft-cli, and diffs new MCP commands."""
+    checker = studio_root / ".agents/skills/assemble-timeline/scripts/check_filmcraft_env.py"
+    if checker.exists():
+        sys.path.insert(0, str(checker.parent))
+        try:
+            from check_filmcraft_env import verify_filmcraft_environment
+            status = verify_filmcraft_environment(auto_sync_cli=True, check_remote=True)
+            print(
+                f"FilmCraft Verified: App v{status.get('app_version')} | CLI v{status.get('cli_version')} "
+                f"({status.get('capabilities', {}).get('total', 0)} MCP commands)"
+            )
+            return status
+        except Exception as e:
+            print(f"FilmCraft check warning: {e}")
+    return {}
 
 
 def run_bleequp_ranger_sync_if_needed(project_dir: Path, skip_sync: bool):
@@ -568,6 +587,7 @@ def main():
     studio_root = Path(args.studio_root).expanduser().resolve()
     proxy_dir = project_dir / ".proxies"
 
+    run_filmcraft_version_check(studio_root)
     run_bleequp_ranger_sync_if_needed(project_dir, args.skip_bleequp_sync)
     convert_heic_to_jpg(project_dir)
 

@@ -15,7 +15,8 @@ You can invoke `/magic-movie` on a folder and optionally pass inline overrides (
 - `--thumb-text "<HEADLINE>"` (default: reads `thumbnail.headline_text` from `Storyboard.md`)
 
 ## Execution Sequence
-1. **Step 1 (Ensure Ingestion & `Storyboard.md`):**
+1. **Step 1 (Enforce FilmCraft >= v0.17.0 & Ensure Ingestion + `Storyboard.md`):**
+   - Run `python3 ./.agents/skills/assemble-timeline/scripts/check_filmcraft_env.py` to enforce `MIN_FILMCRAFT_VERSION = "0.17.0"`, auto-sync `filmcraft-cli` if `FilmCraft.app` was updated in ArtCraft Launcher, check for newer upstream releases on `storytold/filmcraft`, and diff any newly added MCP commands against `00_Archive_Indexes/filmcraft_capabilities.json`.
    - If `project_manifest.json` or `Storyboard.md` does not yet exist, run `ingest_and_sync_media.py` to convert `.HEIC` -> `.jpg`, generate `.proxies/`, and draft `Storyboard.md`.
 2. **Step 2 (Fetch Linked YouTube Flashbacks & Render GPX Overlays):**
    - If `Storyboard.md` links an `@akomlik` YouTube URL, pull the slice via `fetch_yt_broll_clip.py`. If the clip is low-resolution (`< 720p`), render it as a `65%` centered **Picture-in-Picture (PiP) card** with a subtle white border over a soft-blurred `16:9` background (`low_res_broll_mode: pip_card`).

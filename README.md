@@ -172,6 +172,21 @@ thumbnail:
 
 ---
 
+## 6b. FilmCraft Version Gate (`>= v0.17.0`), CLI Auto-Sync & MCP Capability Diffing
+
+Because [`storytold/filmcraft`](https://github.com/storytold/filmcraft/releases) ships new releases every 48–72 hours via the **ArtCraft Launcher**, Studio v2 includes an automatic version gate and capability tracker ([`check_filmcraft_env.py`](./.agents/skills/assemble-timeline/scripts/check_filmcraft_env.py) + [`00_Archive_Indexes/filmcraft_capabilities.json`](./00_Archive_Indexes/filmcraft_capabilities.json)) wired directly into `ingest_and_sync_media.py` and `assemble_engine.py`:
+
+1. **Enforces `MIN_FILMCRAFT_VERSION = "0.17.0"`:** Prevents older FilmCraft versions from running without `essentialSound.*` auto-ducking, 5x faster GPU Bokeh Blur, and serialized bridge frame rendering.
+2. **Auto-Syncs `filmcraft-cli` with `FilmCraft.app`:** Updating `FilmCraft.app` inside the ArtCraft Launcher does *not* automatically update `/opt/homebrew/bin/filmcraft-cli`. Whenever `check_filmcraft_env.py` detects that `filmcraft-cli` lags behind `FilmCraft.app`, it automatically downloads the matching `filmcraft-cli-<ver>-macos-universal.zip` from GitHub, clears macOS quarantine attributes, and ad-hoc signs the binary.
+3. **Leverages Native FilmCraft `v0.17.0+` `essentialSound.*` Auto-Ducking:** [`assemble_engine.py`](./.agents/skills/assemble-timeline/scripts/assemble_engine.py) automatically tags `A4`/`A1` voice clips as `Dialogue` (with rumble repair + `Balanced Voice` clarity EQ), `A2` tracks as `Music`, `A1` riding clips as `Ambience`, and `A3` clips as `SFX`, and runs `essentialSound.generateDucking` so background music automatically ducks `-3.5 dB` under voiceover and swells back up during pure riding!
+4. **Diffs New MCP Commands on Every Upgrade:** Whenever you update FilmCraft in the ArtCraft Launcher, run:
+   ```bash
+   ./.venv/bin/python .agents/skills/assemble-timeline/scripts/check_filmcraft_env.py --sync-cli
+   ```
+   to align `filmcraft-cli` and print a diff of all newly added MCP commands against `00_Archive_Indexes/filmcraft_capabilities.json` (716 commands in `v0.17.0`).
+
+---
+
 ## 7. For BleeqUP Ranger AI Glasses Users (`bleequp-ranger-sync`)
 
 If you shoot POV cycling or outdoor footage with [**BleeqUP Ranger AI Sports Camera Glasses**](https://www.bleequp.com/products/bleequp-ranger-ai-sports-camera-glasses) alongside an iPhone and a Garmin `.gpx` computer, [`ingest_and_sync_media.py`](./.agents/skills/ingest-media/scripts/ingest_and_sync_media.py) (used by `/storyboard`, `/ingest-media`, and `/magic-movie`) automatically integrates with the companion open-source utility:

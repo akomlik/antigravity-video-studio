@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
 """
 assemble_engine.py
-Universal Timeline Assembly & Polishing Engine for Google Antigravity & FilmCraft.
+Universal Timeline Assembly & Polishing Engine for Google Antigravity & FilmCraft (v0.17.0+).
 
-Guarantees high-production-value edits automatically on EVERY movie:
-1. Two-Phase (or Multi-Phase) BGM on A2 with smooth head/tail volume keyframed fades.
-2. Voice Priority Audio Ducking: boosts speech on A1 (+4 to +6 dB) and ducks music on A2 (-20 dB or silence).
-3. Frame-Accurate Sound Design on A3: whooshes, camera shutters, and punchline SFX from 02_SFX/.
-4. Smooth Ken Burns scale keyframing (EaseIn/EaseOut) on all still photos.
-5. Built-in subtitle/caption track (C1) with dark translucent rounded pills for every scene (emojis sanitized).
-6. Smooth Outro Dip-to-Black native transition on the closing clip.
-7. Renders the finished master MP4 with --settings '{"burnCaptions": true}'.
+Guarantees Studio v2 broadcast quality standards automatically on EVERY movie:
+1. Enforces FilmCraft >= v0.17.0 version gate & auto-syncs `filmcraft-cli` with `FilmCraft.app`.
+2. Auto-detects 4K UHD (3840x2160) when sources exceed 1080p, applying smooth Ken Burns scale/pan
+   keyframing (`EaseIn`/`EaseOut`) on all still photos and `scale_to_frame=True` on video clips.
+3. Configures native FilmCraft v0.17.0+ `Essential Sound` metadata & processing (`essentialSound.*`):
+   - Tags `A1` speech & `A4` voiceover clips as `Dialogue` (with rumble/noise repair & `Balanced Voice` clarity).
+   - Tags `A1` riding clips as `Ambience`, `A2` tracks as `Music`, and `A3` clips as `SFX`.
+   - Executes `essentialSound.generateDucking` via `filmcraft-cli` so music (`A2`) automatically ducks `-3.5 dB`
+     under dialogue/voiceover (`A1`/`A4`) and swells back up during pure riding segments!
+4. Applies a smooth native 1.5s `dip_to_black` transition on the closing clip.
+5. Defaults to clean 4K frames (`--burn-captions false` by default; captions served via `.srt` + voiceover).
 """
 
 import argparse
-import hashlib
 import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_filmcraft_env import verify_filmcraft_environment
 
 TICKS_PER_SEC = 254016000000
 
@@ -29,10 +35,9 @@ EXPORTS_ROOT = Path(os.environ.get("EXPORTS_ROOT", "~/Movies/Exports")).expandus
 
 def sanitize_caption_text(text: str) -> str:
     """Strips emoji glyphs that fail to render in Inter font, preserving standard punctuation and accents."""
-    # Remove emoji and symbols outside standard latin/extended text
-    cleaned = re.sub(r'[\U00010000-\U0010ffff]', '', text)
-    cleaned = re.sub(r'[\u2600-\u27bf]', '', cleaned)
-    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    cleaned = re.sub(r"[\U00010000-\U0010ffff]", "", text)
+    cleaned = re.sub(r"[\u2600-\u27bf]", "", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
 
 
@@ -47,14 +52,14 @@ def make_volume_effect(fade_in_s=None, fade_out_s=None, duration_s=0.0):
             "value": {"Float": -60.0},
             "interp": "EaseIn",
             "in_influence": 0.3333333333333333,
-            "out_influence": 0.3333333333333333
+            "out_influence": 0.3333333333333333,
         })
         keyframes.append({
             "time": in_ticks,
             "value": {"Float": 0.0},
             "interp": "EaseOut",
             "in_influence": 0.3333333333333333,
-            "out_influence": 0.3333333333333333
+            "out_influence": 0.3333333333333333,
         })
     if fade_out_s:
         out_start_ticks = max(0, dur_ticks - int(fade_out_s * TICKS_PER_SEC))
@@ -63,14 +68,14 @@ def make_volume_effect(fade_in_s=None, fade_out_s=None, duration_s=0.0):
             "value": {"Float": 0.0},
             "interp": "EaseIn",
             "in_influence": 0.3333333333333333,
-            "out_influence": 0.3333333333333333
+            "out_influence": 0.3333333333333333,
         })
         keyframes.append({
             "time": dur_ticks,
             "value": {"Float": -60.0},
             "interp": "EaseOut",
             "in_influence": 0.3333333333333333,
-            "out_influence": 0.3333333333333333
+            "out_influence": 0.3333333333333333,
         })
 
     param_val = {"value": {"Float": 0.0}}
@@ -80,7 +85,7 @@ def make_volume_effect(fade_in_s=None, fade_out_s=None, duration_s=0.0):
     return [
         {"effect": "volume", "enabled": True, "params": {"bypass": {"value": {"Bool": False}}, "level": param_val}},
         {"effect": "channel_volume", "enabled": True, "params": {"bypass": {"value": {"Bool": False}}, "left": {"value": {"Float": 0.0}}, "right": {"value": {"Float": 0.0}}}},
-        {"effect": "panner", "enabled": True, "params": {"balance": {"value": {"Float": 0.0}}}}
+        {"effect": "panner", "enabled": True, "params": {"balance": {"value": {"Float": 0.0}}}},
     ]
 
 
@@ -108,15 +113,15 @@ def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom
             "value": {"Float": start_scale},
             "interp": "EaseIn",
             "in_influence": 0.3333333333333333,
-            "out_influence": 0.3333333333333333
+            "out_influence": 0.3333333333333333,
         },
         {
             "time": dur_ticks,
             "value": {"Float": end_scale},
             "interp": "EaseOut",
             "in_influence": 0.3333333333333333,
-            "out_influence": 0.3333333333333333
-        }
+            "out_influence": 0.3333333333333333,
+        },
     ]
 
     pos_param = {"value": {"Vec2": {"x": cx, "y": start_y}}}
@@ -127,15 +132,15 @@ def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom
                 "value": {"Vec2": {"x": cx, "y": start_y}},
                 "interp": "EaseIn",
                 "in_influence": 0.3333333333333333,
-                "out_influence": 0.3333333333333333
+                "out_influence": 0.3333333333333333,
             },
             {
                 "time": dur_ticks,
                 "value": {"Vec2": {"x": cx, "y": end_y}},
                 "interp": "EaseOut",
                 "in_influence": 0.3333333333333333,
-                "out_influence": 0.3333333333333333
-            }
+                "out_influence": 0.3333333333333333,
+            },
         ]
 
     return {
@@ -148,13 +153,90 @@ def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom
             "uniform_scale": {"value": {"Bool": True}},
             "rotation": {"value": {"Float": 0.0}},
             "anchor": {"value": {"Vec2": {"x": src_w / 2.0, "y": src_h / 2.0}}},
-            "anti_flicker": {"value": {"Float": 0.0}}
-        }
+            "anti_flicker": {"value": {"Float": 0.0}},
+        },
     }
 
 
-def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None):
-    """Applies universal quality standards (4K UHD when sources >1080p, Ken Burns, Dip to Black, Subtitles, Ducking) and exports master MP4."""
+def apply_v017_essential_sound_via_cli(cli_bin: str, fcproj_path: Path, seq: dict):
+    """
+    Uses FilmCraft v0.17.0+ native `essentialSound.*` commands via `filmcraft-cli run` to:
+    - Tag Dialogue (`A4` voiceover + `A1` dialog clips), Music (`A2`), SFX (`A3`), and Ambience (`A1` riding clips)
+    - Enable auto-ducking on `A2` Music (`reduceDb: -3.5`, `fadeS: 0.45`) and generate ducking keyframes against Dialogue.
+    """
+    dialogue_ids, ambience_ids, music_ids, sfx_ids = [], [], [], []
+    audio_tracks = seq.get("audio_tracks", [])
+
+    for idx, track in enumerate(audio_tracks):
+        tname = (track.get("name") or "").lower()
+        for it in track.get("items", []):
+            cid = it.get("id")
+            cname = (it.get("name") or "").lower()
+            if idx == 3 or "voiceover" in tname or "dialog" in cname or "voiceover" in cname:
+                dialogue_ids.append(cid)
+            elif idx == 1 or "music" in tname or "bgm" in tname:
+                music_ids.append(cid)
+            elif idx == 2 or "sfx" in tname:
+                sfx_ids.append(cid)
+            else:
+                ambience_ids.append(cid)
+
+    commands = []
+    if dialogue_ids:
+        commands.append({"id": "essentialSound.setType", "params": {"clips": dialogue_ids, "type": "dialogue"}})
+        commands.append({
+            "id": "essentialSound.set",
+            "params": {
+                "clips": dialogue_ids,
+                "values": {"repair.rumble.on": True, "clarity.eq.on": True, "clarity.eqPreset": "Balanced Voice"},
+            },
+        })
+    if ambience_ids:
+        commands.append({"id": "essentialSound.setType", "params": {"clips": ambience_ids, "type": "ambience"}})
+    if sfx_ids:
+        commands.append({"id": "essentialSound.setType", "params": {"clips": sfx_ids, "type": "sfx"}})
+    if music_ids:
+        commands.append({"id": "essentialSound.setType", "params": {"clips": music_ids, "type": "music"}})
+        commands.append({
+            "id": "essentialSound.set",
+            "params": {
+                "clips": music_ids,
+                "values": {
+                    "ducking.enabled": True,
+                    "ducking.reduceDb": -3.5,
+                    "ducking.fadeS": 0.45,
+                    "ducking.sensitivity": 6.0,
+                },
+            },
+        })
+        if dialogue_ids:
+            commands.append({"id": "essentialSound.generateDucking", "params": {"clips": music_ids}})
+
+    if not commands:
+        return
+
+    jsonl_payload = "\n".join(json.dumps(c) for c in commands) + "\n"
+    res = subprocess.run(
+        [cli_bin, "--project", str(fcproj_path), "--save", "run", "-"],
+        input=jsonl_payload,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if res.returncode == 0:
+        print(
+            f"Applied FilmCraft v0.17.0+ Essential Sound tags & auto-ducking "
+            f"(Dialogue={len(dialogue_ids)}, Music={len(music_ids)}, Ambience={len(ambience_ids)}, SFX={len(sfx_ids)})"
+        )
+    else:
+        print(f"Note: Essential Sound batch returned non-zero ({res.stderr.strip()[:200]})")
+
+
+def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_captions: bool = False):
+    """Applies Studio v2 quality standards (4K UHD, Ken Burns, Essential Sound auto-ducking, Dip to Black) and exports master MP4."""
+    env_status = verify_filmcraft_environment(auto_sync_cli=True, check_remote=True)
+    cli_bin = env_status.get("cli_binary") or "/opt/homebrew/bin/filmcraft-cli"
+
     print(f"Loading project for polishing: {fcproj_path}")
     data = json.loads(fcproj_path.read_text(encoding="utf-8"))
     proj = data["project"]
@@ -165,7 +247,6 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None):
 
     # 1. Clear accidental duplicate items from V2
     if len(seq.get("video_tracks", [])) > 1:
-        # Check if V2 items duplicate V1
         v1_names = {it.get("name") for it in seq["video_tracks"][0].get("items", [])}
         v2_items = seq["video_tracks"][1].get("items", [])
         if any(it.get("name") in v1_names for it in v2_items):
@@ -221,55 +302,61 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None):
                 "effect": {
                     "effect": "dip_to_black",
                     "enabled": True,
-                    "params": {}
+                    "params": {},
                 },
                 "start": last_end_ticks - fade_ticks,
                 "duration": fade_ticks,
                 "from": last_clip_id,
                 "to": None,
                 "align": "EndAtCut",
-                "reverse": False
+                "reverse": False,
             }
         ]
         next_id += 1
         print(f"Applied native Dip-to-Black (1.5s) transition to closing clip {last_clip.get('name')}")
 
-    # 3. Sanitize Subtitles in Caption Tracks
+    # 3. Sanitize Subtitles in Caption Tracks & Set Burn-In Visibility
     if seq.get("caption_tracks"):
         for ct in seq["caption_tracks"]:
+            ct["enabled"] = bool(burn_captions)
             for cap in ct.get("captions", []):
                 orig_text = cap.get("text", "")
                 cap["text"] = sanitize_caption_text(orig_text)
-        print(f"Sanitized all caption glyphs in {len(seq['caption_tracks'])} caption track(s)")
+        print(f"Sanitized caption glyphs in {len(seq['caption_tracks'])} track(s) (burn_captions={burn_captions})")
 
     data["next_id"] = next_id
     fcproj_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     print(f"Updated {fcproj_path.name} with polishing parameters.")
 
-    # 4. Render MP4 with burned captions
+    # 4. Apply FilmCraft v0.17.0+ Essential Sound tags & auto-ducking keyframes
+    apply_v017_essential_sound_via_cli(cli_bin, fcproj_path, seq)
+
+    # 5. Render MP4 (burnCaptions=false by default in Studio v2)
     if output_mp4:
         output_mp4.parent.mkdir(parents=True, exist_ok=True)
-        print(f"Rendering polished master MP4 -> {output_mp4} with burnCaptions=true...")
+        burn_json = "true" if burn_captions else "false"
+        print(f"Rendering polished master MP4 -> {output_mp4} with burnCaptions={burn_json}...")
         cmd = [
-            "/opt/homebrew/bin/filmcraft-cli",
+            cli_bin,
             "--project", str(fcproj_path),
             "export", str(output_mp4),
             "--preset", "Match Source – Adaptive High Bitrate",
-            "--settings", '{"burnCaptions": true}'
+            "--settings", f'{{"burnCaptions": {burn_json}}}',
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        subprocess.run(cmd, capture_output=True, text=True, check=True)
         print(f"Export successful -> {output_mp4} ({round(output_mp4.stat().st_size / 1024 / 1024, 1)} MB)")
 
 
 def main():
-    p = argparse.ArgumentParser(description="Universal Timeline Assembly & Polishing Engine")
+    p = argparse.ArgumentParser(description="Universal Timeline Assembly & Polishing Engine (FilmCraft v0.17.0+)")
     p.add_argument("--project", required=True, help="Path to .fcproj project file")
     p.add_argument("--export-mp4", help="Optional path to output master MP4")
+    p.add_argument("--burn-captions", action="store_true", help="Burn captions into video (default: False in Studio v2)")
     args = p.parse_args()
 
     fcproj = Path(args.project).expanduser().resolve()
     mp4 = Path(args.export_mp4).expanduser().resolve() if args.export_mp4 else None
-    polish_and_render_project(fcproj, mp4)
+    polish_and_render_project(fcproj, mp4, burn_captions=args.burn_captions)
 
 
 if __name__ == "__main__":

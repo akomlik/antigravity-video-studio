@@ -14,9 +14,10 @@ __pycache__/
 # Private Personal Digital Brain (see examples/my_digital_brain.example.md)
 my_digital_brain.md
 
-# Archive Indexes (keep directory via .placeholder)
+# Archive Indexes (keep directory & FilmCraft MCP capabilities snapshot)
 00_Archive_Indexes/*
 !00_Archive_Indexes/.placeholder
+!00_Archive_Indexes/filmcraft_capabilities.json
 
 # Audio Library (keep directory structure & SFX catalog.json, ignore MP3/WAV/Voice samples)
 03_Audio_Library/01_Curated_BGM/*/*
