@@ -176,11 +176,29 @@ def assign_playlists_and_captions(youtube, vid_id: str, meta: dict):
                 print(f"  Note: Caption upload ({lang}) warning: {e}")
 
 
+def infer_recording_date_iso(meta: dict, video_path: Path | None = None) -> str | None:
+    """
+    Infers the YouTube Data API v3 `recordingDetails.recordingDate` (ISO 8601 UTC: YYYY-MM-DDT00:00:00.000Z)
+    from `meta['recording_date']`, `meta['project_name']`, `meta['title']`, or `video_path.name`.
+    """
+    raw = meta.get("recording_date") or ""
+    if raw:
+        m = re.search(r"(\d{4}-\d{2}-\d{2})", str(raw))
+        if m:
+            return f"{m.group(1)}T00:00:00.000Z"
+    for candidate in (meta.get("project_name", ""), meta.get("title", ""), video_path.name if video_path else ""):
+        m = re.search(r"(\d{4}-\d{2}-\d{2})", str(candidate))
+        if m:
+            return f"{m.group(1)}T00:00:00.000Z"
+    return None
+
+
 def update_existing_video_via_api(meta_path: Path, vid_id: str, skip_playlists: bool = False, skip_captions: bool = False):
     youtube = get_youtube_service()
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     localizations = meta.get("localizations", {})
     YT_WIRE_LANG = {"en": "en", "ua": "uk", "ru": "ru"}
+    rec_date_iso = infer_recording_date_iso(meta)
 
     body = {
         "id": vid_id,
@@ -200,9 +218,12 @@ def update_existing_video_via_api(meta_path: Path, vid_id: str, skip_playlists: 
             for lang, loc in localizations.items()
         }
         parts.append("localizations")
+    if rec_date_iso:
+        body["recordingDetails"] = {"recordingDate": rec_date_iso}
+        parts.append("recordingDetails")
 
     youtube.videos().update(part=",".join(parts), body=body).execute()
-    print(f"Updated video {vid_id} with Imperial metadata and {list(localizations.keys())} localizations.")
+    print(f"Updated video {vid_id} with Imperial metadata, recordingDate={rec_date_iso}, and {list(localizations.keys())} localizations.")
     meta_for_sync = dict(meta)
     if skip_playlists:
         meta_for_sync["playlists"] = []
@@ -225,10 +246,12 @@ def upload_raw_video(
     playlists: list = None,
     srt_files: dict = None,
     localizations: dict = None,
+    recording_date_iso: str = None,
 ) -> tuple[str, str]:
     from googleapiclient.http import MediaFileUpload
 
     YT_WIRE_LANG = {"en": "en", "ua": "uk", "ru": "ru"}
+    rec_iso = recording_date_iso or infer_recording_date_iso({"title": title}, video_path)
 
     body = {
         "snippet": {
@@ -251,8 +274,11 @@ def upload_raw_video(
             for lang, loc in localizations.items()
         }
         parts.append("localizations")
+    if rec_iso:
+        body["recordingDetails"] = {"recordingDate": rec_iso}
+        parts.append("recordingDetails")
 
-    print(f"Uploading {video_path.name} via API v3 ({privacy}, lang={default_lang})...")
+    print(f"Uploading {video_path.name} via API v3 ({privacy}, lang={default_lang}, recordingDate={rec_iso})...")
     media = MediaFileUpload(str(video_path), chunksize=16 * 1024 * 1024, resumable=True)
     req = youtube.videos().insert(part=",".join(parts), body=body, media_body=media)
 
@@ -315,6 +341,7 @@ def upload_option_b_multilingual(
     proj_dir = meta_path.parent
     ua_thumb = proj_dir / "thumbnail_ua.jpg"
     ru_thumb = proj_dir / "thumbnail_ru.jpg"
+    rec_date_iso = infer_recording_date_iso(meta, primary_mp4)
 
     edition_urls = {}
 
@@ -322,14 +349,17 @@ def upload_option_b_multilingual(
     if ua_mp4.exists():
         ua_title = locs.get("ua", {}).get("title", f"{meta['title']} (Українська озвучка)")
         ua_base_desc = locs.get("ua", {}).get("description", meta["description"])
-        ua_desc = (
-            "🇺🇦 Українська версія з авторським закадровим голосом (AI Voice Model).\n\n"
-            f"{ua_base_desc}\n\n"
-            "━━━━━━━━━━━━━━━━━━━━\n"
-            "🎵 МУЗИКА\n"
-            + "\n".join(f"• {mc}" for mc in meta.get("music_credits", []))
-            + "\n\n#MallorcaCycling #PortDePollenca #PortDAlcudia #SanJoseBicycleClub #CyclingVlog"
-        )
+        if "🎵 МУЗИКА" in ua_base_desc or not meta.get("music_credits"):
+            ua_desc = f"🇺🇦 Українська версія з авторським закадровим голосом (AI Voice Model).\n\n{ua_base_desc}"
+        else:
+            ua_desc = (
+                "🇺🇦 Українська версія з авторським закадровим голосом (AI Voice Model).\n\n"
+                f"{ua_base_desc}\n\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                "🎵 МУЗИКА\n"
+                + "\n".join(f"• {mc}" for mc in meta.get("music_credits", []))
+                + "\n\n#MallorcaCycling #PortDePollenca #PortDAlcudia #SanJoseBicycleClub #CyclingVlog"
+            )
         ua_srts = {"ua": srt_files["ua"]} if "ua" in srt_files else {}
         ua_id, ua_url = upload_raw_video(
             youtube,
@@ -338,11 +368,12 @@ def upload_option_b_multilingual(
             description=ua_desc,
             privacy=privacy_editions,
             default_lang="uk",
-            tags=tags + ["Майорка", "велоспорт", "Зумба"],
+            tags=tags + ["Майорка", "Українська озвучка"],
             category_id=cat_id,
             thumbnail_path=ua_thumb if ua_thumb.exists() else thumb_path,
             playlists=playlists,
             srt_files=ua_srts,
+            recording_date_iso=rec_date_iso,
         )
         edition_urls["ua"] = ua_url
         register_in_archive_index({"title": ua_title, "description": ua_desc, "chapters": meta.get("chapters", []), "project_name": meta.get("project_name", "")}, ua_url)
@@ -351,14 +382,17 @@ def upload_option_b_multilingual(
     if ru_mp4.exists():
         ru_title = locs.get("ru", {}).get("title", f"{meta['title']} (Русская озвучка)")
         ru_base_desc = locs.get("ru", {}).get("description", meta["description"])
-        ru_desc = (
-            "🇷🇺 Русская версия с авторским закадровым голосом (AI Voice Model).\n\n"
-            f"{ru_base_desc}\n\n"
-            "━━━━━━━━━━━━━━━━━━━━\n"
-            "🎵 МУЗЫКА\n"
-            + "\n".join(f"• {mc}" for mc in meta.get("music_credits", []))
-            + "\n\n#MallorcaCycling #PortDePollenca #PortDAlcudia #SanJoseBicycleClub #CyclingVlog"
-        )
+        if "🎵 МУЗЫКА" in ru_base_desc or not meta.get("music_credits"):
+            ru_desc = f"🇷🇺 Русская версия с авторским закадровым голосом и живыми диалогами.\n\n{ru_base_desc}"
+        else:
+            ru_desc = (
+                "🇷🇺 Русская версия с авторским закадровым голосом (AI Voice Model).\n\n"
+                f"{ru_base_desc}\n\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                "🎵 МУЗЫКА\n"
+                + "\n".join(f"• {mc}" for mc in meta.get("music_credits", []))
+                + "\n\n#MallorcaCycling #PortDePollenca #PortDAlcudia #SanJoseBicycleClub #CyclingVlog"
+            )
         ru_srts = {"ru": srt_files["ru"]} if "ru" in srt_files else {}
         ru_id, ru_url = upload_raw_video(
             youtube,
@@ -367,11 +401,12 @@ def upload_option_b_multilingual(
             description=ru_desc,
             privacy=privacy_editions,
             default_lang="ru",
-            tags=tags + ["Майорка", "велосипед", "Зумба"],
+            tags=tags + ["Майорка", "Русская озвучка"],
             category_id=cat_id,
             thumbnail_path=ru_thumb if ru_thumb.exists() else thumb_path,
             playlists=playlists,
             srt_files=ru_srts,
+            recording_date_iso=rec_date_iso,
         )
         edition_urls["ru"] = ru_url
         register_in_archive_index({"title": ru_title, "description": ru_desc, "chapters": meta.get("chapters", []), "project_name": meta.get("project_name", "")}, ru_url)
@@ -382,18 +417,20 @@ def upload_option_b_multilingual(
         ua_link_line = f"🔊 Повна версія з українською озвучкою: {edition_urls['ua']}\n\n"
         if "🇺🇦 УКРАЇНСЬКОЮ" in primary_desc:
             primary_desc = primary_desc.replace("🇺🇦 УКРАЇНСЬКОЮ\n", f"🇺🇦 УКРАЇНСЬКОЮ\n{ua_link_line}")
-        if "ua" in locs:
+        if "ua" in locs and edition_urls["ua"] not in locs["ua"]["description"]:
             locs["ua"]["description"] = ua_link_line + locs["ua"]["description"]
 
     if "ru" in edition_urls:
         ru_link_line = f"🔊 Полная версия с русской озвучкой: {edition_urls['ru']}\n\n"
         if "🇷🇺 ПО-РУССКИ" in primary_desc:
             primary_desc = primary_desc.replace("🇷🇺 ПО-РУССКИ\n", f"🇷🇺 ПО-РУССКИ\n{ru_link_line}")
-        if "ru" in locs:
+        if "ru" in locs and edition_urls["ru"] not in locs["ru"]["description"]:
             locs["ru"]["description"] = ru_link_line + locs["ru"]["description"]
 
     meta["description"] = primary_desc
     meta["localizations"] = locs
+    if rec_date_iso:
+        meta["recording_date"] = rec_date_iso
 
     # 4. Upload or Update Primary English Master (Private by default)
     if reuse_en_id:
@@ -416,6 +453,7 @@ def upload_option_b_multilingual(
             playlists=playlists,
             srt_files=srt_files,
             localizations=locs,
+            recording_date_iso=rec_date_iso,
         )
 
     if delete_old_editions:

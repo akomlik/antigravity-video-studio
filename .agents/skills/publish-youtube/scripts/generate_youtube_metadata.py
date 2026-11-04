@@ -478,8 +478,12 @@ def main():
     if thumb_ok and not thumb_ru_path.exists() and args.thumb_text_ru:
         localize_existing_thumbnail(thumb_path, thumb_ru_path, "Russian", args.thumb_text, args.thumb_text_ru)
 
+    m_date = re.search(r"(\d{4}-\d{2}-\d{2})", project_name)
+    recording_date_iso = f"{m_date.group(1)}T00:00:00.000Z" if m_date else None
+
     metadata = {
         "project_name": project_name,
+        "recording_date": recording_date_iso,
         "video_file": str(mp4_path),
         "thumbnail_file": str(thumb_path) if thumb_ok else None,
         "thumbnail_timestamp_sec": args.thumb_sec,
