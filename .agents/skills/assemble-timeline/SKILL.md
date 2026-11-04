@@ -31,11 +31,13 @@ Watching the timeline assemble live in the open FilmCraft GUI adds less than 1.5
 4. **Broadcast Polish:**
    - Tag `A4` voiceover and `A1` dialog as `Dialogue` (`clarity.eqPreset: "Balanced Voice"`).
    - Execute native `essentialSound.generateDucking` (`reduceDb: -3.5`, `fadeS: 0.45`) on `A2` Music so BGM ducks automatically.
-   - Apply native 1.5s `dip_to_black` transition on the closing visual clip.
+   - Apply native 1.5s to 2.0s `dip_to_black` transition on the closing visual clip.
+   - **Mandatory Synchronized Outro Audio Fade:** The master audio output (`[fullout]`) and music on `A2` MUST execute a synchronized `2.0s–2.5s` half-sine fade-out (`afade=t=out:st=<TOTAL_DUR - FADE_DUR>:d=<FADE_DUR>:curve=hsin`) so all audio (music, camera noise, SFX tails) reaches complete silence (`-infinity dB`) at or before the final frame. In `.fcproj`, track `A2` MUST carry an `EndAtCut` audio fade transition (`from: Some(clip.id), to: None, align: "EndAtCut"`). Sound must NEVER cut off abruptly.
    - Write multi-language subtitle tracks to `caption_tracks` (C1) with `enabled: false` (`burnCaptions: false` default).
 
 ### 3. Headless Batch Fallback (`assemble_engine.py`)
-If FilmCraft GUI is not running or bridge mode is offline, automatically assemble the `.fcproj` directly via `assemble_engine.py` / project generator scripts in $< 1$ second and render 4K master MP4 via `filmcraft-cli`.
+If FilmCraft GUI is not running or bridge mode is offline, automatically assemble the `.fcproj` directly via `assemble_engine.py` in $< 1$ second and render 4K master MP4 via `filmcraft-cli`.
+- **Repository Hygiene Rule:** Keep `.agents/skills/assemble-timeline/scripts/` strictly reserved for universal, project-agnostic engines (`assemble_engine.py`, `gpx_widgets.py`, `generate_voiceover.py`, `check_filmcraft_env.py`). If a custom or project-specific assembly script is ever created for a particular project, always save it inside that project's git-ignored catalog folder (`04_Project_Catalog/YEAR/<project_name>/`) and never inside `.agents/skills/`.
 
 ### 4. Visual Verification & Master Render
 1. Call `render_frame` at three timestamps (Act 1 intro, midpoint, epilogue) to confirm framing.

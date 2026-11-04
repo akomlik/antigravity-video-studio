@@ -89,66 +89,74 @@ def make_volume_effect(fade_in_s=None, fade_out_s=None, duration_s=0.0):
     ]
 
 
-def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom_in=True):
-    """Creates a motion effect with true-center anchor and Ken Burns scale + pan keyframing."""
+def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom_in=True, start_pos=None, end_pos=None, start_scale=None, end_scale=None):
+    """Creates a full-bleed 2-axis motion effect with true-center anchor and Ken Burns scale + pan keyframing."""
     dur_ticks = int(duration_s * TICKS_PER_SEC)
-    aspect = src_w / max(1, src_h)
     cx = seq_w / 2.0
     cy = seq_h / 2.0
-    pan_offset = seq_h * (30.0 / 1080.0)
-    if aspect < 1.5:
-        start_scale = 134.0 if zoom_in else 142.0
-        end_scale = 142.0 if zoom_in else 134.0
-        start_y = (cy + pan_offset) if zoom_in else (cy - pan_offset)
-        end_y = (cy - pan_offset) if zoom_in else (cy + pan_offset)
-    else:
-        start_scale = 100.0 if zoom_in else 108.0
-        end_scale = 108.0 if zoom_in else 100.0
-        start_y = cy
-        end_y = cy
 
-    scale_keyframes = [
+    # Minimum scale (%) required to cover the entire sequence frame with zero black bars (when scale_to_frame=False)
+    min_cover_scale = max(seq_w / max(1, src_w), seq_h / max(1, src_h)) * 100.0
+
+    if start_scale is None or end_scale is None:
+        base_s = max(108.0, round(min_cover_scale + 4.0, 1))
+        zoom_s = round(base_s + 12.0, 1)
+        start_scale = base_s if zoom_in else zoom_s
+        end_scale = zoom_s if zoom_in else base_s
+
+    if start_pos is None or end_pos is None:
+        if src_h > src_w:
+            # Portrait photo: smooth vertical sweep from upper face/subject down over torso/details
+            pan_y = seq_h * 0.20
+            start_pos = (cx, cy + pan_y)
+            end_pos = (cx, cy - pan_y)
+        else:
+            # Landscape photo: gentle diagonal pan + zoom across the frame
+            pan_x = seq_w * 0.025
+            pan_y = seq_h * 0.03
+            start_pos = (cx + (pan_x if zoom_in else -pan_x), cy + (pan_y if zoom_in else -pan_y))
+            end_pos = (cx + (-pan_x if zoom_in else pan_x), cy + (-pan_y if zoom_in else pan_y))
+
+    pos_keyframes = [
         {
             "time": 0,
-            "value": {"Float": start_scale},
-            "interp": "EaseIn",
+            "value": {"Vec2": {"x": float(start_pos[0]), "y": float(start_pos[1])}},
+            "interp": "EaseOut",
             "in_influence": 0.3333333333333333,
             "out_influence": 0.3333333333333333,
         },
         {
             "time": dur_ticks,
-            "value": {"Float": end_scale},
-            "interp": "EaseOut",
+            "value": {"Vec2": {"x": float(end_pos[0]), "y": float(end_pos[1])}},
+            "interp": "EaseIn",
             "in_influence": 0.3333333333333333,
             "out_influence": 0.3333333333333333,
         },
     ]
 
-    pos_param = {"value": {"Vec2": {"x": cx, "y": start_y}}}
-    if start_y != end_y:
-        pos_param["keyframes"] = [
-            {
-                "time": 0,
-                "value": {"Vec2": {"x": cx, "y": start_y}},
-                "interp": "EaseIn",
-                "in_influence": 0.3333333333333333,
-                "out_influence": 0.3333333333333333,
-            },
-            {
-                "time": dur_ticks,
-                "value": {"Vec2": {"x": cx, "y": end_y}},
-                "interp": "EaseOut",
-                "in_influence": 0.3333333333333333,
-                "out_influence": 0.3333333333333333,
-            },
-        ]
+    scale_keyframes = [
+        {
+            "time": 0,
+            "value": {"Float": float(start_scale)},
+            "interp": "EaseOut",
+            "in_influence": 0.3333333333333333,
+            "out_influence": 0.3333333333333333,
+        },
+        {
+            "time": dur_ticks,
+            "value": {"Float": float(end_scale)},
+            "interp": "EaseIn",
+            "in_influence": 0.3333333333333333,
+            "out_influence": 0.3333333333333333,
+        },
+    ]
 
     return {
         "effect": "motion",
         "enabled": True,
         "params": {
-            "position": pos_param,
-            "scale": {"value": {"Float": start_scale}, "keyframes": scale_keyframes},
+            "position": {"value": {"Vec2": {"x": float(start_pos[0]), "y": float(start_pos[1])}}, "keyframes": pos_keyframes},
+            "scale": {"value": {"Float": float(start_scale)}, "keyframes": scale_keyframes},
             "scale_width": {"value": {"Float": 100.0}},
             "uniform_scale": {"value": {"Bool": True}},
             "rotation": {"value": {"Float": 0.0}},
@@ -156,6 +164,12 @@ def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom
             "anti_flicker": {"value": {"Float": 0.0}},
         },
     }
+
+
+def master_outro_fade_filter(total_dur_s: float, fade_dur_s: float = 2.2) -> str:
+    """Returns the mandatory Synchronized Outro Audio Fade ffmpeg filter string (Half-Sine S-curve to -inf dB)."""
+    st = max(0.0, total_dur_s - fade_dur_s)
+    return f"afade=t=out:st={st:.2f}:d={fade_dur_s:.2f}:curve=hsin"
 
 
 def apply_v017_essential_sound_via_cli(cli_bin: str, fcproj_path: Path, seq: dict):
@@ -270,7 +284,6 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
 
         still_zoom_toggle = True
         for it in all_v1_items:
-            it["scale_to_frame"] = True
             name = it.get("name", "")
             dur_s = it.get("duration", 0) / TICKS_PER_SEC
             media_id = str(it["item"])
@@ -278,13 +291,15 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
             src_w = vinfo.get("width", 1920)
             src_h = vinfo.get("height", 1080)
             if name.lower().endswith((".jpg", ".jpeg", ".png", ".heic")):
+                it["scale_to_frame"] = False
                 effects = it.get("effects", [])
                 effects = [e for e in effects if e.get("effect") != "motion"]
                 effects.insert(0, make_motion_ken_burns(dur_s, src_w, src_h, seq_w, seq_h, zoom_in=still_zoom_toggle))
                 still_zoom_toggle = not still_zoom_toggle
                 it["effects"] = effects
-                print(f"Applied Ken Burns motion to {name} ({src_w}x{src_h} -> {seq_w}x{seq_h}, {dur_s:.1f}s)")
+                print(f"Applied full-bleed 2-axis Ken Burns motion to {name} ({src_w}x{src_h} -> {seq_w}x{seq_h}, {dur_s:.1f}s)")
             else:
+                it["scale_to_frame"] = True
                 for eff in it.get("effects", []):
                     if eff.get("effect") == "motion":
                         eff["params"]["position"] = {"value": {"Vec2": {"x": seq_w / 2.0, "y": seq_h / 2.0}}}
@@ -314,6 +329,32 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
         ]
         next_id += 1
         print(f"Applied native Dip-to-Black (1.5s) transition to closing clip {last_clip.get('name')}")
+
+        # Synchronized 2.2s Audio Outro Fade on A2 (Music)
+        audio_tracks = seq.get("audio_tracks", [])
+        if len(audio_tracks) > 1 and audio_tracks[1].get("items"):
+            a2 = audio_tracks[1]
+            last_music_clip = a2["items"][-1]
+            music_end_ticks = last_music_clip["start"] + last_music_clip["duration"]
+            audio_fade_ticks = int(2.2 * TICKS_PER_SEC)
+            a2["transitions"] = [
+                {
+                    "id": next_id,
+                    "effect": {
+                        "effect": "constant_power",
+                        "enabled": True,
+                        "params": {},
+                    },
+                    "start": max(last_music_clip["start"], music_end_ticks - audio_fade_ticks),
+                    "duration": audio_fade_ticks,
+                    "from": last_music_clip["id"],
+                    "to": None,
+                    "align": "EndAtCut",
+                    "reverse": False,
+                }
+            ]
+            next_id += 1
+            print(f"Applied synchronized 2.2s Audio Outro Fade to closing music clip {last_music_clip.get('name')}")
 
     # 3. Sanitize Subtitles in Caption Tracks & Set Burn-In Visibility
     if seq.get("caption_tracks"):

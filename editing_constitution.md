@@ -83,9 +83,9 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
     - **Speech & Notable Sound Ducking (`A2`):** When native speech (market banter, café talk, party toasts) or a notable sound occurs on `A1`, duck `A2` by an additional **`-4.0 dB` to `-6.0 dB`** (bringing `A2` to **`-18.0 dB` to `-20.0 dB`**) with a `0.4s` ramp.
     - **Native BleeqUP Audio (`A1`) when GPX Speed $< 40\text{ km/h}$:** **`-6.0 dB`** (natural road/freehub presence).
     - **Native BleeqUP Audio (`A1`) when GPX Speed $\ge 40\text{ km/h}$:** **`-24.0 dB` or Mute** (mandatory wind-buffeting suppression).
-    - **Fades on `A2`:**
-        - **Head:** `1.0s` to `1.5s` linear fade-in starting with clip motion.
-        - **Tail:** `1.5s` to `2.0s` exponential fade-out over the closing cooldown or static shot.
+    - **Fades on `A2` & Synchronized Outro Fade Law:**
+        - **Head:** `1.0s` to `1.5s` fade-in (`curve=hsin`) starting with clip motion.
+        - **Mandatory Synchronized Outro Audio Fade Law:** Whenever a sequence ends with a visual `Dip to Black` (typically `1.5s–2.0s`), the audio mix MUST NEVER cut off abruptly. The master audio output (`[fullout]`) and background music (`A2`) MUST execute a synchronized **`2.0s–2.5s` Half-Sine outro fade (`afade=t=out:st=<TOTAL_DUR - FADE_DUR>:d=<FADE_DUR>:curve=hsin`)** reaching complete silence (`-infinity dB`) exactly as the video hits black. In `.fcproj`, track `A2` MUST include an `exponential_fade` or `constant_power` transition (`from: Some(clip.id), to: None, align: "EndAtCut"`). Never allow room tone, SFX decay, or music to hard-cut at the end of a video.
 
 ### ARTICLE VI: TRANSITIONS, STORY CAPTIONS & COLOR CONTINUITY
 
