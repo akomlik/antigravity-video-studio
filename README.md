@@ -1,6 +1,9 @@
 # Antigravity Video Studio v2 — User Tutorial & Daily Playbook (`@akomlik`)
 
-Welcome to **Antigravity Video Studio v2**! This guide walks you through your complete end-to-end workflow—from writing a 5-line rough draft and dropping raw camera files into `~/Movies/2026/`, to co-developing `Storyboard.md` (with Section 5 YouTube Publishing & Composite Thumbnail specs), rendering GPX route maps & telemetry HUDs, synthesizing warm replicated voice-over (`EN` / `UA` / `RU`), building a broadcast-balanced 4-track timeline in **FilmCraft** (or **DaVinci Resolve**), and publishing 1 or 3 localized 4K editions to YouTube via headless OAuth (`direnv-mcp` + 1Password).
+Welcome to **Antigravity Video Studio v2**! This guide walks you through your complete end-to-end workflow—from writing a 5-line rough draft and dropping raw camera files into `~/Movies/2026/`, to co-developing `Storyboard.md` (with Section 5 YouTube Publishing & Composite Thumbnail specs), rendering GPX route maps & telemetry HUDs, synthesizing warm replicated voice-over (`EN` / `UA` / `RU`), building a broadcast-balanced 4-track timeline in **FilmCraft** (or **DaVinci Resolve**), and publishing 1 or 3 localized 4K editions to YouTube via the YouTube Data API v3.
+
+> **Environment Setup (Bring Your Own Env Manager):**
+> Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET` using whichever method you prefer (`direnv` + 1Password, `.zshrc`, or a local git-ignored `.env` file in the studio root), then launch Google Antigravity from that shell session (e.g., `agy .` or `open -a "Google Antigravity"`) so all skills and scripts inherit your environment variables automatically with zero wrapper dependencies. Once you authorize YouTube once, `~/.config/antigravity_youtube/token.json` caches your OAuth refresh token for all future uploads.
 
 ---
 
@@ -61,7 +64,7 @@ Then run just **two commands**:
 │ STAGE 4: YouTube Publishing (/publish-youtube or auto via /magic-movie)      │
 │ • Generates Imperial titles, clean 00:00 chapters, .srt tracks (en, ua, ru)  │
 │ • Generates or applies YouTube-Studio-style Composite Thumbnail (1920x1080)  │
-│ • Uploads via headless OAuth (1Password direnv-mcp + cached refresh token):  │
+│ • Uploads via YouTube Data API v3 (inherited env vars + cached OAuth token): │
 │   - en_only : 1 English 4K video (Private) + captions.en.srt                 │
 │   - option_a: 1 English 4K video (Private) + EN/UA/RU titles, descs & .srts  │
 │   - option_b: All 3 4K editions (EN Private + UA & RU Unlisted cross-linked) │

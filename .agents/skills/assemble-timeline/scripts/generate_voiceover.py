@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 """
 generate_voiceover.py
-Synthesizes warm multilingual voice-over narration (en, uk, ru) in Alexander Komlik's
-voice using Gemini 3.8 Flash TTS (`gemini-3.8-flash-tts`), automatically injecting
-`GEMINI_API_KEY` from 1Password via `~/src/ai-workflow/scripts/direnv-mcp`:
-- Tier 1 (Exact Voice Replication): Uses `alexander_komlik_reference_24k.wav` (extracted from
-  `Zero-T Performance Self-Talk.m4a`) + `alexander_komlik_consent_24k.wav` when present.
-- Tier 2 (Audio-Matched Voice Design): Analyzes `alexander_komlik_reference_24k.wav` with
-  `gemini-3.8-flash` to capture Alexander's exact vocal timbre, pitch, cadence, and subtle
-  Eastern European/American inflection, creates a persistent custom `voice_...` persona via
-  `client.voices.create(type="prompted")`, and synthesizes `voiceover_en.wav`, `voiceover_uk.wav`,
-  and `voiceover_ru.wav`.
+Synthesizes warm multilingual voice-over narration (en, ua, ru) using Gemini 3.8 Flash TTS
+(`gemini-3.8-flash-tts`). Reads `GEMINI_API_KEY` from the inherited shell environment
+(e.g., exported via `direnv` before launching Antigravity, or from a local `.env` file).
 """
 
 import argparse
@@ -21,18 +14,21 @@ import sys
 from pathlib import Path
 
 STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
-DIRENV_MCP = Path(os.environ.get("DIRENV_MCP_BIN", "~/src/ai-workflow/scripts/direnv-mcp")).expanduser()
 VOICE_DIR = STUDIO_ROOT / "03_Audio_Library/03_Voice_Profile"
 REF_WAV = VOICE_DIR / "alexander_komlik_reference_24k.wav"
 CONSENT_WAV = VOICE_DIR / "alexander_komlik_consent_24k.wav"
 VOICE_ID_FILE = VOICE_DIR / "voice_id.json"
 
 
-def ensure_direnv_environment():
-    """If launched from a GUI app without GEMINI_API_KEY, re-exec via direnv-mcp."""
-    if not os.environ.get("GEMINI_API_KEY") and DIRENV_MCP.exists() and not os.environ.get("_DIRENV_MCP_WRAPPED"):
-        os.environ["_DIRENV_MCP_WRAPPED"] = "1"
-        os.execv(str(DIRENV_MCP), [str(DIRENV_MCP), sys.executable, *sys.argv])
+def load_dotenv_if_needed():
+    """Loads STUDIO_ROOT/.env if GEMINI_API_KEY is not already inherited from the shell."""
+    env_file = STUDIO_ROOT / ".env"
+    if not os.environ.get("GEMINI_API_KEY") and env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip("\"'"))
 
 
 def ensure_custom_voice(client) -> str:
@@ -163,7 +159,7 @@ def synthesize_narration(text: str, out_wav: Path, voice_id: str, client):
 
 
 def main():
-    ensure_direnv_environment()
+    load_dotenv_if_needed()
     from google import genai
 
     p = argparse.ArgumentParser(description="Generate multilingual voice-over narration in Alexander's voice")

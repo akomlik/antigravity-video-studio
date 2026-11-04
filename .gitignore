@@ -5,8 +5,10 @@
 __pycache__/
 *.pyc
 
-# Virtual Environment & Local Agent Bindings
+# Virtual Environment, Secrets & Local Agent Bindings
 .venv/
+.env
+.envrc
 .agents/notebook.json
 
 # Private Personal Digital Brain (see examples/my_digital_brain.example.md)

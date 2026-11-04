@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
 upload_youtube_api.py
-Headless YouTube Data API v3 uploader and localization manager integrated with
-~/src/ai-workflow (`direnv-mcp` + 1Password):
+Headless YouTube Data API v3 uploader and localization manager:
 - Reads GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, and GOOGLE_CLOUD_PROJECT
-  directly from environment variables (auto-relaunching via ~/src/ai-workflow/scripts/direnv-mcp
-  when invoked from the Antigravity Desktop App so no secrets are ever stored in plaintext files).
+  from the inherited shell environment (e.g., set via `direnv` or a local `.env` file)
+  on first-time authorization, and caches the OAuth refresh token in
+  `~/.config/antigravity_youtube/token.json` for zero-prompt subsequent runs.
 - Uploads 4K MP4 masters with resumable progress (Private by default)
-- Sets English default title/description + Ukrainian (uk) and Russian (ru) localizations
-- Uploads custom 1080p thumbnail (thumbnail.jpg)
+- Sets English default title/description + Ukrainian (ua -> uk) and Russian (ru) localizations
+- Uploads localized 1080p composite thumbnails (thumbnail.jpg, thumbnail_ua.jpg, thumbnail_ru.jpg)
 - Assigns playlists by name (e.g., 'Mallorca', '2026 Mallorca Cycling')
-- Uploads multi-language .srt subtitle tracks (en, uk, ru) via captions.insert
+- Uploads multi-language .srt subtitle tracks (en, ua -> uk, ru) via captions.insert
 - Can also update an existing video (--update-video-id <ID>) with localizations & captions
 - Registers the published URL in 00_Archive_Indexes/youtube_motion_index.jsonl
 """
@@ -23,7 +23,6 @@ import re
 import sys
 from pathlib import Path
 
-DIRENV_MCP = Path(os.environ.get("DIRENV_MCP_BIN", "~/src/ai-workflow/scripts/direnv-mcp")).expanduser()
 STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
 YT_INDEX_PATH = STUDIO_ROOT / "00_Archive_Indexes/youtube_motion_index.jsonl"
 OAUTH_DIR = Path("~/.config/antigravity_youtube").expanduser()
@@ -36,11 +35,15 @@ SCOPES = [
 ]
 
 
-def ensure_direnv_environment():
-    """If launched from a GUI app without direnv env vars, re-exec via direnv-mcp."""
-    if not os.environ.get("GOOGLE_OAUTH_CLIENT_ID") and DIRENV_MCP.exists() and not os.environ.get("_DIRENV_MCP_WRAPPED"):
-        os.environ["_DIRENV_MCP_WRAPPED"] = "1"
-        os.execv(str(DIRENV_MCP), [str(DIRENV_MCP), sys.executable, *sys.argv])
+def load_dotenv_if_needed():
+    """Loads STUDIO_ROOT/.env if OAuth client env vars are not already in os.environ."""
+    env_file = STUDIO_ROOT / ".env"
+    if not os.environ.get("GOOGLE_OAUTH_CLIENT_ID") and env_file.exists():
+        for line in env_file.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip("\"'"))
 
 
 def get_youtube_service():
@@ -58,14 +61,14 @@ def get_youtube_service():
             OAUTH_DIR.mkdir(parents=True, exist_ok=True)
             TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
         else:
-            ensure_direnv_environment()
+            load_dotenv_if_needed()
             client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID")
             client_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
-            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "digital-sprite-495517-i6")
+            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "antigravity-video-studio")
             if not client_id or not client_secret:
                 raise RuntimeError(
                     "GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET not found in environment. "
-                    "Ensure ~/src/.envrc and 1Password are unlocked."
+                    "Set them in your shell environment (e.g. via direnv) or in a local .env file."
                 )
             client_config = {
                 "installed": {
@@ -483,7 +486,7 @@ def upload_option_b_multilingual(
 
 
 def main():
-    p = argparse.ArgumentParser(description="Upload or update YouTube video via YouTube Data API v3 (1Password + direnv-mcp)")
+    p = argparse.ArgumentParser(description="Upload or update YouTube video via YouTube Data API v3")
     p.add_argument("--metadata", required=True, help="Path to youtube_metadata.json")
     p.add_argument("--privacy", choices=["unlisted", "private", "public"], help="Override privacy status")
     p.add_argument("--option-b", action="store_true", help="Upload Ukrainian & Russian editions as Unlisted, cross-link them in the English description, and upload the English master as Private")
