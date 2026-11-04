@@ -178,7 +178,7 @@ thumbnail:
 | **`/storyboard <path>`** | Stage 0: Converts `.HEIC` $\rightarrow$ `.jpg`, generates `.proxies/`, co-develops `Storyboard.md` (with Section 5 Publishing & Thumbnail Spec), and updates `my_digital_brain.md`. |
 | **`/magic-movie <path>`** | Gear 1: One-command build from `Storyboard.md` $\rightarrow$ GPX overlays + replicated VO + 4-track broadcast audio mix $\rightarrow$ clean 4K MP4(s) + optional YouTube upload. |
 | **`/publish-youtube <path>`** | Stage 4: Generates Imperial metadata, `00:00` chapters, `.srt` subtitles (`en`, `ua`, `ru`), and Composite Thumbnail, then uploads (`en_only`, `option_a`, or `option_b`) to `@akomlik`. |
-| **`/find-music <path>`** | Curates & auto-saves matching `< 3:00` tracks from YouTube Audio Library / `creatormix.com` into `03_Audio_Library/01_Curated_BGM/`. |
+| **`/find-music [query]`** | Curates, non-reuse checks, & auto-downloads matching `< 3:00` tracks from the 134-track CreatorMix direct CDN catalog or YouTube Audio Library into `03_Audio_Library/01_Curated_BGM/`. |
 | **`/swap-music [track]`** | Swaps the background music track on `A2` while preserving all video cuts and audio ducking. |
 | **`/build-cut-table <path>`** | Gear 2: Generates the scene-by-scene Markdown Cut Table (`cut_table.md`) and waits for your `"OK"`. |
 | **`/assemble-timeline`** | Executes an approved `cut_table.md` in FilmCraft or DaVinci Resolve. |

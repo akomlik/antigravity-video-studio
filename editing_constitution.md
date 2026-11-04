@@ -65,6 +65,10 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
     - `A1`: Native Camera Audio (Tire roll, freewheel clicks, speech, market punchlines, toasts, café banter)
     - `A2`: Dedicated Background Music Track (`03_Audio_Library/01_Curated_BGM/`) — **kept completely separate on `A2` for one-command swapping (`/swap-music`)**
     - `A3`: Subtle Contextual Sound Effects (`03_Audio_Library/02_SFX/catalog.json` — 209 Brehov cinematic WAVs across `01_Whooshes_Soft` through `19_Ambient_Pads`, aligned by `peak_ms` so the sound peak lands on the exact frame of motion/caption reveal)
+- **Anti-Monotony & Mandatory Music Non-Reuse Law:**
+    - **Never reuse the same background music track across video projects.** Every ride, hike, party, and event deserves its own distinct musical identity.
+    - **Online Catalog Search Threshold ($< 100$ Local Titles):** Until the local pool in `03_Audio_Library/01_Curated_BGM/` exceeds **100 local titles**, `/storyboard`, `/find-music`, `/magic-movie`, and `/build-cut-table` MUST NOT default to recycling the same few local tracks.
+    - Instead, the system checks `04_Project_Catalog/` to identify all previously used tracks and queries the 130+ track **CreatorMix Online Catalog** (`fetch_creatormix_catalog.py`) or YouTube Audio Library to pull fresh, never-before-used candidate tracks matching the detected genre, auto-downloading new tracks directly into `03_Audio_Library/01_Curated_BGM/<Category>/`.
 - **Music Taxonomy & Pool Mapping (`Music for Video Workflow` Standard):**
     - All tracks in `03_Audio_Library/01_Curated_BGM/` follow `[BPM]_[Mood]_[TrackName]_[Artist].mp3` (sourced from **YouTube Audio Library** and **Creator Mix `creatormix.com`**, filtered to `< 3:00` duration):
         - `01_Rolling_Cadence/` (110–125 BPM): Steady pedaling, flat roads, coastal lanes (`cycling_ride` default).

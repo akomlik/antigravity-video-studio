@@ -6,9 +6,10 @@ description: Curates, filters, previews, and auto-saves matching background musi
 # Live Browser & Local Pool Music Matcher (`/find-music`)
 
 ## Purpose
-Implements the **"Music for Video Workflow"** (`1lZCANKqhc2ZQ20LeimogKIXDEOW_gm2gTuVwZTi31YY`). Instead of paying for stock subscriptions, this skill inspects your project's `Storyboard.md` / `project_manifest.json` motion profile and either:
-1. Matches an already-saved track in `03_Audio_Library/01_Curated_BGM/`, OR
-2. Connects to your **two open browser tabs** (**YouTube Audio Library** in YouTube Studio and **Creator Mix** at `https://creatormix.com/stream`) via the `chrome-devtools` skill / browser automation, applies the exact genre, mood, and `< 3:00` duration filters for your clip, lets you preview or downloads the winning track, and **auto-saves** it into `03_Audio_Library/01_Curated_BGM/<Category>/[BPM]_[Mood]_[TrackName]_[Artist].mp3` for future reuse!
+Implements the **"Music for Video Workflow"** and the **Anti-Monotony & Mandatory Music Non-Reuse Law**:
+1. **Zero Music Reuse Across Projects:** Every video must have a unique soundscape. Tracks used in past projects (`04_Project_Catalog/*/Storyboard.md` and `.fcproj`) are automatically excluded.
+2. **Online Search Mandatory Until Local Pool $> 100$ Titles:** Because small local pools lead to repetitive soundtrack choices, `/find-music` and `/storyboard` query fresh royalty-free tracks from the **CreatorMix Direct Online Catalog** (`fetch_creatormix_catalog.py`) and **YouTube Studio Audio Library** before reusing any existing local track.
+3. **Frictionless Direct CDN Fetching:** Instead of requiring manual browser navigation for every song, `fetch_creatormix_catalog.py` queries 134+ copyright-safe tracks directly across 21 albums, filters by `< 3:00` duration, and downloads directly via CDN stream URLs into `03_Audio_Library/01_Curated_BGM/<Category>/[BPM]_[Mood]_[TrackName]_[Artist].mp3`!
 
 ## Directory & Taxonomy Standard
 All saved tracks live inside `03_Audio_Library/01_Curated_BGM/`:
@@ -19,41 +20,43 @@ All saved tracks live inside `03_Audio_Library/01_Curated_BGM/`:
 - `05_Short_Transitions/` — `15–30s` stingers, comedic riffs, quick intros
 
 **Filename Format:** `[BPM]_[Mood]_[TrackName]_[Artist].mp3`  
-*(Examples: `118bpm_ChillBeat_CircuitRush_TheMiniVandals.mp3`, `095bpm_AmbientWonder_Pulsar_DensityAndTime.mp3`)*
+*(Examples: `118bpm_ChillBeat_CircuitRush_TheMiniVandals.mp3`, `085bpm_WarmChillhop_BubbleGum_Creatormix.mp3`)*
 
 ## Step-by-Step Execution Workflow
 
 ### Step 1: Analyze Project / Clip Motion Profile & Duration
 1. Read `<project_dir>/Storyboard.md` and `<project_dir>/project_manifest.json` (or inspect the target video clip).
-2. Determine:
-   - **Target Video Duration** (Rule: always filter for tracks `< 3:00` unless building a long archival slideshow).
-   - **Primary & Secondary Phases** (e.g., Phase 1: `01_Rolling_Cadence` 110–125 BPM $\rightarrow$ Phase 2: `02_Scenic_Wonder` reveal, or `04_Warm_Social_And_Retro` acoustic guitar/bossa nova for market & café comedy).
-3. Check `03_Audio_Library/01_Curated_BGM/music_catalog.json` and the category subfolders first. If strong local matches already exist, list the top 2 local matches alongside fresh browser filter recommendations.
+2. Determine target video duration (rule: `< 3:00`) and scene phases (e.g. `01_Rolling_Cadence` $\rightarrow$ `04_Warm_Social_And_Retro`).
+3. Scan past projects in `04_Project_Catalog/` to compile the list of excluded (already used) tracks.
 
-### Step 2: Filter Your Two Open Browser Tabs (YouTube Audio Library & `creatormix.com`)
-Use the `chrome-devtools` skill (`list_pages` $\rightarrow$ `take_snapshot` $\rightarrow$ `click` / `fill`) or `/browser` to interact with Alexander's two music tabs:
-1. **Tab 1 — YouTube Audio Library (`studio.youtube.com/channel/.../music`):**
-   - Apply **Duration Filter:** `< 3:00` (e.g., `01:30` to `03:00`).
-   - Apply **Genre & Mood Filters** based on the scene:
-     - *Rolling / Cycling:* Genre = `Dance & Electronic` or `Rock` / `Indie`, Mood = `Inspirational` or `Happy` / `Bright`.
-     - *Scenic / Hike / Bay Reveal:* Genre = `Ambient` or `Cinematic`, Mood = `Calm` or `Inspirational`.
-     - *Market Excursion / Café / Social:* Genre = `Folk & Acoustic`, `Jazz & Blues`, or `Pop`, Mood = `Bright`, `Happy`, or `Romantic`.
-   - Read the visible track table rows (Title, Genre, Mood, Artist, Duration, BPM if shown) and click the Play/Download button on the best match.
-2. **Tab 2 — Creator Mix (`https://creatormix.com/stream`):**
-   - Filter by Category / Playlist (`Vlog`, `Chill`, `Gaming / Action`, `Synthwave`, `Acoustic / Indie`).
-   - Inspect the track list and click Download on the matching track.
+### Step 2: Source Fresh Music (Direct CreatorMix CLI or YouTube Studio Browser)
 
-### Step 3: Auto-Save & Tag Into `03_Audio_Library/01_Curated_BGM/` for Future Reuse
-Once a track is downloaded into `~/Downloads`, immediately run `save_music_track.py` so it is renamed to `[BPM]_[Mood]_[TrackName]_[Artist].mp3`, filed into the right `03_Audio_Library/01_Curated_BGM/<Category>/` folder, backed up to Google Drive, and indexed in `music_catalog.json`:
+#### Option A: Direct CreatorMix Online Search & Auto-Download (Instant, Zero Browser Friction)
+Run `fetch_creatormix_catalog.py` with your desired genre or search terms:
 ```bash
-python3 ./.agents/skills/find-music/scripts/save_music_track.py \
-  --source latest \
-  --bpm 118 \
-  --mood "ChillBeat" \
-  --title "Circuit Rush" \
-  --artist "The Mini Vandals" \
-  --category "01_Rolling_Cadence" \
-  --source-site "YouTube_Audio_Library" \
-  --notes "Steady tempo, coastal rolling shots"
+# Search fresh, never-used tracks in a specific genre:
+python3 ./.agents/skills/find-music/scripts/fetch_creatormix_catalog.py --genre chillhop --max-duration 180
+
+# Download the winning track (e.g. candidate #2):
+python3 ./.agents/skills/find-music/scripts/fetch_creatormix_catalog.py --genre chillhop --download-idx 2
 ```
-Confirm the new standardized filename to Alexander and offer to place it on Track `A2` via `/swap-music`, `/magic-movie`, or `/build-cut-table`.
+*The script downloads the high-quality MP3 directly from CreatorMix CDN, formats it with the standard `[BPM]_[Mood]_[TrackName]_Creatormix.mp3` naming convention, moves it into `03_Audio_Library/01_Curated_BGM/<Category>/`, and updates `music_catalog.json` automatically!*
+
+#### Option B: YouTube Studio Audio Library Browser Tab (`studio.youtube.com`)
+If searching for specific ambient or vintage moods in the YouTube Audio Library:
+1. Connect via `chrome-devtools` or `/browser` to your open YouTube Studio tab.
+2. Apply filters: Duration `< 3:00`, Genre (`Dance & Electronic`, `Ambient`, `Folk & Acoustic`), Mood (`Inspirational`, `Happy`, `Calm`).
+3. Download the track to `~/Downloads` and run `save_music_track.py` to auto-tag and move it:
+   ```bash
+   python3 ./.agents/skills/find-music/scripts/save_music_track.py \
+     --source latest \
+     --bpm 118 \
+     --mood "ChillBeat" \
+     --title "Circuit Rush" \
+     --artist "The Mini Vandals" \
+     --category "01_Rolling_Cadence" \
+     --source-site "YouTube_Audio_Library"
+   ```
+
+### Step 3: Confirm to Creator & Offer Timeline Placement
+Report the new track to Alexander and offer to place it on Track `A2` via `/swap-music`, `/magic-movie`, or `/build-cut-table`.

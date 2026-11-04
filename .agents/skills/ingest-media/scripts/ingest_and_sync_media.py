@@ -375,17 +375,29 @@ def detect_genre(requested_genre: str, gpx_points: list, media_items: list):
 
 def recommend_music_tracks(genre: str, studio_root: Path):
     """
-    Scans 03_Audio_Library/01_Curated_BGM/ and parses
-    [BPM]_[Mood]_[TrackName]_[Artist].mp3 taxonomy.
+    Scans 03_Audio_Library/01_Curated_BGM/ and CreatorMix online catalog.
+    Enforces the Anti-Monotony Non-Reuse Law: excludes tracks previously used in 04_Project_Catalog/!
+    If local pool has < 3 unused candidates, automatically supplements from CreatorMix online catalog.
     """
     music_root = studio_root / "03_Audio_Library" / "01_Curated_BGM"
     genre_folder_map = {
-        "cycling_ride": ["01_Rolling_Cadence", "03_Punchy_Climbs"],
-        "hike_outdoor": ["02_Scenic_Wonder", "04_Warm_Social_And_Retro"],
-        "social_event": ["04_Warm_Social_And_Retro", "01_Rolling_Cadence"],
-        "archival_slideshow": ["04_Warm_Social_And_Retro", "02_Scenic_Wonder"],
+        "cycling_ride": (["01_Rolling_Cadence", "03_Punchy_Climbs"], ["synthwave", "house", "rock"]),
+        "hike_outdoor": (["02_Scenic_Wonder", "04_Warm_Social_And_Retro"], ["lofi", "chillhop", "mixes"]),
+        "social_event": (["04_Warm_Social_And_Retro", "01_Rolling_Cadence"], ["chillhop", "lofi"]),
+        "archival_slideshow": (["04_Warm_Social_And_Retro", "02_Scenic_Wonder"], ["lofi", "mixes"]),
     }
-    preferred_subs = genre_folder_map.get(genre, ["01_Rolling_Cadence"])
+    preferred_subs, cm_genres = genre_folder_map.get(genre, (["01_Rolling_Cadence"], ["synthwave"]))
+    
+    # Check previously used tracks in 04_Project_Catalog/
+    find_music_dir = studio_root / ".agents/skills/find-music/scripts"
+    sys.path.insert(0, str(find_music_dir))
+    used_tracks = set()
+    try:
+        from fetch_creatormix_catalog import get_previously_used_tracks, search_catalog
+        used_tracks = get_previously_used_tracks(studio_root)
+    except Exception:
+        pass
+
     candidates = []
     if music_root.exists():
         for f in sorted(music_root.rglob("*")):
@@ -404,6 +416,12 @@ def recommend_music_tracks(genre: str, studio_root: Path):
                     track_title = f.stem
                     artist = "CreatorMix_Or_YTAudio"
 
+                # Check if already used in a project
+                clean_title = re.sub(r"[^a-z0-9]", "", track_title.lower())
+                is_used = any(u in clean_title or clean_title in u for u in used_tracks if len(u) > 3)
+                if is_used:
+                    continue  # Enforce Anti-Monotony Non-Reuse Law!
+
                 beat_interval_s = round(60.0 / max(bpm, 1), 3)
                 parent_name = f.parent.name
                 priority = 1 if parent_name == preferred_subs[0] else (2 if parent_name in preferred_subs else 3)
@@ -418,8 +436,36 @@ def recommend_music_tracks(genre: str, studio_root: Path):
                     "beat_interval_s": beat_interval_s,
                     "recommended_cut_4bars_s": round(beat_interval_s * 8, 2),
                     "genre_match_priority": priority,
+                    "source": "local_pool",
                 })
-    candidates.sort(key=lambda x: (x["genre_match_priority"], x["filename"]))
+
+    # If local pool has fewer than 3 unused matches, supplement from CreatorMix online catalog (134 tracks)
+    if len(candidates) < 3:
+        try:
+            from fetch_creatormix_catalog import search_catalog
+            for g in cm_genres:
+                online_matches = search_catalog(genre=g, max_duration_s=180, exclude_used=True, limit=3)
+                for om in online_matches:
+                    candidates.append({
+                        "filename": f"[ONLINE] {om['title']} ({om['duration_formatted']}) - {om['genre'].upper()}",
+                        "abspath": None,
+                        "mood_folder": preferred_subs[0],
+                        "mood_tag": om["genre"].capitalize(),
+                        "track_title": om["title"],
+                        "artist": "CreatorMix",
+                        "album": om["album"],
+                        "duration_s": om["duration_s"],
+                        "stream_url": om["stream_url"],
+                        "genre_match_priority": 1,
+                        "source": "creatormix_online",
+                        "download_command": f"python3 ./.agents/skills/find-music/scripts/fetch_creatormix_catalog.py --search \"{om['title']}\" --download-idx 1",
+                    })
+                if len(candidates) >= 5:
+                    break
+        except Exception as e:
+            print(f"CreatorMix online catalog check note: {e}")
+
+    candidates.sort(key=lambda x: (x.get("genre_match_priority", 3), x.get("track_title", "")))
     return candidates[:5]
 
 
