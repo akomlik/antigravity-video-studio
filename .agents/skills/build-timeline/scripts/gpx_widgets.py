@@ -228,3 +228,35 @@ def render_telemetry_hud_widget(
     out_png.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_png, "PNG")
     return out_png
+
+
+def should_show_telemetry_hud(
+    clip_name: str,
+    gpx_points: list[dict] = None,
+    clip_ts: dt.datetime | None = None,
+    rolling_speed_mph: float | None = None,
+    window_s: float = 3.0,
+    speed_threshold_mph: float = 2.0,
+) -> bool:
+    """
+    Evaluates whether the Telemetry HUD should be visible on a clip (Studio v2.1 standard):
+    - Automatically False (OFF) for still photo clips (.jpg, .jpeg, .png, .heic).
+    - Automatically False (OFF) for stationary scenes (speed <= 2.0 mph: cafe, counter, terrace, gates).
+    - Automatically True (ON) for actual moving scenes (riding, running, hiking, moving camera: speed > 2.0 mph).
+    """
+    # 1. Stills are always suppressed
+    if clip_name.lower().endswith((".jpg", ".jpeg", ".png", ".heic")):
+        return False
+
+    # 2. If rolling speed is directly provided
+    if rolling_speed_mph is not None:
+        return rolling_speed_mph > speed_threshold_mph
+
+    # 3. If GPX stream and timestamp are provided, calculate rolling speed over window
+    if gpx_points and clip_ts is not None:
+        pts_in_win = [p for p in gpx_points if abs((p["time"] - clip_ts).total_seconds()) <= window_s]
+        if pts_in_win:
+            avg_spd = sum(p["spd_mph"] for p in pts_in_win) / len(pts_in_win)
+            return avg_spd > speed_threshold_mph
+
+    return False

@@ -40,7 +40,7 @@ Thumbnail: "SAVED AT THE GATE" with selfie + brake caliper cutout.
      - **Section 5: Production & YouTube Publishing Spec (Tuning Knobs)** — YAML block capturing:
        - `units`: `imperial_default` (`mi`, `ft`, `mph`)
        - `burned_in_titles`: `false` (default, so 4K video stays clean and never collides with YouTube CC subtitles)
-       - `gpx_corner_map` (`top_right`, `26%` width) & `gpx_telemetry_hud` (`auto` — suppressed when speed `< 5 mph`)
+       - `gpx_corner_map` (`top_right`, `26%` width) & `gpx_telemetry_hud` (`auto` — shown on moving scenes when 3s speed > 2 mph; suppressed on stills & stationary scenes <= 2 mph)
        - `low_res_broll_mode`: `pip_card` (`65%` centered card over blurred `16:9` backdrop for `< 720p` clips)
        - `audio_mix`: `voiceover_persona: voice_jntybwupjc1s`, `live_dialog_boost: auto`, `bgm_under_vo_db: -7.5`, `bgm_riding_swell_db: +3.5`, `pip_broll_music_db: -6.5`
        - `default_privacy`: `"unlisted"` (default for all uploads to allow immediate comments, previews, and language switchers without public feed spam)
