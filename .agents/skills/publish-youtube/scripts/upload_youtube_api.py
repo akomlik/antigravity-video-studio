@@ -339,7 +339,7 @@ def post_pinned_language_comment(youtube, video_id: str, edition_urls: dict):
 
 def upload_option_b_multilingual(
     meta_path: Path,
-    privacy_primary: str = "private",
+    privacy_primary: str = "unlisted",
     privacy_editions: str = "unlisted",
     reuse_en_id: str | None = None,
     delete_old_editions: list[str] | None = None,
@@ -613,7 +613,7 @@ def main():
         old_eds = [x.strip() for x in args.delete_old_editions.split(",") if x.strip()] if args.delete_old_editions else None
         upload_option_b_multilingual(
             meta_path,
-            privacy_primary=args.privacy or "private",
+            privacy_primary=args.privacy or meta.get("privacy_status", "unlisted"),
             privacy_editions="unlisted",
             reuse_en_id=args.reuse_en_id,
             delete_old_editions=old_eds,
@@ -625,7 +625,7 @@ def main():
         video_path=Path(meta["video_file"]),
         title=meta["title"],
         description=meta["description"],
-        privacy=args.privacy or meta.get("privacy_status", "private"),
+        privacy=args.privacy or meta.get("privacy_status", "unlisted"),
         default_lang="en",
         tags=meta.get("tags", []),
         category_id=meta.get("category_id", "17"),

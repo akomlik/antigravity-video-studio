@@ -17,9 +17,9 @@
 ## 1. Video Overview, Title Ideas & Multi-Phase Music Selection
 
 ### Title Options (Imperial Default)
-* **Primary (Archival + Imperial):** `2026-11-02 · Escorting Nina to Zumba & Pollença Loop (21.5 mi)`
-* **Alt 1 (Story Hook):** `Saved by Nina's Sharp Eyes! Escorting to Zumba & 21.5 mi Pollença Coastal Loop`
-* **Alt 2 (Route & Highlights):** `Mallorca Morning Ride: Bellevue Zumba Drop-Off, Missing Brake Pad & Badia de Pollença (21.5 mi)`
+* **Primary (Hook-First / YouTube):** `Saved by Nina's Sharp Eyes! Escorting to Zumba & 21.5 mi Pollença Loop`
+* **Alt 1 (Route & Highlights):** `Mallorca Morning Ride: Bellevue Zumba Drop-Off, Missing Brake Pad & Badia de Pollença (21.5 mi)`
+* **Archival (Catalog Index):** `2026-11-02 · Escorting Nina to Zumba & Pollença Loop (21.5 mi)`
 
 ### Multi-Phase Music & Audio Mix Structure
 * **Phase 1 (`0.0s – 31.4s`, Escorting Nina to Bellevue):** `083bpm_Playfullofi_EasyPeasy_Creatormix.mp3` (`04_Warm_Social_And_Retro/`) on `A2` at **`-7.5 dB`** under Part 1 Voice-Over (`1.8s–12.9s`), then swelling by **`+3.5 dB` (`-4.0 dB`)** during the riding-only approach (`13.0s–30.6s`).
@@ -84,9 +84,9 @@ bgm_swell_riding_db: +3.5             # Swells to -4.0 dB (-22.9 dB mean) during
 pip_broll_music_gain_db: -6.5         # Tames smartphone B-roll music (-30 dB mean) so it never overpowers
 
 # YouTube Localization & Publishing Knobs
-publishing_mode: "option_b"           # "en_only" | "option_a" (1 video + en/ua/ru .srt + inline UA/RU text) | "option_b" (All 3: EN Private + UA/RU Unlisted voiceover editions cross-linked)
+publishing_mode: "option_a"           # "option_a" (Default: 1 4K video + EN/UA/RU .srt captions) | "en_only" | "option_b" (3 full videos for special occasions)
 toponym_phonetics: "mallorca_yeismo"  # Always use Пойенса (RU) / Поєнса (UA) & Майорка (never bookish "ль" like Польенса/Мальорка)
-default_privacy: "private"            # Primary video uploaded as "private" for review; UA/RU editions as "unlisted"
+default_privacy: "unlisted"           # Default: "unlisted" (allows instant comments, language switcher & preview; avoids private mode comment blocking)
 playlists:
   - "Mallorca"
   - "2026 Mallorca Cycling"

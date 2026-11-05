@@ -32,6 +32,10 @@ Thumbnail: "SAVED AT THE GATE" with selfie + brake caliper cutout.
      - **Section 1: Story Overview & Narrative Arc** (Imperial + Metric stats).
      - **Section 2: Multi-Phase Music Plan** (`03_Audio_Library/01_Curated_BGM/` tracks, ducking under VO/dialog, `+3.5 dB` swell during pure riding).
      - **Section 3: Scene-by-Scene Visual & Audio Map** (`Scene 00` -> `Scene N`, exact timecodes, `V1` clips/stills, `V2` GPX corner maps/HUD, `A1` live dialog boost, `A4` voiceover cues).
+     - **Section 1: Video Overview, Title Ideas & Multi-Phase Music Selection:**
+       - **Title Options:** Always put the hook-first title under `* **Primary (Hook-First / YouTube):**` (no date prefix so mobile titles don't truncate), followed by `* **Alt 1 (Route & Highlights):**`, and `* **Archival (Catalog Index):** YYYY-MM-DD · ...`.
+     - **Section 2: The Narrative Story** (chronological scene-by-scene breakdown).
+     - **Section 3: Archival Memory & Brain Links** (cross-era links to past years or key people from `my_digital_brain.md`).
      - **Section 4: Multi-Language Voice-Over & Subtitle Scripts (`EN`, `UA`, `RU`)** (always using ISO code `ua` for Ukrainian locally).
      - **Section 5: Production & YouTube Publishing Spec (Tuning Knobs)** — YAML block capturing:
        - `units`: `imperial_default` (`mi`, `ft`, `mph`)
@@ -39,10 +43,11 @@ Thumbnail: "SAVED AT THE GATE" with selfie + brake caliper cutout.
        - `gpx_corner_map` (`top_right`, `26%` width) & `gpx_telemetry_hud` (`auto` — suppressed when speed `< 5 mph`)
        - `low_res_broll_mode`: `pip_card` (`65%` centered card over blurred `16:9` backdrop for `< 720p` clips)
        - `audio_mix`: `voiceover_persona: voice_jntybwupjc1s`, `live_dialog_boost: auto`, `bgm_under_vo_db: -7.5`, `bgm_riding_swell_db: +3.5`, `pip_broll_music_db: -6.5`
+       - `default_privacy`: `"unlisted"` (default for all uploads to allow immediate comments, previews, and language switchers without public feed spam)
        - `youtube_publishing.publishing_mode`:
-         - `en_only`: 1 English 4K video (`private`) with `captions.en.srt`
-         - `option_a`: 1 English 4K video (`private`) with localized `EN`/`UA`/`RU` titles, descriptions & `.srt` subtitles (`captions.en.srt`, `captions.ua.srt`, `captions.ru.srt`)
-         - `option_b`: **Full 3-Edition Multi-Language Upload** — 1 English 4K Master (`private`) + `0.2s` lossless remuxed `🇺🇦 UA` (`_UA.mp4`, `unlisted`) & `🇷🇺 RU` (`_RU.mp4`, `unlisted`) editions with native `UA`/`RU` replicated voice-over, cross-linked at the top of the `🇺🇦 УКРАЇНСЬКОЮ` and `🇷🇺 ПО-РУССКИ` sections of the English description
+         - `option_a` (Recommended Default): 1 clean 4K master (`unlisted`) with matching voiceover + localized `EN`/`UA`/`RU` titles, descriptions & `.srt` subtitles (`captions.en.srt`, `captions.ua.srt`, `captions.ru.srt`). Concentrates views on 1 video while serving multi-lingual audiences via YouTube CC.
+         - `en_only`: 1 English 4K video (`unlisted`) with `captions.en.srt`.
+         - `option_b`: Special Occasions Only — 3 separate 4K video uploads (EN Master `unlisted` + UA/RU unlisted voiced editions). Always requires explicit confirmation before upload!
        - `thumbnail`: `style: composite_ai` (`headline_text`, `hero_image`, `prop_cutout`) modeled after YouTube Studio's "Ask Suggestions" composite layout.
 3. **Step 3 (Automatic Memory Harvesting into `my_digital_brain.md`):**
    - Append any new people, companions, recurring gear/wardrobe, or cross-year links into `./my_digital_brain.md`.
