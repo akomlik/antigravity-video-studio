@@ -41,13 +41,13 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
 
 2. **Question 2: Background Music Selection (with Speaker Preview)**
    - Present the top 2 curated tracks from `03_Audio_Library/01_Curated_BGM/` matching the project genre & BPM.
-   - Options:
-     - `(Recommended) #1: <Track 1 Name> (<Genre>, <BPM>)`
-     - `#2: <Track 2 Name> (<Genre>, <BPM>)`
-     - `Preview Track #1 on Mac speakers (10s audio snippet)`
-     - `Preview Track #2 on Mac speakers (10s audio snippet)`
-     - `Search for a different mood...`
-   *(If the user selects a preview, run `afplay -t 10 "03_Audio_Library/01_Curated_BGM/<path_to_track>"` and re-prompt for their choice).*
+   - Use clear, unmistakable action prefixes (`▶️ Listen` vs `✅ Select`):
+     - `▶️ Listen to Track #1 ("<Track 1 Name>" — <BPM> BPM, <Genre>)`
+     - `▶️ Listen to Track #2 ("<Track 2 Name>" — <BPM> BPM, <Genre>)`
+     - `(Recommended) ✅ Select Track #1 ("<Track 1 Name>")`
+     - `✅ Select Track #2 ("<Track 2 Name>")`
+     - `🔍 Search for a different mood or genre...`
+   *(If the user selects a preview, run `afplay -t 10 "03_Audio_Library/01_Curated_BGM/<path_to_track>"` and immediately re-prompt for their choice).*
 
 3. **Question 3: YouTube Publishing Mode**
    - Options:
