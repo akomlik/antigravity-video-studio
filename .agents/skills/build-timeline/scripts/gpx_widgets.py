@@ -230,23 +230,56 @@ def render_telemetry_hud_widget(
     return out_png
 
 
+ACTIVITY_SPEED_THRESHOLDS = {
+    "cycling_ride": 2.0,
+    "cycling": 2.0,
+    "ride": 2.0,
+    "run": 1.5,
+    "running": 1.5,
+    "hike_outdoor": 0.8,
+    "hike": 0.8,
+    "hiking": 0.8,
+    "walk": 0.8,
+    "walking": 0.8,
+}
+
+
 def should_show_telemetry_hud(
     clip_name: str,
     gpx_points: list[dict] = None,
     clip_ts: dt.datetime | None = None,
     rolling_speed_mph: float | None = None,
+    activity_type: str = "cycling_ride",
+    mode: str = "auto",
     window_s: float = 3.0,
-    speed_threshold_mph: float = 2.0,
+    speed_threshold_mph: float | None = None,
 ) -> bool:
     """
     Evaluates whether the Telemetry HUD should be visible on a clip (Studio v2.1 standard):
-    - Automatically False (OFF) for still photo clips (.jpg, .jpeg, .png, .heic).
-    - Automatically False (OFF) for stationary scenes (speed <= 2.0 mph: cafe, counter, terrace, gates).
-    - Automatically True (ON) for actual moving scenes (riding, running, hiking, moving camera: speed > 2.0 mph).
+    - mode == 'off': Always False (suppressed across all clips).
+    - mode == 'always': Always True for video clips (stills remain False).
+    - mode == 'auto':
+        - False for still photo clips (.jpg, .jpeg, .png, .heic).
+        - False for stationary scenes below the activity-aware speed threshold (cafe, counter, terrace, gates).
+        - True for actual moving scenes above threshold:
+            * cycling_ride: > 2.0 mph (3.2 km/h)
+            * run:          > 1.5 mph (2.4 km/h)
+            * hike_outdoor: > 0.8 mph (1.3 km/h)
     """
-    # 1. Stills are always suppressed
+    # 1. Stills are always suppressed (clean frame for Ken Burns stills)
     if clip_name.lower().endswith((".jpg", ".jpeg", ".png", ".heic")):
         return False
+
+    mode_clean = (mode or "auto").strip().lower()
+    if mode_clean == "off":
+        return False
+    if mode_clean == "always":
+        return True
+
+    # Resolve threshold based on activity type
+    if speed_threshold_mph is None:
+        act_key = (activity_type or "cycling_ride").strip().lower()
+        speed_threshold_mph = ACTIVITY_SPEED_THRESHOLDS.get(act_key, 2.0)
 
     # 2. If rolling speed is directly provided
     if rolling_speed_mph is not None:

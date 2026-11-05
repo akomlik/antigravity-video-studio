@@ -105,7 +105,7 @@ sequence_resolution: "3840x2160@30"
 units: "imperial"                     # "imperial" (default: mi, ft, mph + metric in parens) | "metric"
 burned_in_titles: false               # false (default: clean 4K frames; rely on .srt CC + voiceover) | true
 gpx_corner_map: true                  # true (default: 3.5s top-right GPX progress map at scene transitions) | false
-gpx_telemetry_hud: "auto"             # "auto" (shown on moving scenes when 3s speed > 2 mph; suppressed on stills & stationary scenes <= 2 mph) | "always" | "off"
+gpx_telemetry_hud: "auto"             # "auto" (activity-aware: > 2.0 mph ride / > 0.8 mph hike; off at stops & stills) | "always" | "off"
 low_res_broll_mode: "pip_card"        # "pip_card" (62% framed inset over blurred 4K backdrop for <1080p clips) | "full"
 
 # Audio & Voice-Over Knobs (4-Track Broadcast Mix)

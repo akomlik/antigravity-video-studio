@@ -49,13 +49,19 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
      - `🔍 Search for a different mood or genre...`
    *(If the user selects a preview, run `afplay -t 10 "03_Audio_Library/01_Curated_BGM/<path_to_track>"` and immediately re-prompt for their choice).*
 
-3. **Question 3: YouTube Publishing Mode**
+3. **Question 3: Telemetry HUD Overlays (`gpx_telemetry_hud`)** *(When GPX track is present)*
+   - Options:
+     - `(Recommended) Auto — On for moving scenes (> 2.0 mph for ride / > 0.8 mph for hike), Off at stops & stills`
+     - `Always ON — Show Telemetry HUD on all video clips`
+     - `OFF — Hide Telemetry HUD completely (clean screen)`
+
+4. **Question 4: YouTube Publishing Mode**
    - Options:
      - `(Recommended) Option A — 1 Clean 4K Master (Unlisted) + EN/UA/RU Subtitles`
      - `English Only (1 4K Master, Unlisted)`
      - `Option B — 3 Separate Voiced Videos (EN + UA + RU)`
 
-**Automatic Persistence:** Once Alexander selects his choices and submits the form, the agent writes the selected language, music tracks, and publishing mode directly into Section 5 of `Storyboard.md` on disk. **Zero window switching, zero manual file edits.**
+**Automatic Persistence:** Once Alexander selects his choices and submits the form, the agent writes the selected language, music tracks, HUD setting, and publishing mode directly into Section 5 of `Storyboard.md` on disk. **Zero window switching, zero manual file edits.**
 
 ---
 
