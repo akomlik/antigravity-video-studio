@@ -17,6 +17,7 @@ Headless YouTube Data API v3 uploader and localization manager:
 
 import argparse
 import datetime
+import hashlib
 import json
 import os
 import re
@@ -112,7 +113,7 @@ def register_in_archive_index(meta: dict, youtube_url: str):
     print(f"Registered {clean_url} in {YT_INDEX_PATH}")
 
 
-def assign_playlists_and_captions(youtube, vid_id: str, meta: dict):
+def assign_playlists_and_captions(youtube, vid_id: str, meta: dict, meta_path: Path | None = None):
     from googleapiclient.http import MediaFileUpload
 
     # 1. Assign Playlists by title (avoiding duplicate insertions)
@@ -136,7 +137,7 @@ def assign_playlists_and_captions(youtube, vid_id: str, meta: dict):
         except Exception as e:
             print(f"  Note: Playlist assignment warning: {e}")
 
-    # 2. Upload .srt subtitle tracks (en, ua, ru)
+    # 2. Upload .srt subtitle tracks (en, ua, ru) with hash-check caching
     # Note: Locally we always use ISO code `ua` for Ukraine; YouTube API's wire language code is `uk`.
     YT_WIRE_LANG = {"en": "en", "ua": "uk", "ru": "ru"}
     lang_names = {"en": "English", "ua": "Українська (UA)", "ru": "Русский"}
@@ -149,11 +150,30 @@ def assign_playlists_and_captions(youtube, vid_id: str, meta: dict):
     except Exception as e:
         print(f"  Note: captions.list warning: {e}")
 
+    caption_hashes = meta.setdefault("caption_hashes", {})
+    if meta_path and Path(meta_path).exists():
+        try:
+            disk_meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+            if "caption_hashes" in disk_meta:
+                caption_hashes.update(disk_meta["caption_hashes"])
+        except Exception:
+            pass
+
+    hashes_changed = False
     for lang, srt_path in meta.get("srt_files", {}).items():
         yt_lang = YT_WIRE_LANG.get(lang, lang)
-        if Path(srt_path).exists():
+        srt_file = Path(srt_path)
+        if srt_file.exists():
+            current_hash = hashlib.sha256(srt_file.read_bytes()).hexdigest()
+            cache_key = f"{vid_id}:{yt_lang}"
+
+            # If caption already exists on YouTube and hash matches cached hash, skip to save 400 quota units!
+            if yt_lang in existing_langs and caption_hashes.get(cache_key) == current_hash:
+                print(f"  Caption track for {lang} ({yt_lang}) unchanged (SHA256: {current_hash[:8]}), skipping captions.insert to save 400 quota units.")
+                continue
+
             try:
-                media = MediaFileUpload(srt_path, mimetype="application/x-subrip")
+                media = MediaFileUpload(str(srt_file), mimetype="application/x-subrip")
                 for old_id in existing_langs.get(yt_lang, []):
                     try:
                         youtube.captions().delete(id=old_id).execute()
@@ -171,9 +191,19 @@ def assign_playlists_and_captions(youtube, vid_id: str, meta: dict):
                     },
                     media_body=media,
                 ).execute()
-                print(f"  Uploaded {lang} subtitle track: {Path(srt_path).name}")
+                print(f"  Uploaded {lang} subtitle track: {srt_file.name} (SHA256: {current_hash[:8]})")
+                caption_hashes[cache_key] = current_hash
+                hashes_changed = True
             except Exception as e:
                 print(f"  Note: Caption upload ({lang}) warning: {e}")
+
+    if hashes_changed and meta_path and Path(meta_path).exists():
+        try:
+            stored_meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+            stored_meta.setdefault("caption_hashes", {}).update(caption_hashes)
+            Path(meta_path).write_text(json.dumps(stored_meta, indent=2, ensure_ascii=False), encoding="utf-8")
+        except Exception as save_err:
+            print(f"  Note: Could not persist caption_hashes: {save_err}")
 
 
 def infer_recording_date_iso(meta: dict, video_path: Path | None = None) -> str | None:
@@ -230,7 +260,7 @@ def update_existing_video_via_api(meta_path: Path, vid_id: str, skip_playlists: 
     if skip_captions:
         meta_for_sync["srt_files"] = {}
     if meta_for_sync.get("playlists") or meta_for_sync.get("srt_files"):
-        assign_playlists_and_captions(youtube, vid_id, meta_for_sync)
+        assign_playlists_and_captions(youtube, vid_id, meta_for_sync, meta_path=meta_path)
 
 
 def upload_raw_video(
@@ -247,6 +277,7 @@ def upload_raw_video(
     srt_files: dict = None,
     localizations: dict = None,
     recording_date_iso: str = None,
+    meta_path: Path | None = None,
 ) -> tuple[str, str]:
     from googleapiclient.http import MediaFileUpload
 
@@ -306,7 +337,7 @@ def upload_raw_video(
         "playlists": playlists or [],
         "srt_files": srt_files or {},
     }
-    assign_playlists_and_captions(youtube, vid_id, meta_tmp)
+    assign_playlists_and_captions(youtube, vid_id, meta_tmp, meta_path=meta_path)
     return vid_id, yt_url
 
 
@@ -402,6 +433,7 @@ def upload_option_b_multilingual(
             playlists=playlists,
             srt_files=ua_srts,
             recording_date_iso=rec_date_iso,
+            meta_path=meta_path,
         )
         edition_urls["ua"] = ua_url
         register_in_archive_index({"title": ua_title, "description": ua_desc, "chapters": meta.get("chapters", []), "project_name": meta.get("project_name", "")}, ua_url)
@@ -436,6 +468,7 @@ def upload_option_b_multilingual(
             playlists=playlists,
             srt_files=ru_srts,
             recording_date_iso=rec_date_iso,
+            meta_path=meta_path,
         )
         edition_urls["ru"] = ru_url
         register_in_archive_index({"title": ru_title, "description": ru_desc, "chapters": meta.get("chapters", []), "project_name": meta.get("project_name", "")}, ru_url)
@@ -483,6 +516,7 @@ def upload_option_b_multilingual(
             srt_files=srt_files,
             localizations=locs,
             recording_date_iso=rec_date_iso,
+            meta_path=meta_path,
         )
 
     if delete_old_editions:
@@ -633,6 +667,7 @@ def main():
         playlists=meta.get("playlists", []),
         srt_files=meta.get("srt_files", {}),
         localizations=meta.get("localizations", {}),
+        meta_path=meta_path,
     )
     meta["published_youtube_url"] = yt_url
     meta["published_video_id"] = vid_id

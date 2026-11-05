@@ -41,6 +41,42 @@ def sanitize_caption_text(text: str) -> str:
     return cleaned
 
 
+def verify_and_repair_v1_continuity(seq: dict) -> int:
+    """
+    Ensures V1 timeline items are strictly contiguous with zero accidental black gaps or overlaps.
+    If a gap > 0 ticks is detected between clip i and clip i+1, snaps subsequent clips to close
+    the black void.
+    Returns the count of repaired gaps.
+    """
+    video_tracks = seq.get("video_tracks", [])
+    if not video_tracks or not video_tracks[0].get("items"):
+        return 0
+    v1_items = video_tracks[0]["items"]
+    v1_items.sort(key=lambda x: x.get("start", 0))
+
+    current_ticks = 0
+    repaired_gaps = 0
+    for idx, item in enumerate(v1_items):
+        start = item.get("start", 0)
+        dur = item.get("duration", 0)
+        gap = start - current_ticks
+        if abs(gap) > 0:
+            gap_s = gap / TICKS_PER_SEC
+            if gap > 0:
+                print(f"[Continuity Check] Repaired black gap of {gap_s:.3f}s before clip '{item.get('name')}' (snapped from {start/TICKS_PER_SEC:.2f}s to {current_ticks/TICKS_PER_SEC:.2f}s)")
+            else:
+                print(f"[Continuity Check] Repaired overlap of {-gap_s:.3f}s before clip '{item.get('name')}' (snapped from {start/TICKS_PER_SEC:.2f}s to {current_ticks/TICKS_PER_SEC:.2f}s)")
+            item["start"] = current_ticks
+            repaired_gaps += 1
+        current_ticks += dur
+
+    if repaired_gaps:
+        print(f"V1 Visual Continuity: Repaired {repaired_gaps} gap(s)/overlap(s). Total V1 duration: {current_ticks / TICKS_PER_SEC:.2f}s")
+    else:
+        print(f"V1 Visual Continuity: Passed (100% contiguous, {len(v1_items)} clips, total duration: {current_ticks / TICKS_PER_SEC:.2f}s)")
+    return repaired_gaps
+
+
 def make_volume_effect(fade_in_s=None, fade_out_s=None, duration_s=0.0):
     """Creates a volume effect dictionary with keyframed fades if requested."""
     dur_ticks = int(duration_s * TICKS_PER_SEC)
@@ -300,6 +336,11 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
     proj = data["project"]
     items = proj["items"]
     seq_id = str(data["view"].get("active_sequence") or 98)
+    if seq_id not in items or "Sequence" not in items[seq_id].get("kind", {}):
+        for k, v in items.items():
+            if "Sequence" in v.get("kind", {}):
+                seq_id = k
+                break
     seq = items[seq_id]["kind"]["Sequence"]
     next_id = data.get("next_id", 300)
 
@@ -312,10 +353,11 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
             seq["video_tracks"][1]["items"] = []
             seq["video_tracks"][1]["transitions"] = []
 
-    # 2. Auto-detect 4K UHD (3840x2160) when sources exceed 1080p, apply scale_to_frame=True, Ken Burns & Dip-to-Black
+    # 2. Auto-detect 4K UHD (3840x2160) when sources exceed 1080p, enforce V1 visual continuity, apply scale_to_frame=True, Ken Burns & Dip-to-Black
     video_tracks = seq.get("video_tracks", [])
     if video_tracks and video_tracks[0].get("items"):
         v1 = video_tracks[0]
+        verify_and_repair_v1_continuity(seq)
         all_v1_items = v1.get("items", [])
         max_src_w = max(
             (items.get(str(it["item"]), {}).get("kind", {}).get("Media", {}).get("info", {}).get("video") or {}).get("width", 1920)
