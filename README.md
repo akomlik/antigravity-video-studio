@@ -203,7 +203,21 @@ Because [`storytold/filmcraft`](https://github.com/storytold/filmcraft/releases)
 
 ---
 
-## 6c. IntelliJ IDEA: FilmCraft MCP
+## 6c. IntelliJ IDEA: MCP Servers
+
+This project's [`.ai/mcp/mcp.json`](./.ai/mcp/mcp.json) carries over the three servers configured in Antigravity's `~/.gemini/config/mcp_config.json`:
+
+| Server | Launch configuration |
+| :--- | :--- |
+| `github` | `direnv-mcp npx -y @modelcontextprotocol/server-github` |
+| `google-workspace` | `direnv-mcp uvx workspace-mcp --tool-tier complete` |
+| `filmcraft` | `filmcraft-mcp-bridge` connecting to the visible app |
+
+GitHub and Google Workspace use the existing `/Users/akomlik/src/ai-workflow/scripts/direnv-mcp` launcher. It reuses the inherited environment when `WORKFLOW_CONTEXT` is set; otherwise, it loads the environment through `direnv exec ~/src`. The project JSON contains no credentials. Fully quit IDEA before launching it from your configured shell with `open -a "IntelliJ IDEA"` when refreshing inherited environment variables.
+
+Enable the project entries in **Settings → Tools → AI Assistant → Model Context Protocol (MCP)** and click **Apply**. If global entries with the same names already exist, use the project configuration for this workspace. Start a new agent chat after enabling changed servers. Chrome DevTools and DaVinci Resolve are mentioned elsewhere in this guide but are not configured in the Antigravity MCP file above.
+
+### FilmCraft desktop connection
 
 IDEA's AI Assistant reads this project's [`.ai/mcp/mcp.json`](./.ai/mcp/mcp.json), which registers **`filmcraft`** over STDIO. It uses the existing `/Users/akomlik/.local/bin/filmcraft-mcp-bridge` launcher to control the visible FilmCraft app on `127.0.0.1:9876`. The launcher reads the private token from `~/.config/filmcraft/control_token` and runs `~/src/filmcraft/target/release/filmcraft-cli mcp --bridge 127.0.0.1:9876`. These are local installation paths; adjust the configuration if setting up another Mac.
 
