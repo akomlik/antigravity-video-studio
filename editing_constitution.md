@@ -18,9 +18,15 @@
     - In interactive `/storyboard` mode, present the drafted `Storyboard.md` and ask the user if they want to refine any scene or add historical media before moving to video production.
 - **Mandatory Automatic Memory Harvesting into `my_digital_brain.md`:**
     - Whenever `Storyboard.md` is created or updated with user context, immediately extract any newly mentioned **people/companions**, **landmarks/restaurants/markets**, **recurring wardrobe/gear items**, and **cross-year archival links**, and append them under the appropriate section of `./my_digital_brain.md`.
-- **The Two-Gear Execution Dial (Fed by `Storyboard.md`):**
-    - **Gear 1 — Express `/magic-movie` Mode (Hands-Off Auto-Pilot):** Reads `Storyboard.md` (or auto-generates it on the fly if missing), picks Candidate #1 from `recommended_music_candidates` in `03_Audio_Library/01_Curated_BGM/`, writes `cut_table.md` to `04_Project_Catalog/YEAR/<project_name>/`, immediately builds the timeline via MCP (`command_batch` in FilmCraft) without pausing for "OK", saves the `.fcproj`, verifies 3 rendered frames, and exports the `.mp4` to `~/Movies/Exports/YEAR/`.
-    - **Gear 2 — Supervised `/build-cut-table` Mode (Brehov Approval Gate):** Translates `Storyboard.md` (`Scene 00` $\rightarrow$ `Scene N`) directly into the Markdown **Cut Table** (`cut_table.md`), displays the top 3 recommended music tracks (or offers to run `/find-music` on your open YouTube Audio Library / `creatormix.com` tabs), and waits for the user to reply **"OK"** before calling any mutating MCP timeline tools.
+- **The Unified 3-Stage Conversational Pipeline (Fed by `Storyboard.md`):**
+    - **Stage 0 — Interactive `/storyboard` (Narrative Co-Creation & Memory Harvesting):** Ingests raw media, extracts proxies, co-designs the story arc in chat, and automatically harvests memories/people into `my_digital_brain.md`.
+    - **Stage 1 — Conversational `/build-timeline` (Zero-IDE, Interactive Timeline Assembly):**
+        1. Presents an in-chat clickable alignment card (`ask_question`) for Primary Voice-Over Language, Music Track #1 & #2 (with 10-second Mac speaker preview via `afplay`), and Publishing Mode (`option_a` default).
+        2. Automatically writes settings into `Storyboard.md` on disk (no manual YAML/markdown editing in external IDEs!).
+        3. Builds the 4-track timeline in FilmCraft MCP, exports clean 4K `.mp4` to `~/Movies/Exports/YEAR/`, and generates `facebook_promo.md` and metadata package.
+        4. Invites human visual review directly via FilmCraft GUI playback (completely replacing tedious `cut_table.md` spreadsheets).
+    - **Stage 2 — `/publish-youtube` (Headless Release):**
+        - Uploads the 4K MP4 (`unlisted` default), sets metadata & localized titles/subtitles, posts language switcher comment, and prints copy-ready Facebook post in chat.
 
 ### ARTICLE II: GENRE-ADAPTIVE NARRATIVE PROFILES (WHEN Storyboard.md HAS NO CUSTOM SCENES)
 
@@ -94,15 +100,12 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
 - **Storyboard Punchline Captions (`V2`):** When `Storyboard.md` highlights a specific narrative joke or callback (e.g., *"Scene 00: July 2025 — Last sighting of the €20 jacket at SJC"*, *"€20 -> €30 inflation (+ he's in Alcúdia every Tuesday!)"*, or *"Saved by Nina's sharp eyes: Front disc brake pad on the ground!"*), generate clean lower-third text overlays on `V2`.
 - **Color & Monochrome Integrity:** Conform iPhone 15 Pro `BT.2020` HDR clips to `Rec.709` linear light. Never apply color LUTs or saturation adjustments to 1977+ black-and-white film scans.
 
-### ARTICLE VII: REQUIRED CUT TABLE SCHEMA
+### ARTICLE VII: DIRECT TIMELINE ASSEMBLY & FILMCRAFT PLAYBACK REVIEW
 
-Before assembling any timeline in Supervised Mode (or when logging the auto-plan in `/magic-movie` Mode), write `04_Project_Catalog/YEAR/<project_name>/cut_table.md` mapping every scene from `Storyboard.md`:
-
-**Storyboard Source:** `Storyboard.md` | **Selected Music (`A2`):** `<[BPM]_[Mood]_[TrackName]_[Artist].mp3>` (`<BPM>` BPM, `<beat_interval_s>s/beat`) | **Alternates:** 1. `<alt1.mp3>`, 2. `<alt2.mp3>`
-
-| **Cut #** | **Timeline TC** | **Duration** | **Storyboard Scene** | **Source File** | **Source / Era** | **In -> Out (s)** | **Visual Action / Caption Overlay** | **Context / Telemetry** | **Audio (A1 / A2 dB)** |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 01 | 00:00.0 – 00:03.5 | 3.5s | Scene 00: Flashback | `IMG_E9287.jpg` | iPhone (2024) | Still (3.5s) | Push-In 100%->106% + Caption | SJC Jacket Backstory | Mute / -11 dB (1.5s fade-in) |
+No human editor wants to proofread hundreds of rows of numerical timecodes in a spreadsheet (`cut_table.md`) to imagine how a video feels. All timeline assembly is executed directly from `Storyboard.md` via FilmCraft MCP:
+1. **Live Assembly & Verification:** As clips and audio tracks are assembled in FilmCraft, visual review happens directly where it belongs: in the open FilmCraft GUI playback window or the rendered 4K `.mp4` export.
+2. **Conversational Adjustments:** Any pacing, trim, or audio adjustments are requested directly in chat (*"shorten the market scene by 2 seconds"*, *"boost Nina's voice"*, *"swap music track"*). The agent applies the edits instantly via FilmCraft MCP socket calls.
+3. **Cut Table Deprecated:** The intermediate `cut_table.md` file is fully deprecated in favor of direct timeline execution and real-time visual feedback.
 
 ### ARTICLE VIII: IMPERIAL UNITS DEFAULT, GPX WIDGETS, LOW-RES B-ROLL FRAMING & BROADCAST AUDIO MIX
 

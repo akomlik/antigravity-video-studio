@@ -59,4 +59,4 @@ If searching for specific ambient or vintage moods in the YouTube Audio Library:
    ```
 
 ### Step 3: Confirm to Creator & Offer Timeline Placement
-Report the new track to Alexander and offer to place it on Track `A2` via `/swap-music`, `/magic-movie`, or `/build-cut-table`.
+Report the new track to Alexander and offer to place it on Track `A2` via `/swap-music` or `/build-timeline`.

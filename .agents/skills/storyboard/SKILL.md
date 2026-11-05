@@ -52,5 +52,5 @@ Thumbnail: "SAVED AT THE GATE" with selfie + brake caliper cutout.
 3. **Step 3 (Automatic Memory Harvesting into `my_digital_brain.md`):**
    - Append any new people, companions, recurring gear/wardrobe, or cross-year links into `./my_digital_brain.md`.
 4. **Step 4 (Interactive Co-Design Prompt):**
-   - Present the updated `Storyboard.md` (highlighting the Scene Map, Section 5 `publishing_mode`, and the proposed 3–4 word Thumbnail Headline + Hero/Prop pairing) and ask:
-     **"Storyboard.md (including Section 5 YouTube Publishing & Thumbnail Spec) is ready. Would you like to tweak any scene or thumbnail/localization setting, or run `/magic-movie` to build and publish?"**
+   - Present the updated `Storyboard.md` (highlighting the Scene Map, characters, and proposed Thumbnail Headline + Hero/Prop pairing) and ask:
+     **"Storyboard.md is ready! Would you like to tweak any story details, or run `/build-timeline` to select your music/language in chat and assemble the 4K video?"**

@@ -31,7 +31,7 @@ BGM_ROOT = STUDIO_ROOT / "03_Audio_Library" / "01_Curated_BGM"
 
 def run_filmcraft_version_check(studio_root: Path):
     """Step 0a-pre: Enforces FilmCraft >= v0.17.0, auto-syncs filmcraft-cli, and diffs new MCP commands."""
-    checker = studio_root / ".agents/skills/assemble-timeline/scripts/check_filmcraft_env.py"
+    checker = studio_root / ".agents/skills/build-timeline/scripts/check_filmcraft_env.py"
     if checker.exists():
         sys.path.insert(0, str(checker.parent))
         try:

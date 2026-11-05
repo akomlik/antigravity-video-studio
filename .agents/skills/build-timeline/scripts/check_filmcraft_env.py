@@ -199,7 +199,7 @@ def verify_filmcraft_environment(auto_sync_cli: bool = True, check_remote: bool 
         else:
             print(
                 f"⚠️  Version mismatch: FilmCraft.app is v{app_ver}, but filmcraft-cli is v{cli_ver}. "
-                f"Run `python3 ./.agents/skills/assemble-timeline/scripts/check_filmcraft_env.py --sync-cli` to align them."
+                f"Run `python3 ./.agents/skills/build-timeline/scripts/check_filmcraft_env.py --sync-cli` to align them."
             )
 
     remote_info = {}
