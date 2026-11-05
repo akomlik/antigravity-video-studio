@@ -564,7 +564,18 @@ def upload_option_b_multilingual(
     if "ru" in edition_urls:
         print(f"  🇷🇺 Russian 4K Edition ({privacy_editions}):   {edition_urls['ru']}")
     print("========================================================\n")
+    output_facebook_promo_after_publish(meta_path, en_url, edition_urls)
     return en_url
+
+
+def output_facebook_promo_after_publish(meta_path: Path, live_url: str, edition_urls: dict | None = None):
+    try:
+        from generate_facebook_promo import build_facebook_promo, print_promo_box
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        promo = build_facebook_promo(meta_path.parent, meta, live_url=live_url, edition_urls=edition_urls)
+        print_promo_box(promo)
+    except Exception as e:
+        print(f"Note: Facebook promo generation notice: {e}")
 
 
 def main():
@@ -586,10 +597,16 @@ def main():
         meta["published_youtube_url"] = args.register_url
         meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
         register_in_archive_index(meta, args.register_url)
+        output_facebook_promo_after_publish(meta_path, args.register_url, meta.get("edition_urls"))
         return
 
     if args.update_video_id:
         update_existing_video_via_api(meta_path, args.update_video_id, args.skip_playlists)
+        yt_url = f"https://www.youtube.com/watch?v={args.update_video_id}"
+        meta["published_youtube_url"] = yt_url
+        meta["published_video_id"] = args.update_video_id
+        meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+        output_facebook_promo_after_publish(meta_path, yt_url, meta.get("edition_urls"))
         return
 
     if args.option_b:
@@ -603,7 +620,7 @@ def main():
         )
         return
 
-    upload_raw_video(
+    vid_id, yt_url = upload_raw_video(
         get_youtube_service(),
         video_path=Path(meta["video_file"]),
         title=meta["title"],
@@ -617,6 +634,11 @@ def main():
         srt_files=meta.get("srt_files", {}),
         localizations=meta.get("localizations", {}),
     )
+    meta["published_youtube_url"] = yt_url
+    meta["published_video_id"] = vid_id
+    meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
+    register_in_archive_index(meta, yt_url)
+    output_facebook_promo_after_publish(meta_path, yt_url, meta.get("edition_urls"))
 
 
 if __name__ == "__main__":

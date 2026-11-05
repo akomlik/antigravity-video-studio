@@ -513,6 +513,14 @@ def main():
     print(f"Saved YouTube metadata JSON (Imperial + uk/ru localizations) -> {json_out}")
     print(f"Saved .srt subtitle tracks -> {list(srt_files.keys())}")
 
+    # Generate Facebook promotional copy options
+    try:
+        from generate_facebook_promo import build_facebook_promo, print_promo_box
+        promo = build_facebook_promo(proj_dir, metadata, live_url=existing_url, edition_urls=existing_editions)
+        print(f"Saved Facebook promotional copy -> {proj_dir / 'facebook_promo.md'}")
+    except Exception as e:
+        print(f"Note: Facebook promo generation notice: {e}")
+
 
 if __name__ == "__main__":
     main()

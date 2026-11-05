@@ -15,6 +15,10 @@ Turns any finished 4K `.mp4` export and `.fcproj` project into a complete YouTub
 4. **YouTube Chapter Parser Rule:** YouTube uses the **last** `00:00` timestamp block in a video's description to label the scrub-bar chapters. Therefore, inline `🇺🇦 УКРАЇНСЬКОЮ` and `🇷🇺 ПО-РУССКИ` blocks inside the English description must **never** include `00:00` chapter lists (localized chapters belong strictly inside `localizations["ua"]` and `localizations["ru"]`).
 5. **Mandatory Recording Date (`recordingDetails.recordingDate`):** Every uploaded or updated video (including `EN`, `UA`, and `RU` editions) MUST set `recordingDetails.recordingDate` (`YYYY-MM-DDT00:00:00.000Z`, derived from `recording_date` in `youtube_metadata.json` or the `YYYY-MM-DD` project folder prefix) via `part="snippet,status,localizations,recordingDetails"`.
 6. **Environment Inheritance (Zero Wrapper Dependencies):** Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET` using your preferred environment manager (e.g., `direnv` + 1Password, shell profile, or a local `.env` file) and start Antigravity from that shell session so all child processes inherit them automatically. Once authorized once, `~/.config/antigravity_youtube/token.json` caches the OAuth refresh token for zero-prompt future uploads.
+7. **Automated Facebook Promotional Package (`facebook_promo.md`):** Automatically generates three copy-ready Facebook post strategies upon metadata generation and post-upload completion, saving to `04_Project_Catalog/YEAR/<project_name>/facebook_promo.md` and printing the ready-to-copy box directly to the console:
+   - **Option 1 (The Curiosity Hook — Algorithm-Optimized):** Zero outbound links in the post text (prevents Facebook's feed reach suppression) + personal backstory and cliffhanger, with the YouTube link and language edition notes formatted for the First Comment.
+   - **Option 2 (Direct Story Narrative):** All-in-one post with emoji highlights and embedded video link.
+   - **Option 3 (Bilingual / Classmates):** English story hook + UA/RU localized context for European and Ukrainian friends.
 
 ## Step 1: Generate Metadata Package, `.srt` Tracks & Composite Thumbnail
 Run `generate_youtube_metadata.py`:
@@ -50,3 +54,12 @@ Uploads the 4K **🇺🇦 Ukrainian Edition** (`_UA.mp4`, **Unlisted**, with `th
   --privacy private \
   --option-b
 ```
+
+## Step 3: Social Promotion (Facebook & Beyond)
+When `upload_youtube_api.py` finishes, it automatically prints the copy-ready Facebook post box to the console and saves the full formatted package with the live YouTube URL to:
+`04_Project_Catalog/YEAR/<project_name>/facebook_promo.md`
+
+To share on Facebook:
+1. Open `facebook_promo.md`.
+2. Copy the **Option 1 Post Text** and paste into Facebook (attach 1–3 still photos from the project for maximum algorithmic reach).
+3. Post the update, then immediately paste the **Option 1 First Comment** (which includes the clean YouTube link and localized language edition notes).
