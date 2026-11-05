@@ -1,5 +1,5 @@
 {
-  "version": "0.17.0",
+  "version": "0.17.1",
   "minimum_required_version": "0.17.0",
   "total_commands": 716,
   "namespaces": {
@@ -284,7 +284,7 @@
     "timeline.delete": "{\"clips\":[id]?,\"clip\":id?,\"ripple\":bool?} (deletes the named clips, else the selection; ripple closes the gap)",
     "timeline.select": "{\"clips\":[id],\"transitions\":[id]?,\"add\":bool,\"toggle\":bool,\"linked\":bool?}",
     "timeline.selectGap": "{\"track\":\"V1\"|id,\"time\":ticks|\"frame\":n|\"seconds\":f}",
-    "timeline.move": "{\"moves\":[{\"clip\":id,\"track\":id|\"V2\"|\"new\" (after the last of its kind),\"time\":ticks}],\"insert\":bool,\"linked\":bool?,\"copy\":bool?,\"captions\":[id]?}",
+    "timeline.move": "{\"moves\":[{\"clip\":id,\"track\":id|\"V2\"|\"new\" (after the last of its kind),\"time\":ticks|{\"seconds\":f}|{\"frame\":n}|{\"timecode\":str}}],\"insert\":bool,\"linked\":bool?,\"copy\":bool?,\"captions\":[id]?}",
     "timeline.trim": "{\"clip\":id,\"edge\":\"in|out\",\"mode\":\"regular|ripple\",\"delta\":ticks|\"deltaFrames\":i64,\"linked\":bool?}",
     "trim.selectEditPoint": "{\"clip\":id,\"edge\":\"in|out\",\"kind\":\"trim|ripple|roll\",\"add\":bool?}",
     "trim.selectNearest": "{\"kind\":\"rippleIn|rippleOut|roll|trimIn|trimOut\"}",
@@ -357,7 +357,7 @@
     "captions.showAll": "{}",
     "captions.showActiveOnly": "{\"track\":id|\"C1\"?}",
     "captions.hideAll": "{}",
-    "captions.import": "{\"path\":str,\"name\":str?}",
+    "captions.import": "{\"path\":str,\"name\":str?,\"language\":str?}",
     "captions.export": "{\"path\":str,\"format\":\"srt|vtt|scc|mcc|stl|ttml|dfxp\"? (default: from the extension),\"track\":id|\"C1\"?,\"dropFrame\":bool=true}",
     "captions.list": "{\"track\":id|\"C1\"?}",
     "prefs.schema": "{\"category\":str?}",
@@ -515,7 +515,7 @@
     "graphics.setRoll": "{\"clip\":id?,\"mode\":\"off|roll|crawlLeft|crawlRight\"?,\"startOffScreen\":bool?,\"endOffScreen\":bool?,\"prerollFrames\":n?,\"easeInFrames\":n?,\"easeOutFrames\":n?,\"postrollFrames\":n? (or \u2026Seconds, or ticks as preroll/easeIn/easeOut/postroll)}",
     "graphics.setResponsiveTime": "{\"clip\":id?,\"introFrames\":n?,\"outroFrames\":n? (or introSeconds / outroSeconds, or ticks as intro / outro)}",
     "graphics.pin": "{\"clip\":id?,\"layer\":n|name?,\"to\":\"frame\"|\"none\"|layer index|layer name,\"edges\":[\"left\",\"top\",\"right\",\"bottom\"]|\"all\"=\"all\"}",
-    "graphics.setCharStyle": "{\"clip\":id?,\"layer\":n|name?,\"start\":char=0,\"end\":char=len,\"style\":{\"font\":str,\"fontStyle\":str,\"size\":px,\"color\":\"#rrggbb\",\"bold\":bool,\"italic\":bool,\"underline\":bool,\"strikethrough\":bool,\"tracking\":n,\"baselineShift\":px,\"caps\":\"normal|all caps|small caps\"},\"clear\":bool? (remove styles from the range),\"merge\":bool?,\"begin\":bool? (start a new undo gesture)}",
+    "graphics.setCharStyle": "{\"clip\":id?,\"layer\":n|name?,\"start\":char=0,\"end\":char=len,\"style\":{\"font\":str,\"fontStyle\":str,\"size\":px,\"color\":\"#rrggbb\",\"stroke\":bool,\"strokeColor\":\"#rrggbb\",\"strokeWidth\":px,\"strokeType\":\"outer|center|inner\",\"stroke2\":bool,\"stroke2Color\":\"#rrggbb\",\"stroke2Width\":px,\"stroke2Type\":\"outer|center|inner\",\"bold\":bool,\"italic\":bool,\"underline\":bool,\"strikethrough\":bool,\"tracking\":n,\"baselineShift\":px,\"caps\":\"normal|all caps|small caps\"},\"clear\":bool? (remove styles from the range),\"merge\":bool?,\"begin\":bool? (start a new undo gesture)}",
     "graphics.upgradeCaption": "{\"captions\":[id]? (default: the selected captions, else the one under the playhead)}",
     "graphics.upgradeToSourceGraphic": "{\"clip\":id?}",
     "file.replaceFonts": "{\"from\":family|{\"family\",\"style\"?},\"to\":family|{\"family\",\"style\"?},\"toStyle\":str?}",
