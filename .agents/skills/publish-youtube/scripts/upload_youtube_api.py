@@ -310,6 +310,33 @@ def upload_raw_video(
     return vid_id, yt_url
 
 
+def post_pinned_language_comment(youtube, video_id: str, edition_urls: dict):
+    """Posts a pinned comment on the English master linking to UA and RU voiced editions."""
+    if not edition_urls or not any(k in edition_urls for k in ("ua", "ru")):
+        return
+    comment_lines = ["🔊 Watch with full localized voice-over:"]
+    if "ua" in edition_urls:
+        comment_lines.append(f"• 🇺🇦 Українська версія: {edition_urls['ua']}")
+    if "ru" in edition_urls:
+        comment_lines.append(f"• 🇷🇺 Русская версия: {edition_urls['ru']}")
+    comment_text = "\n".join(comment_lines)
+    try:
+        body = {
+            "snippet": {
+                "videoId": video_id,
+                "topLevelComment": {
+                    "snippet": {
+                        "textOriginal": comment_text
+                    }
+                }
+            }
+        }
+        res = youtube.commentThreads().insert(part="snippet", body=body).execute()
+        print(f"  Posted language switcher comment on EN master: thread_id={res.get('id')}")
+    except Exception as e:
+        print(f"  Note: Automated language comment notice: {e}")
+
+
 def upload_option_b_multilingual(
     meta_path: Path,
     privacy_primary: str = "private",
@@ -520,6 +547,9 @@ def upload_option_b_multilingual(
             print("  Cross-linked primary EN link into RU edition description (preserving tags & recordingDate)")
         except Exception as e:
             print(f"  Note: RU cross-link warning: {e}")
+
+    # Post automated language switcher comment on EN Master
+    post_pinned_language_comment(youtube, en_id, edition_urls)
 
     meta["published_youtube_url"] = en_url
     meta["published_video_id"] = en_id

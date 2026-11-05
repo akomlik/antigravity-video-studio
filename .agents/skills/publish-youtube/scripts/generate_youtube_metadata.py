@@ -249,8 +249,8 @@ def main():
     yt_links = list(dict.fromkeys(re.findall(r"https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[A-Za-z0-9_-]+", story_body_only)))
 
     if "Nina_Pollenca_Loop" in project_name:
-        title_primary = "2026-11-02 · Escorting Nina to Zumba & Pollença Loop (21.5 mi)"
-        title_alt_1 = "Saved by Nina's Sharp Eyes! Escorting to Zumba & 21.5 mi Pollença Coastal Loop"
+        title_primary = "Saved by Nina's Sharp Eyes! Escorting to Zumba & 21.5 mi Pollença Loop"
+        title_alt_1 = "2026-11-02 · Escorting Nina to Zumba & Pollença Loop (21.5 mi)"
         title_alt_2 = "Mallorca Morning Ride: Bellevue Zumba Drop-Off, Missing Brake Pad & Badia de Pollença (21.5 mi)"
         playlists = ["Mallorca", "2026 Mallorca Cycling"]
 
