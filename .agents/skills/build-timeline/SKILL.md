@@ -28,7 +28,7 @@ Use `/build-timeline <folder>` to turn an approved `Storyboard.md` into a finish
 ---
 
 ### Step 2: The In-Chat Clickable Alignment Card (`ask_question`)
-Before synthesizing voice-over, rendering GPX maps, or building the timeline, prompt Alexander with a clean 3-part interactive question card using `ask_question`:
+Before synthesizing voice-over, rendering GPX maps, or building the timeline, prompt Alexander with **one focused question per turn** using `ask_question` (never bundle all 3 into one card, so each choice receives dedicated focus and cannot be accidentally bulk-submitted):
 
 1. **Question 1: Primary Voice-Over Language**
    - Detect the predominant language spoken in the raw video clips (e.g. Russian, Ukrainian, or English).
