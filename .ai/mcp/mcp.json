@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "filmcraft": {
+      "command": "/Users/akomlik/.local/bin/filmcraft-mcp-bridge",
+      "args": []
+    }
+  }
+}

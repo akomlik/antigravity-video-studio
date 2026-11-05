@@ -203,6 +203,28 @@ Because [`storytold/filmcraft`](https://github.com/storytold/filmcraft/releases)
 
 ---
 
+## 6c. IntelliJ IDEA: FilmCraft MCP
+
+IDEA's AI Assistant reads this project's [`.ai/mcp/mcp.json`](./.ai/mcp/mcp.json), which registers **`filmcraft`** over STDIO. It uses the existing `/Users/akomlik/.local/bin/filmcraft-mcp-bridge` launcher to control the visible FilmCraft app on `127.0.0.1:9876`. The launcher reads the private token from `~/.config/filmcraft/control_token` and runs `~/src/filmcraft/target/release/filmcraft-cli mcp --bridge 127.0.0.1:9876`. These are local installation paths; adjust the configuration if setting up another Mac.
+
+1. Start FilmCraft with its control channel enabled. With FilmCraft closed, run this in a terminal (the existing token file is required):
+   ```bash
+   (
+     mkdir -p "$HOME/Movies/Cache_And_Previews" || exit 1
+     cd "$HOME/Movies/Cache_And_Previews" || exit 1
+     export FILMCRAFT_CONTROL_TOKEN="$(tr -d '[:space:]' < "$HOME/.config/filmcraft/control_token")"
+     test -n "$FILMCRAFT_CONTROL_TOKEN" || exit 1
+     /Applications/FilmCraft.app/Contents/MacOS/FilmCraft --control 9876
+   )
+   ```
+   Keep that terminal running. If FilmCraft is already open without the control channel, save your work and quit it before relaunching with this command. Keep the token out of the MCP JSON and version control.
+2. In **Settings → Tools → AI Assistant → Model Context Protocol (MCP)**, enable the project-level **filmcraft** entry and click **Apply**. IDEA may first show an external-configuration-change notification because automatic enabling is disabled. See [JetBrains' MCP setup instructions](https://www.jetbrains.com/help/ai-assistant/configure-an-mcp-server.html).
+3. Check that the server connects and lists tools such as `doc_inspect`, `command_list`, and `command_run`. Start a new agent chat if the current chat does not pick up the added tools. A read-only check is: “Use FilmCraft MCP to inspect the current project.”
+
+The FilmCraft app must remain open with the control channel enabled for editing tools to work. A successful MCP connection alone does not establish that the desktop app is reachable. The bridge CLI and installed app were both verified at **0.17.1** during setup; keep the bridge's CLI aligned when upgrading FilmCraft.
+
+---
+
 ## 7. For BleeqUP Ranger AI Glasses Users (`bleequp-ranger-sync`)
 
 If you shoot POV cycling or outdoor footage with [**BleeqUP Ranger AI Sports Camera Glasses**](https://www.bleequp.com/products/bleequp-ranger-ai-sports-camera-glasses) alongside an iPhone and a Garmin `.gpx` computer, [`ingest_and_sync_media.py`](./.agents/skills/ingest-media/scripts/ingest_and_sync_media.py) (used by `/storyboard`, `/ingest-media`, and `/magic-movie`) automatically integrates with the companion open-source utility:
