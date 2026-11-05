@@ -15,7 +15,7 @@ Welcome to **Antigravity Video Studio v2**! This guide walks you through your co
 
 ---
 
-## 1. Quick-Start: The 5-Line Draft $\rightarrow$ `/storyboard` $\rightarrow$ `/magic-movie` Flow
+## 1. Quick-Start: The 5-Line Draft $\rightarrow$ `/storyboard` $\rightarrow$ `/build-timeline` Flow
 
 For any new ride, hike, excursion, or family event in `~/Movies/YEAR/YYYY-MM-DD_<Name>/`, you only need to write **3 to 5 lines** (either in a starter `Storyboard.md` inside the folder or directly in chat):
 
@@ -24,25 +24,33 @@ Ride escorting Nina to Bellevue Zumba, then 21.5 mi coastal loop around Pollenç
 At the gate Nina spotted my blue Reynolds front brake pad on the ground!
 Added IMG_8777.HEIC (pad on ground) & IMG_8775.HEIC (pad seated in Dura-Ace caliper).
 Include 5s of Nina's Zumba video (https://www.youtube.com/watch?v=fGveL-nza0E).
-Publish: option_b (all 3 locales: EN Private + UA/RU Unlisted).
+Publish: option_a (Single 4K master, Unlisted, with EN/UA/RU subtitles).
 Thumbnail: "SAVED AT THE GATE" with selfie + brake caliper cutout.
 ```
 
-Then run just **two commands**:
-1. **Co-Develop the Storyboard & Section 5 Spec:**
+Then run the streamlined workflow:
+1. **Stage 0: Co-Develop the Storyboard & Section 5 Spec:**
    ```text
    /storyboard ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
    ```
    - Converts `.HEIC` $\rightarrow$ `.jpg`, extracts `.proxies/` video thumbnails, syncs Garmin `.gpx` telemetry (`mi`, `ft`, `mph`), inspects live camera audio levels, drafts the full `Storyboard.md` (including **Section 5: Production & YouTube Publishing Spec** and the **Composite Thumbnail** layout), and harvests new people/places into [`my_digital_brain.md`](./my_digital_brain.md).
-2. **Build, Render & Publish End-to-End:**
+2. **Stage 1: Interactive Assembly & 4K Export:**
    ```text
-   /magic-movie ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
+   /build-timeline ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
    ```
-   - Reads Section 5 of `Storyboard.md`, renders GPX corner maps & telemetry HUD overlays (`V2`), synthesizes warm replicated voice-over (`Audio 4`) in `EN` (plus `UA` & `RU` if `option_b`), normalizes live camera dialog (`Audio 1`), balances multi-phase BGM (`Audio 2`) and PiP B-roll audio (`Audio 3`), exports clean 4K MP4(s) with **zero burned-in bottom titles**, generates/applies the `"SAVED AT THE GATE"` composite `thumbnail.jpg`, and uploads to `@akomlik` on YouTube!
+   - Presents an interactive in-chat alignment card (`ask_question`, 1 question per turn) to confirm primary language (defaulting to live spoken language), background music (with 10s audio previews via Mac speaker), and publishing mode (`option_a` unlisted by default).
+   - Enforces 100% V1 visual continuity (auto-repairing black gaps), builds the 4-track broadcast mix (`A1` camera speech boosted to `-22 dB`, `A2` music auto-ducked `-6.0 dB`, `A3` SFX, `A4` voiceover), applies 2-axis Ken Burns motion to photos, and exports clean 4K MP4 with native Dip-to-Black and synchronized outro audio fade.
+3. **Stage 2: Headless YouTube Publishing:**
+   ```text
+   /publish-youtube ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
+   ```
+   - Mandatory human review gate before upload.
+   - Uploads 4K MP4 as `unlisted` by default, sets Imperial-first metadata, clean chapters, and multilingual `.srt` subtitles (`en`, `ua` $\rightarrow$ `uk`, `ru`) with SHA-256 hash caching to save up to 1,200 API quota units.
+   - Prints ready-to-paste Facebook promo directly in chat.
 
 ---
 
-## 2. End-to-End Studio v2 Architecture Diagram (Gear 1 Express & Gear 2 Supervised)
+## 2. End-to-End Studio v2 Architecture Diagram
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -51,31 +59,19 @@ Then run just **two commands**:
 └───────────────────────────────────────────────┬───────────────────────────────────────────────┘
                                                 ▼
 ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
-│ STAGE 0: Run  /storyboard ~/Movies/2026/YYYY-MM-DD_<Name>                                     │
+│ STAGE 0: Co-Design & Lore Harvest (/storyboard ~/Movies/2026/YYYY-MM-DD_<Name>)               │
 │ • Enforces FilmCraft >= v0.17.0 (auto-syncs filmcraft-cli) & runs ranger-sync if needed       │
 │ • Converts .HEIC -> .jpg, extracts .proxies/, syncs .gpx (Imperial mi/ft/mph + 40m grade)     │
 │ • Co-develops Storyboard.md (Scenes 00..N + Section 5 Publishing & Composite Thumbnail Spec)  │
 │ • Harvests new people, landmarks & gear lore into my_digital_brain.md                         │
-└──────────────────────┬─────────────────────────────────────────────────┬──────────────────────┘
-                       │                                                 │
-       [GEAR 1: Express Auto-Pilot]                      [GEAR 2: Supervised Precision]
-                       ▼                                                 ▼
-┌─────────────────────────────────────────────┐   ┌─────────────────────────────────────────────┐
-│ Run  /magic-movie <path>                    │   │ 1. Run  /build-cut-table <path>             │
-│ • Zero-pause build straight from            │   │    • Uses Argon 95% Implicit Context Cache  │
-│   Storyboard.md (auto-logs cut_table.md)    │   │    • Generates scene-by-scene cut_table.md  │
-│                                             │   │      with beat-quantized cuts & top 3 BGM   │
-│                                             │   │    • PAUSES for human "OK" (or row tweaks   │
-│                                             │   │      / "/swap-music to #2")                 │
-│                                             │   │ 2. Run  /assemble-timeline                  │
-│                                             │   │    • Executes approved cut_table.md in      │
-│                                             │   │      FilmCraft MCP or DaVinci Resolve MCP   │
-└──────────────────────┬──────────────────────┘   └──────────────────────┬──────────────────────┘
-                       └────────────────────────┬────────────────────────┘
+└───────────────────────────────────────────────┬───────────────────────────────────────────────┘
                                                 ▼
 ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
-│ TIMELINE ENGINE & BROADCAST AUDIO MIX (assemble_engine.py + FilmCraft v0.17.0+ / Resolve)     │
-│ • V1: 4K video cuts, Ken Burns stills, 62% PiP card over blurred 4K backdrop for <1080p clips │
+│ STAGE 1: Interactive Assembly & Render (/build-timeline ~/Movies/2026/YYYY-MM-DD_<Name>)      │
+│ • In-Chat Alignment Card (ask_question, 1 question/turn): Primary Language, Music (10s audio  │
+│   preview via Mac speaker with ▶️ Listen vs ✅ Select), and Publishing Mode (option_a unlisted) │
+│ • Automatically updates Storyboard.md with your selections (zero manual file editing!)        │
+│ • V1: Continuity auto-repair (zero black gaps), 4K cuts, Ken Burns stills, 62% PiP B-roll card │
 │ • V2: Translucent GPX Corner Route Maps + conditional smoothed Telemetry HUD                  │
 │ • A1: Speech-boosted live camera dialog (-22 dB mean, 120 Hz HPF + dynaudnorm) / Ambience     │
 │ • A2: Multi-phase BGM (-7.5 dB under VO, native Essential Sound auto-ducking & +3.5 dB swell) │
@@ -85,13 +81,15 @@ Then run just **two commands**:
 └───────────────────────────────────────────────┬───────────────────────────────────────────────┘
                                                 ▼
 ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
-│ STAGE 4: YouTube Publishing (/publish-youtube or auto via /magic-movie)                       │
+│ STAGE 2: Headless YouTube Publishing (/publish-youtube ~/Movies/2026/YYYY-MM-DD_<Name>)       │
+│ • MANDATORY APPROVAL GATE: Always pauses for human review before touching YouTube API         │
 │ • Generates Imperial titles, clean 00:00 chapters, .srt tracks (en, ua -> uk, ru)             │
+│ • SHA-256 caption hash caching: Skips captions.insert if unchanged (saves 1,200 quota units)  │
 │ • Generates localized 1920x1080 Composite Thumbnails (thumbnail.jpg, _ua.jpg, _ru.jpg)        │
 │ • Uploads via YouTube Data API v3 (inherited env vars + cached OAuth token):                  │
-│   - en_only : 1 English 4K video (Private) + captions.en.srt                                  │
-│   - option_a: 1 English 4K video (Private) + EN/UA/RU titles, descs & .srts                   │
-│   - option_b: All 3 4K editions (EN Private + UA & RU Unlisted cross-linked)                  │
+│   - option_a (Default): 1 English 4K video (Unlisted) + EN/UA/RU titles, descs & .srts        │
+│   - option_b (Milestones): 3 4K editions (EN + UA/RU Unlisted) + pinned switcher comment      │
+│ • Automatically prints ready-to-copy Facebook promotional post in chat                         │
 └───────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -153,7 +151,7 @@ thumbnail:
 | **1. Pre-Processing (`/ingest-media`)** | 🟢 **Gemini 3.8 Flash** | Runs local Python (`ranger-sync`, `sips`, `ffmpeg`, GPX math) at 0% Argon cost. |
 | **2. Drafting & Co-Developing `/storyboard`** | 🟢 **Gemini 3.8 Flash** *(or Argon Medium)* | Inspects `.proxies/*_thumb.jpg` thumbnails, drafts `Storyboard.md` + Section 5, and updates `my_digital_brain.md`. |
 | **3. Curating Browser Music (`/find-music`)** | 🟢 **Gemini 3.8 Flash** | Filters open YouTube Audio Library & `creatormix.com` tabs (`< 3:00`). |
-| **4. Building & Publishing (`/magic-movie`, `/publish-youtube`)** | 🟢 **Gemini 3.8 Flash** or 🟡 **Argon Medium** | All audio mixing, GPX widget rendering, voiceover synthesis, and YouTube API uploads run via deterministic Python scripts in `.venv`. |
+| **4. Building & Publishing (`/build-timeline`, `/publish-youtube`)** | 🟢 **Gemini 3.8 Flash** | All audio mixing, GPX widget rendering, voiceover synthesis, and YouTube API uploads run via deterministic Python scripts in `.venv`. |
 
 ---
 
@@ -162,7 +160,7 @@ thumbnail:
 | Folder / File | Location | Purpose |
 | :--- | :--- | :--- |
 | **Workspace Root** | `./` | Contains `README.md`, `editing_constitution.md`, `my_digital_brain.md`, and `.venv` (`google-genai`, `google-api-python-client`, `pillow`). |
-| **Agent Skills** | `.agents/skills/` | All 10 slash-command skills (`storyboard`, `magic-movie`, `publish-youtube`, `assemble-timeline`, `build-cut-table`, `find-music`, `swap-music`, `ingest-media`, `interview-brain`, `relink-archive`). |
+| **Agent Skills** | `.agents/skills/` | All 8 slash-command skills (`storyboard`, `build-timeline`, `publish-youtube`, `find-music`, `swap-music`, `ingest-media`, `interview-brain`, `relink-archive`). |
 | **Voice Profile** | `03_Audio_Library/03_Voice_Profile/` | Reference voice audio (`alexander_komlik_reference_24k.wav`) & persistent Gemini TTS persona ID (`voice_id.json` $\rightarrow$ `voice_jntybwupjc1s`). |
 | **Curated Music Pool** | `03_Audio_Library/01_Curated_BGM/` | Reusable copyright-safe music (`[BPM]_[Mood]_[TrackName]_[Artist].mp3`). |
 | **Hot Raw Media** | `~/Movies/2026/YYYY-MM-DD_<Name>/` | Raw `.MP4`/`.MOV`/`.HEIC`/`.gpx` files, `.proxies/`, and synced `Storyboard.md`. |
@@ -171,33 +169,31 @@ thumbnail:
 
 ---
 
-## 6. Summary of All 10 Slash Commands
+## 6. Summary of Active Slash Commands
 
-| Slash Command | Purpose |
-| :--- | :--- |
-| **`/storyboard <path>`** | Stage 0: Converts `.HEIC` $\rightarrow$ `.jpg`, generates `.proxies/`, co-develops `Storyboard.md` (with Section 5 Publishing & Thumbnail Spec), and updates `my_digital_brain.md`. |
-| **`/magic-movie <path>`** | Gear 1: One-command build from `Storyboard.md` $\rightarrow$ GPX overlays + replicated VO + 4-track broadcast audio mix $\rightarrow$ clean 4K MP4(s) + optional YouTube upload. |
-| **`/publish-youtube <path>`** | Stage 4: Generates Imperial metadata, `00:00` chapters, `.srt` subtitles (`en`, `ua`, `ru`), and Composite Thumbnail, then uploads (`en_only`, `option_a`, or `option_b`) to `@akomlik`. |
-| **`/find-music [query]`** | Curates, non-reuse checks, & auto-downloads matching `< 3:00` tracks from the 134-track CreatorMix direct CDN catalog or YouTube Audio Library into `03_Audio_Library/01_Curated_BGM/`. |
-| **`/swap-music [track]`** | Swaps the background music track on `A2` while preserving all video cuts and audio ducking. |
-| **`/build-cut-table <path>`** | Gear 2: Generates the scene-by-scene Markdown Cut Table (`cut_table.md`) and waits for your `"OK"`. |
-| **`/assemble-timeline`** | Executes an approved `cut_table.md` in FilmCraft or DaVinci Resolve. |
-| **`/ingest-media <path>`** | Standalone media pre-processor (`ranger-sync`, `.HEIC` $\rightarrow$ `.jpg`, `.proxies/`, GPX sync). |
-| **`/interview-brain [topic]`** | Interactive Q&A session to enrich `my_digital_brain.md` (`1977+ B&W`, `1980–1984 University`, Mallorca/California cycling). |
-| **`/relink-archive <path>`** | Rewrites media paths in `.fcproj` & `project_manifest.json` when moving folders between `~/Movies/` and `/Volumes/Crucial-4T/Movies/`. |
+| Slash Command | Stage | Purpose |
+| :--- | :--- | :--- |
+| **`/storyboard <path>`** | Stage 0 | Converts `.HEIC` $\rightarrow$ `.jpg`, generates `.proxies/`, co-develops `Storyboard.md` (with Section 5 Publishing & Thumbnail Spec), and updates `my_digital_brain.md`. |
+| **`/build-timeline <path>`** | Stage 1 | Interactive in-chat alignment card (`ask_question`), enforces V1 visual continuity (auto-repairs black gaps), builds 4-track broadcast mix (`A1` speech, `A2` music auto-ducking, `A3` SFX, `A4` VO), applies Ken Burns motion, and exports 4K MP4. |
+| **`/publish-youtube <path>`** | Stage 2 | Mandatory human review gate, generates Imperial metadata, `00:00` chapters, hash-cached `.srt` tracks (`en`, `ua` $\rightarrow$ `uk`, `ru` saving 1,200 quota units), and Composite Thumbnail, then uploads to `@akomlik` and prints Facebook promo. |
+| **`/find-music [query]`** | Tool | Curates, non-reuse checks, & auto-downloads matching `< 3:00` tracks from the 134-track CreatorMix direct CDN catalog or YouTube Audio Library into `03_Audio_Library/01_Curated_BGM/`. |
+| **`/swap-music [track]`** | Tool | Swaps the background music track on `A2` while preserving all video cuts and audio ducking. |
+| **`/ingest-media <path>`** | Pre-Proc | Standalone media pre-processor (`ranger-sync`, `.HEIC` $\rightarrow$ `.jpg`, `.proxies/`, GPX sync). |
+| **`/interview-brain [topic]`** | Harvest | Interactive Q&A session to enrich `my_digital_brain.md` (`1977+ B&W`, `1980–1984 University`, Mallorca/California cycling). |
+| **`/relink-archive <path>`** | Archive | Rewrites media paths in `.fcproj` & `project_manifest.json` when moving folders between `~/Movies/` and `/Volumes/Crucial-4T/Movies/`. |
 
 ---
 
 ## 6b. FilmCraft Version Gate (`>= v0.17.0`), CLI Auto-Sync & MCP Capability Diffing
 
-Because [`storytold/filmcraft`](https://github.com/storytold/filmcraft/releases) ships new releases every 48–72 hours via the **ArtCraft Launcher**, Studio v2 includes an automatic version gate and capability tracker ([`check_filmcraft_env.py`](./.agents/skills/assemble-timeline/scripts/check_filmcraft_env.py) + [`00_Archive_Indexes/filmcraft_capabilities.json`](./00_Archive_Indexes/filmcraft_capabilities.json)) wired directly into `ingest_and_sync_media.py` and `assemble_engine.py`:
+Because [`storytold/filmcraft`](https://github.com/storytold/filmcraft/releases) ships new releases every 48–72 hours via the **ArtCraft Launcher**, Studio v2 includes an automatic version gate and capability tracker ([`check_filmcraft_env.py`](./.agents/skills/build-timeline/scripts/check_filmcraft_env.py) + [`00_Archive_Indexes/filmcraft_capabilities.json`](./00_Archive_Indexes/filmcraft_capabilities.json)) wired directly into `ingest_and_sync_media.py` and `assemble_engine.py`:
 
 1. **Enforces `MIN_FILMCRAFT_VERSION = "0.17.0"`:** Prevents older FilmCraft versions from running without `essentialSound.*` auto-ducking, 5x faster GPU Bokeh Blur, and serialized bridge frame rendering.
 2. **Auto-Syncs `filmcraft-cli` with `FilmCraft.app`:** Updating `FilmCraft.app` inside the ArtCraft Launcher does *not* automatically update `/opt/homebrew/bin/filmcraft-cli`. Whenever `check_filmcraft_env.py` detects that `filmcraft-cli` lags behind `FilmCraft.app`, it automatically downloads the matching `filmcraft-cli-<ver>-macos-universal.zip` from GitHub, clears macOS quarantine attributes, and ad-hoc signs the binary.
-3. **Leverages Native FilmCraft `v0.17.0+` `essentialSound.*` Auto-Ducking:** [`assemble_engine.py`](./.agents/skills/assemble-timeline/scripts/assemble_engine.py) automatically tags `A4`/`A1` voice clips as `Dialogue` (with rumble repair + `Balanced Voice` clarity EQ), `A2` tracks as `Music`, `A1` riding clips as `Ambience`, and `A3` clips as `SFX`, and runs `essentialSound.generateDucking` so background music automatically ducks `-3.5 dB` under voiceover and swells back up during pure riding!
+3. **Leverages Native FilmCraft `v0.17.0+` `essentialSound.*` Auto-Ducking:** [`assemble_engine.py`](./.agents/skills/build-timeline/scripts/assemble_engine.py) automatically tags `A4`/`A1` voice clips as `Dialogue` (with rumble repair + `Balanced Voice` clarity EQ), `A2` tracks as `Music`, `A1` riding clips as `Ambience`, and `A3` clips as `SFX`, and runs `essentialSound.generateDucking` so background music automatically ducks `-3.5 dB` under voiceover and swells back up during pure riding!
 4. **Diffs New MCP Commands on Every Upgrade:** Whenever you update FilmCraft in the ArtCraft Launcher, run:
    ```bash
-   ./.venv/bin/python .agents/skills/assemble-timeline/scripts/check_filmcraft_env.py --sync-cli
+   ./.venv/bin/python .agents/skills/build-timeline/scripts/check_filmcraft_env.py --sync-cli
    ```
    to align `filmcraft-cli` and print a diff of all newly added MCP commands against `00_Archive_Indexes/filmcraft_capabilities.json` (716 commands in `v0.17.0`).
 
@@ -241,7 +237,7 @@ The FilmCraft app must remain open with the control channel enabled for editing 
 
 ## 7. For BleeqUP Ranger AI Glasses Users (`bleequp-ranger-sync`)
 
-If you shoot POV cycling or outdoor footage with [**BleeqUP Ranger AI Sports Camera Glasses**](https://www.bleequp.com/products/bleequp-ranger-ai-sports-camera-glasses) alongside an iPhone and a Garmin `.gpx` computer, [`ingest_and_sync_media.py`](./.agents/skills/ingest-media/scripts/ingest_and_sync_media.py) (used by `/storyboard`, `/ingest-media`, and `/magic-movie`) automatically integrates with the companion open-source utility:
+If you shoot POV cycling or outdoor footage with [**BleeqUP Ranger AI Sports Camera Glasses**](https://www.bleequp.com/products/bleequp-ranger-ai-sports-camera-glasses) alongside an iPhone and a Garmin `.gpx` computer, [`ingest_and_sync_media.py`](./.agents/skills/ingest-media/scripts/ingest_and_sync_media.py) (used by `/storyboard`, `/ingest-media`, and `/build-timeline`) automatically integrates with the companion open-source utility:
 
 - **Repository:** [**`akomlik/bleequp-ranger-sync`**](https://github.com/akomlik/bleequp-ranger-sync) (`ranger-sync` CLI)
 - **What It Solves:**
