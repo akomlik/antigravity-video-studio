@@ -352,13 +352,14 @@ def upload_option_b_multilingual(
         if "🎵 МУЗИКА" in ua_base_desc or not meta.get("music_credits"):
             ua_desc = f"🇺🇦 Українська версія з авторським закадровим голосом (AI Voice Model).\n\n{ua_base_desc}"
         else:
+            ua_tags_hash = " ".join(f"#{t.replace(' ', '')}" for t in (tags or [])[:6])
             ua_desc = (
                 "🇺🇦 Українська версія з авторським закадровим голосом (AI Voice Model).\n\n"
                 f"{ua_base_desc}\n\n"
                 "━━━━━━━━━━━━━━━━━━━━\n"
                 "🎵 МУЗИКА\n"
                 + "\n".join(f"• {mc}" for mc in meta.get("music_credits", []))
-                + "\n\n#MallorcaCycling #PortDePollenca #PortDAlcudia #SanJoseBicycleClub #CyclingVlog"
+                + (f"\n\n{ua_tags_hash}" if ua_tags_hash else "")
             )
         ua_srts = {"ua": srt_files["ua"]} if "ua" in srt_files else {}
         ua_id, ua_url = upload_raw_video(
@@ -385,13 +386,14 @@ def upload_option_b_multilingual(
         if "🎵 МУЗЫКА" in ru_base_desc or not meta.get("music_credits"):
             ru_desc = f"🇷🇺 Русская версия с авторским закадровым голосом и живыми диалогами.\n\n{ru_base_desc}"
         else:
+            ru_tags_hash = " ".join(f"#{t.replace(' ', '')}" for t in (tags or [])[:6])
             ru_desc = (
                 "🇷🇺 Русская версия с авторским закадровым голосом (AI Voice Model).\n\n"
                 f"{ru_base_desc}\n\n"
                 "━━━━━━━━━━━━━━━━━━━━\n"
                 "🎵 МУЗЫКА\n"
                 + "\n".join(f"• {mc}" for mc in meta.get("music_credits", []))
-                + "\n\n#MallorcaCycling #PortDePollenca #PortDAlcudia #SanJoseBicycleClub #CyclingVlog"
+                + (f"\n\n{ru_tags_hash}" if ru_tags_hash else "")
             )
         ru_srts = {"ru": srt_files["ru"]} if "ru" in srt_files else {}
         ru_id, ru_url = upload_raw_video(
@@ -471,39 +473,51 @@ def upload_option_b_multilingual(
     en_link_note_ru = f"\n\n━━━━━━━━━━━━━━━━━━━━\n🇺🇸 Главное видео с английской дорожкой: {en_url}"
     if "ua" in edition_urls:
         try:
-            youtube.videos().update(
-                part="snippet",
-                body={
-                    "id": edition_urls["ua"].split("v=")[-1],
-                    "snippet": {
-                        "title": locs.get("ua", {}).get("title", meta["title"])[:100],
-                        "description": ua_desc + en_link_note_ua,
-                        "categoryId": str(cat_id),
-                        "defaultLanguage": "uk",
-                        "defaultAudioLanguage": "uk",
-                    },
+            update_body_ua = {
+                "id": edition_urls["ua"].split("v=")[-1],
+                "snippet": {
+                    "title": locs.get("ua", {}).get("title", meta["title"])[:100],
+                    "description": ua_desc + en_link_note_ua,
+                    "tags": tags + ["Майорка", "Українська озвучка"],
+                    "categoryId": str(cat_id),
+                    "defaultLanguage": "uk",
+                    "defaultAudioLanguage": "uk",
                 },
+            }
+            parts_ua = ["snippet"]
+            if rec_date_iso:
+                update_body_ua["recordingDetails"] = {"recordingDate": rec_date_iso}
+                parts_ua.append("recordingDetails")
+            youtube.videos().update(
+                part=",".join(parts_ua),
+                body=update_body_ua,
             ).execute()
-            print("  Cross-linked primary EN link into UA edition description")
+            print("  Cross-linked primary EN link into UA edition description (preserving tags & recordingDate)")
         except Exception as e:
             print(f"  Note: UA cross-link warning: {e}")
 
     if "ru" in edition_urls:
         try:
-            youtube.videos().update(
-                part="snippet",
-                body={
-                    "id": edition_urls["ru"].split("v=")[-1],
-                    "snippet": {
-                        "title": locs.get("ru", {}).get("title", meta["title"])[:100],
-                        "description": ru_desc + en_link_note_ru,
-                        "categoryId": str(cat_id),
-                        "defaultLanguage": "ru",
-                        "defaultAudioLanguage": "ru",
-                    },
+            update_body_ru = {
+                "id": edition_urls["ru"].split("v=")[-1],
+                "snippet": {
+                    "title": locs.get("ru", {}).get("title", meta["title"])[:100],
+                    "description": ru_desc + en_link_note_ru,
+                    "tags": tags + ["Майорка", "Русская озвучка"],
+                    "categoryId": str(cat_id),
+                    "defaultLanguage": "ru",
+                    "defaultAudioLanguage": "ru",
                 },
+            }
+            parts_ru = ["snippet"]
+            if rec_date_iso:
+                update_body_ru["recordingDetails"] = {"recordingDate": rec_date_iso}
+                parts_ru.append("recordingDetails")
+            youtube.videos().update(
+                part=",".join(parts_ru),
+                body=update_body_ru,
             ).execute()
-            print("  Cross-linked primary EN link into RU edition description")
+            print("  Cross-linked primary EN link into RU edition description (preserving tags & recordingDate)")
         except Exception as e:
             print(f"  Note: RU cross-link warning: {e}")
 
