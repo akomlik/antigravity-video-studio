@@ -18,7 +18,14 @@ You can invoke `/magic-movie` on a folder and optionally pass inline overrides (
 1. **Step 1 (Enforce FilmCraft >= v0.17.0 & Ensure Ingestion + `Storyboard.md`):**
    - Run `python3 ./.agents/skills/assemble-timeline/scripts/check_filmcraft_env.py` to enforce `MIN_FILMCRAFT_VERSION = "0.17.0"`, auto-sync `filmcraft-cli` if `FilmCraft.app` was updated in ArtCraft Launcher, check for newer upstream releases on `storytold/filmcraft`, and diff any newly added MCP commands against `00_Archive_Indexes/filmcraft_capabilities.json`.
    - If `project_manifest.json` or `Storyboard.md` does not yet exist, run `ingest_and_sync_media.py` to convert `.HEIC` -> `.jpg`, generate `.proxies/`, and draft `Storyboard.md`.
-2. **Step 2 (Fetch Linked YouTube Flashbacks & Render GPX Overlays):**
+2. **Step 1.5 (Pre-Assembly Creative Checkpoint — 1-Turn Quick Align):**
+   - Before launching VO synthesis, GPX rendering, and timeline assembly, present a concise 3-point creative brief to Alexander:
+     1. **Primary Voice-Over Language:** Default to the language spoken in raw video clips (e.g. `Russian` or `Ukrainian` for candid conversations with Nina/friends, `English` for English-spoken rides). Note if overridden for a specific target audience (e.g. `English` for US cycling channel / SJBC teammates).
+     2. **Selected Music Track:** State the curated #1 track from `03_Audio_Library/01_Curated_BGM/` (Title, Genre, BPM, Mood) and list backup Track #2.
+     3. **Publishing Mode:** State target mode (Default: `Option A` — 1 clean 4K master, `unlisted`, with `EN`, `UA`, `RU` `.srt` subtitles).
+   - Prompt: **"Ready to assemble timeline with [Language] voiceover, Track #1: [MusicTitle], and Option A publishing? Reply 'OK' to proceed, or specify any swap (e.g. 'swap music to #2', 'use English voiceover')."**
+   - Once Alexander replies "OK" or "proceed", execute Steps 2 through 4 seamlessly on auto-pilot!
+3. **Step 2 (Fetch Linked YouTube Flashbacks & Render GPX Overlays):**
    - If `Storyboard.md` links an `@akomlik` YouTube URL, pull the slice via `fetch_yt_broll_clip.py`. If the clip is low-resolution (`< 720p`), render it as a `65%` centered **Picture-in-Picture (PiP) card** with a subtle white border over a soft-blurred `16:9` background (`low_res_broll_mode: pip_card`).
    - If a `.gpx` file is present, run `render_gpx_widgets.py` to generate:
      - Top-right **GPX Corner Route Map** (`map_*.png`, `26%` width, `82%` opacity, Imperial `mi`/`ft` header, cyan full track + orange progress trace + glowing current-position dot) placed on `V2`.

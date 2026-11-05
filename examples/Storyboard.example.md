@@ -76,6 +76,7 @@ gpx_telemetry_hud: "auto"             # "auto" (only when 40m-grade >= 4%, speed
 low_res_broll_mode: "pip_card"        # "pip_card" (62% framed inset over blurred 4K backdrop for <1080p clips) | "full"
 
 # Audio & Voice-Over Knobs
+primary_audio_language: "auto"        # "auto" (defaults to predominant language spoken in raw clips; set to "en", "ua", or "ru" if target audience differs)
 voiceover_persona: "voice_jntybwupjc1s" # Replicated from Alexander's Zero-T Performance Self-Talk.m4a
 voiceover_gain_db: -0.5               # Matches normalized live speech (-19 dB mean)
 live_dialog_boost: "auto"             # Normalizes quiet BleeqUP camera speech (<-35 dB) to -22 dB mean & strips overlapping SFX
