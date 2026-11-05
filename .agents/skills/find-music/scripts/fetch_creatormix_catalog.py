@@ -204,9 +204,26 @@ def download_and_import_track(track: dict, category: str = None, bpm: int = None
         return dest_path
 
     print(f"Downloading [{track['genre'].upper()}] '{track['title']}' ({track['duration_formatted']}) from CreatorMix...")
-    req = urllib.request.Request(track["stream_url"], headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=15) as resp, dest_path.open("wb") as out_f:
-        out_f.write(resp.read())
+    stream_url = track.get("stream_url", "")
+    try:
+        req = urllib.request.Request(stream_url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = resp.read()
+    except Exception:
+        # Re-fetch album to get fresh signed token
+        album_id = track.get("album_id")
+        if album_id:
+            fresh_tracks = fetch_album_tracks(album_id)
+            for ft in fresh_tracks:
+                if ft["title"].strip().lower() == track["title"].strip().lower():
+                    stream_url = ft["stream_url"]
+                    break
+        req = urllib.request.Request(stream_url, headers=HEADERS)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = resp.read()
+
+    with dest_path.open("wb") as out_f:
+        out_f.write(data)
 
     # Update music_catalog.json index
     catalog_json = BGM_ROOT / "music_catalog.json"

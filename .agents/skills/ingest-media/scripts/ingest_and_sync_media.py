@@ -590,7 +590,7 @@ def compute_editorial_guidance(item_info, genre: str, gpx_points: list):
 
     is_interesting_telemetry = bool(
         item_info["media_type"] == "video"
-        and (max_spd_mph >= 25.0 or abs(max_grad_pct) >= 4.0 or max_pwr >= 220 or max_hr >= 135)
+        and (max_spd_mph >= 25.0 or abs(max_grad_pct) >= 4.0 or max_pwr >= 150 or max_hr >= 135)
     )
 
     return {

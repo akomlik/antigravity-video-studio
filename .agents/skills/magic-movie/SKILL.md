@@ -38,5 +38,12 @@ You can invoke `/magic-movie` on a folder and optionally pass inline overrides (
      - `C1 (Captions)`: Stored in `.fcproj` for `.srt` extraction, with `enabled: False` and `--settings '{"burnCaptions": false}'` so the exported 4K video has **zero burned-in bottom titles**.
    - Export `~/Movies/Exports/YEAR/<project_name>.mp4` (`3840x2160`, `H.264`, `AAC 192k`) and refresh the live FilmCraft GUI via `file.open`.
    - If `publishing_mode` is `option_b`, build the localized `UA` and `RU` master audio stems (`full_audio_ua.m4a`, `full_audio_ru.m4a`) and losslessly remux them with the 4K video stream (`ffmpeg -c:v copy`, `0.2s` each) into `<project_name>_UA.mp4` and `<project_name>_RU.mp4`.
-5. **Step 5 (Generate Metadata, Composite Thumbnail & Publish to YouTube):**
-   - Run `generate_youtube_metadata.py` and `upload_youtube_api.py` (inheriting `GEMINI_API_KEY` / OAuth credentials from the shell environment or cached `~/.config/antigravity_youtube/token.json`) according to `Section 5` (`en_only`, `option_a`, or `option_b` via `--option-b`), applying `thumbnail.jpg` (`thumbnail_ua.jpg`, `thumbnail_ru.jpg`) to all uploaded editions.
+5. **Step 5 (Generate Metadata, Composite Thumbnail & Social Copy — Pause for Upload Approval):**
+   - Run `generate_youtube_metadata.py` to produce:
+     - `youtube_metadata.json` (Imperial stats, hook-first title, chapters, and localized descriptions)
+     - `thumbnail.jpg`, `thumbnail_ua.jpg`, `thumbnail_ru.jpg`
+     - `facebook_promo.md` (Copy-ready Facebook promotional packages: Option 1 Curiosity Hook, Direct Story, and Bilingual)
+   - Present the release summary, hook-first title, thumbnail, and Facebook promotional copy in the chat response.
+   - **MANDATORY USER CONFIRMATION (NEVER AUTO-UPLOAD):** Never call `upload_youtube_api.py` automatically without asking Alexander first! Always pause and ask:
+     *"4K MP4 export complete and metadata generated. Would you like to upload to YouTube now (`--option-b` / `--privacy unlisted`)?"*
+   - Only run `upload_youtube_api.py` when Alexander explicitly confirms.
