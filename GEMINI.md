@@ -27,6 +27,9 @@ Welcome to **Alexander Komlik's (`@akomlik`) Universal AI Video Studio**. Whenev
 | **Tier 3: Cold External Archive (`Crucial-4T`)** | `/Volumes/Crucial-4T/Movies/YEAR/` & `/Volumes/Crucial-4T/Pictures/` | Historical video projects and 32,815+ Lightroom archival photos (relinked in 10ms via `/relink-archive`). |
 | **Curated Free Music Pool (`03_Audio_Library/01_Curated_BGM/`)** | `03_Audio_Library/01_Curated_BGM/` | Zero-cost tracks (< 3:00 duration) curated from **YouTube Audio Library** and **Creator Mix (`creatormix.com`)**, named `[BPM]_[Mood]_[TrackName]_[Artist].mp3` across `01_Rolling_Cadence`, `02_Scenic_Wonder`, `03_Punchy_Climbs`, `04_Warm_Social_And_Retro`, and `05_Short_Transitions`. |
 
+> **Global Storage Config (`studio.conf`) & Zero-Absolute-Path Law:**
+> All storage locations, external media drives, and catalog paths are centrally defined in [`studio.conf`](./studio.conf) and dynamically resolved by [`studio_config.py`](./studio_config.py). All files, manifests, and catalogs inside the repository **MUST strictly use relative paths** (`path`, `relpath`) against `STUDIO_ROOT` or the active media directory. Never freeze machine-specific absolute paths (`/Users/...`) into project files, manifests, or JSON catalogs!
+
 ---
 
 ## 3. Available Slash-Command Skills (`.agents/skills/`)

@@ -19,10 +19,10 @@ my_digital_brain.md
 !00_Archive_Indexes/.placeholder
 !00_Archive_Indexes/filmcraft_capabilities.json
 
-# Audio Library (keep directory structure & SFX catalog.json, ignore MP3/WAV/Voice samples)
+# Audio Library (keep directory structure & catalogs, ignore MP3/WAV/Voice samples)
 03_Audio_Library/01_Curated_BGM/*/*
 !03_Audio_Library/01_Curated_BGM/*/.placeholder
-03_Audio_Library/01_Curated_BGM/music_catalog.json
+!03_Audio_Library/01_Curated_BGM/music_catalog.json
 
 03_Audio_Library/02_SFX/*/*
 !03_Audio_Library/02_SFX/*/.placeholder

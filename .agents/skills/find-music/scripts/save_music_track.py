@@ -88,7 +88,8 @@ def main():
 
     entry = {
         "filename": new_filename,
-        "abspath": str(dest_path.resolve()),
+        "path": f"03_Audio_Library/01_Curated_BGM/{args.category}/{new_filename}",
+        "relpath": f"{args.category}/{new_filename}",
         "category": args.category,
         "bpm": args.bpm,
         "beat_interval_s": round(60.0 / max(args.bpm, 1), 3),

@@ -189,6 +189,8 @@ def assign_playlists_and_captions(youtube, vid_id: str, meta: dict, meta_path: P
     for lang, srt_path in meta.get("srt_files", {}).items():
         yt_lang = YT_WIRE_LANG.get(lang, lang)
         srt_file = Path(srt_path)
+        if not srt_file.is_absolute() and meta_path:
+            srt_file = meta_path.parent / srt_path
         if srt_file.exists():
             current_hash = hashlib.sha256(srt_file.read_bytes()).hexdigest()
             cache_key = f"{vid_id}:{yt_lang}"
@@ -412,7 +414,11 @@ def upload_option_b_multilingual(
     youtube = get_youtube_service()
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     primary_mp4 = Path(meta["video_file"])
+    if not primary_mp4.is_absolute():
+        primary_mp4 = meta_path.parent / primary_mp4
     thumb_path = Path(meta["thumbnail_file"]) if meta.get("thumbnail_file") else None
+    if thumb_path and not thumb_path.is_absolute():
+        thumb_path = meta_path.parent / thumb_path
     playlists = meta.get("playlists", [])
     tags = meta.get("tags", [])
     cat_id = meta.get("category_id", "17")
@@ -680,16 +686,23 @@ def main():
         )
         return
 
+    single_mp4 = Path(meta["video_file"])
+    if not single_mp4.is_absolute():
+        single_mp4 = meta_path.parent / single_mp4
+    single_thumb = Path(meta["thumbnail_file"]) if meta.get("thumbnail_file") else None
+    if single_thumb and not single_thumb.is_absolute():
+        single_thumb = meta_path.parent / single_thumb
+
     vid_id, yt_url = upload_raw_video(
         get_youtube_service(),
-        video_path=Path(meta["video_file"]),
+        video_path=single_mp4,
         title=meta["title"],
         description=meta["description"],
         privacy=args.privacy or meta.get("privacy_status", "unlisted"),
         default_lang="en",
         tags=meta.get("tags", []),
         category_id=meta.get("category_id", "17"),
-        thumbnail_path=Path(meta["thumbnail_file"]) if meta.get("thumbnail_file") else None,
+        thumbnail_path=single_thumb,
         playlists=meta.get("playlists", []),
         srt_files=meta.get("srt_files", {}),
         localizations=meta.get("localizations", {}),

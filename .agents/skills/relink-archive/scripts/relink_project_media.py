@@ -13,8 +13,16 @@ import shutil
 import sys
 from pathlib import Path
 
-LOCAL_MOVIES_ROOT = str(Path(os.environ.get("LOCAL_MOVIES_ROOT", "~/Movies")).expanduser())
-EXTERNAL_MOVIES_ROOT = os.environ.get("EXTERNAL_MOVIES_ROOT", "/Volumes/Crucial-4T/Movies")
+try:
+    STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+    if str(STUDIO_ROOT) not in sys.path:
+        sys.path.insert(0, str(STUDIO_ROOT))
+    import studio_config
+    LOCAL_MOVIES_ROOT = str(studio_config.get_hot_media_dir())
+    EXTERNAL_MOVIES_ROOT = str(studio_config.get_cold_media_dir())
+except Exception:
+    LOCAL_MOVIES_ROOT = str(Path(os.environ.get("LOCAL_MOVIES_ROOT", "~/Movies")).expanduser())
+    EXTERNAL_MOVIES_ROOT = os.environ.get("EXTERNAL_MOVIES_ROOT", "/Volumes/Crucial-4T/Movies")
 
 
 def relink_json_file(file_path: Path, old_prefix: str, new_prefix: str):

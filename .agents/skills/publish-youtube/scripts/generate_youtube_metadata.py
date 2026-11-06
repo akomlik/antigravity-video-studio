@@ -444,15 +444,15 @@ def main():
     if en_cues_to_write:
         en_srt = proj_dir / "captions.en.srt"
         write_srt(en_cues_to_write, en_srt)
-        srt_files["en"] = str(en_srt)
+        srt_files["en"] = "captions.en.srt"
     if srt_ua:
         ua_srt = proj_dir / "captions.ua.srt"
         write_srt(srt_ua, ua_srt)
-        srt_files["ua"] = str(ua_srt)
+        srt_files["ua"] = "captions.ua.srt"
     if srt_ru:
         ru_srt = proj_dir / "captions.ru.srt"
         write_srt(srt_ru, ru_srt)
-        srt_files["ru"] = str(ru_srt)
+        srt_files["ru"] = "captions.ru.srt"
 
     if narration_scripts:
         (proj_dir / "narration_scripts.json").write_text(
@@ -484,8 +484,8 @@ def main():
     metadata = {
         "project_name": project_name,
         "recording_date": recording_date_iso,
-        "video_file": str(mp4_path),
-        "thumbnail_file": str(thumb_path) if thumb_ok else None,
+        "video_file": mp4_path.name,
+        "thumbnail_file": thumb_path.name if thumb_ok else None,
         "thumbnail_timestamp_sec": args.thumb_sec,
         "title": title_primary,
         "title_alternatives": [title_alt_1, title_alt_2],

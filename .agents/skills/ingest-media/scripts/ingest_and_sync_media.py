@@ -111,7 +111,7 @@ def generate_video_proxy_thumb(video_path: Path, proxy_dir: Path, duration_s: fl
                     check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
                 ql_png.unlink(missing_ok=True)
-    return str(thumb_path) if thumb_path.exists() else None
+    return f".proxies/{thumb_path.name}" if thumb_path.exists() else None
 
 
 def parse_iso6709(iso_str: str):
@@ -209,7 +209,7 @@ def probe_media_file(filepath: Path, proxy_dir: Path):
     ext = filepath.suffix.lower()
     info = {
         "filename": filepath.name,
-        "abspath": str(filepath.resolve()),
+        "relpath": filepath.name,
         "media_type": "video" if ext in (".mp4", ".mov") else "still",
         "source_device": "unknown",
         "width": 0,
@@ -356,7 +356,7 @@ def ensure_or_migrate_storyboard(project_dir: Path, catalog_dir: Path, genre: st
 
     # Always keep a synced copy inside 04_Project_Catalog/YEAR/<project_name>/Storyboard.md
     shutil.copy2(storyboard_path, catalog_dir / "Storyboard.md")
-    return str(storyboard_path), status
+    return "Storyboard.md", status
 
 
 def detect_genre(requested_genre: str, gpx_points: list, media_items: list):
@@ -425,9 +425,15 @@ def recommend_music_tracks(genre: str, studio_root: Path):
                 beat_interval_s = round(60.0 / max(bpm, 1), 3)
                 parent_name = f.parent.name
                 priority = 1 if parent_name == preferred_subs[0] else (2 if parent_name in preferred_subs else 3)
+                try:
+                    rel_to_studio = str(f.relative_to(studio_root))
+                except Exception:
+                    rel_to_studio = f"03_Audio_Library/01_Curated_BGM/{parent_name}/{f.name}"
+
                 candidates.append({
                     "filename": f.name,
-                    "abspath": str(f.resolve()),
+                    "path": rel_to_studio,
+                    "relpath": f"{parent_name}/{f.name}",
                     "mood_folder": parent_name,
                     "mood_tag": mood_tag,
                     "track_title": track_title,
@@ -448,7 +454,8 @@ def recommend_music_tracks(genre: str, studio_root: Path):
                 for om in online_matches:
                     candidates.append({
                         "filename": f"[ONLINE] {om['title']} ({om['duration_formatted']}) - {om['genre'].upper()}",
-                        "abspath": None,
+                        "path": None,
+                        "relpath": None,
                         "mood_folder": preferred_subs[0],
                         "mood_tag": om["genre"].capitalize(),
                         "track_title": om["title"],
@@ -662,14 +669,14 @@ def main():
     manifest = {
         "project_name": project_dir.name,
         "year_bucket": year_folder,
-        "raw_media_folder": str(project_dir),
-        "catalog_project_dir": str(catalog_dir),
+        "raw_media_folder": f"{year_folder}/{project_dir.name}",
+        "catalog_project_dir": f"04_Project_Catalog/{year_folder}/{project_dir.name}",
         "storyboard_file": storyboard_file,
         "storyboard_status": storyboard_status,
-        "proxy_thumbnails_dir": str(proxy_dir),
+        "proxy_thumbnails_dir": ".proxies",
         "detected_genre": genre,
         "gpx_file": gpx_files[0].name if gpx_files else None,
-        "music_library_root": str(studio_root / "03_Audio_Library" / "01_Curated_BGM"),
+        "music_library_root": "03_Audio_Library/01_Curated_BGM",
         "recommended_music_candidates": recommend_music_tracks(genre, studio_root),
         "project_summary": {
             "total_distance_mi": round(total_km * 0.621371, 1),

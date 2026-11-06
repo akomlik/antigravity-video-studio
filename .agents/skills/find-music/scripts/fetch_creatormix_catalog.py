@@ -236,7 +236,8 @@ def download_and_import_track(track: dict, category: str = None, bpm: int = None
 
     entry = {
         "filename": dest_name,
-        "abspath": str(dest_path.resolve()),
+        "path": f"03_Audio_Library/01_Curated_BGM/{target_category}/{dest_name}",
+        "relpath": f"{target_category}/{dest_name}",
         "category": target_category,
         "bpm": target_bpm,
         "beat_interval_s": round(60.0 / max(target_bpm, 1), 3),
