@@ -199,3 +199,13 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
         - **Description:** Clean Russian story description highlighting landmarks, cafe stops, and route lore.
         - **Tags:** `Mallorca, cycling, roadbike, BleeqUP, video, <Village>` (comma-separated for one-click Flickr tagging).
         - **Recommended Album:** e.g., `2026 Fall Mallorca Cycling` in Lightroom Publishing Service / Flickr.
+
+### ARTICLE XI: SOCIAL MEDIA & COMMUNITY PROMOTION (FACEBOOK "MALLORCA CYCLING" STANDARD)
+
+- **The Mallorca Cycling Group Ecosystem (73.4K Members — Rules & Culture):**
+    - **Strict Anti-Advertising Rule:** The group rule explicitly states: *"PLEASE DON'T ADVERTISE ANYTHING HERE. Set up for people that love cycling and live in or visit Mallorca."* Commercial promotion, spammy channel promotion, or generic video dumps get flagged or ignored.
+    - **Community Currency = Authentic Local Road Knowledge & Route Lore:** Posts that generate massive engagement (e.g., lesser-known climbs like Coll de Sant Llorenç / Cala Tuent, hotel and seasonal closures, bakery stops, quiet rural *camís*) share **practical road intel, surface conditions, cafe/bakery gems, and seasonal reality (morning temperature, wind, autumn calm)**.
+    - **Conversational Peer Tone:** Write as a fellow rider based on the island sharing a discovery or a good ride, never as a self-promoting influencer. Ask an engaging question at the end (e.g., favorite cafe stop in the area, hidden alternative lanes).
+    - **Facebook Algorithm Best Practice:** Attach 1–3 authentic photos (e.g., the bakery display, the village fountain, the bike at the cafe), share the route story with distance/elevation, and put the YouTube link in the **First Comment** (`link in first comment 👇`) so Facebook doesn't penalize post reach.
+- **Dedicated FB Promo Generator Option 4 (`mallorca_community`):**
+    - Every cycling project located on Mallorca (`GPX` coordinates in Mallorca bounding box) MUST generate a dedicated **Option 4: Mallorca Cycling Facebook Group Edition** in `facebook_promo.md` alongside Options 1–3.

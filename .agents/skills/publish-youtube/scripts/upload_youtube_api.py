@@ -251,6 +251,19 @@ def infer_recording_date_iso(meta: dict, video_path: Path | None = None) -> str 
     return None
 
 
+def sanitize_yt_description(desc: str, max_bytes: int = 4850) -> str:
+    """Strips '<'/'>' forbidden by YouTube API and caps UTF-8 byte length below 5,000 bytes."""
+    cleaned = (desc or "").replace("<", "‹").replace(">", "›")
+    encoded = cleaned.encode("utf-8")
+    if len(encoded) <= max_bytes:
+        return cleaned
+    truncated = encoded[:max_bytes].decode("utf-8", errors="ignore")
+    last_nl = truncated.rfind("\n")
+    if last_nl > max_bytes // 2:
+        truncated = truncated[:last_nl]
+    return truncated.rstrip()
+
+
 def update_existing_video_via_api(meta_path: Path, vid_id: str, skip_playlists: bool = False, skip_captions: bool = False):
     youtube = get_youtube_service()
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
@@ -262,7 +275,7 @@ def update_existing_video_via_api(meta_path: Path, vid_id: str, skip_playlists: 
         "id": vid_id,
         "snippet": {
             "title": meta["title"][:100],
-            "description": meta["description"],
+            "description": sanitize_yt_description(meta["description"]),
             "tags": meta.get("tags", []),
             "categoryId": str(meta.get("category_id", "17")),
             "defaultLanguage": "en",
@@ -272,7 +285,10 @@ def update_existing_video_via_api(meta_path: Path, vid_id: str, skip_playlists: 
     parts = ["snippet"]
     if localizations:
         body["localizations"] = {
-            YT_WIRE_LANG.get(lang, lang): {"title": loc["title"][:100], "description": loc["description"]}
+            YT_WIRE_LANG.get(lang, lang): {
+                "title": loc["title"][:100],
+                "description": sanitize_yt_description(loc["description"]),
+            }
             for lang, loc in localizations.items()
         }
         parts.append("localizations")
@@ -315,7 +331,7 @@ def upload_raw_video(
     body = {
         "snippet": {
             "title": title[:100],
-            "description": description,
+            "description": sanitize_yt_description(description),
             "tags": tags or [],
             "categoryId": str(category_id),
             "defaultLanguage": default_lang,
@@ -329,7 +345,10 @@ def upload_raw_video(
     parts = ["snippet", "status"]
     if localizations:
         body["localizations"] = {
-            YT_WIRE_LANG.get(lang, lang): {"title": loc["title"][:100], "description": loc["description"]}
+            YT_WIRE_LANG.get(lang, lang): {
+                "title": loc["title"][:100],
+                "description": sanitize_yt_description(loc["description"]),
+            }
             for lang, loc in localizations.items()
         }
         parts.append("localizations")
@@ -688,7 +707,12 @@ def main():
 
     single_mp4 = Path(meta["video_file"])
     if not single_mp4.is_absolute():
-        single_mp4 = meta_path.parent / single_mp4
+        candidate = meta_path.parent / single_mp4
+        if not candidate.exists():
+            exports_candidate = Path("~/Movies/Exports").expanduser() / meta_path.parent.parent.name / single_mp4.name
+            if exports_candidate.exists():
+                candidate = exports_candidate
+        single_mp4 = candidate
     single_thumb = Path(meta["thumbnail_file"]) if meta.get("thumbnail_file") else None
     if single_thumb and not single_thumb.is_absolute():
         single_thumb = meta_path.parent / single_thumb

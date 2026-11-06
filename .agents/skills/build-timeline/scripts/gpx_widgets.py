@@ -178,7 +178,7 @@ def render_corner_map_widget(
     draw.ellipse([cx - 13, cy - 13, cx + 13, cy + 13], fill=(255, 71, 43, 255), outline=(255, 255, 255, 255), width=4)
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
-    img.save(out_png, "PNG")
+    img.save(out_png, "PNG", compress_level=1)
     return out_png
 
 
@@ -226,8 +226,40 @@ def render_telemetry_hud_widget(
         draw.text((cx, y0 + 132), unit, font=font_unit, fill=accent_col)
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
-    img.save(out_png, "PNG")
+    img.save(out_png, "PNG", compress_level=1)
     return out_png
+
+
+def render_live_telemetry_hud_series(
+    gpx_points: list[dict],
+    start_idx: int,
+    timeline_start_s: float,
+    dur_s: float,
+    out_dir: Path,
+    step_s: float = 1.0,
+    canvas_size: tuple[int, int] = (3840, 2160),
+) -> list[tuple[str, float, float]]:
+    """
+    Renders a 1 Hz (1-second step) series of 4K transparent Telemetry HUD PNGs from gpx_points
+    starting at start_idx, so Speed (MPH), Power (W), Heart Rate (BPM), and Grade (%) tick live
+    every second on screen. Returns a list of (relative_filename, timeline_start_s, step_dur_s).
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    entries: list[tuple[str, float, float]] = []
+    t = 0.0
+    sec_step = 0
+    while t < dur_s - 1e-4:
+        cur_dur = min(step_s, round(dur_s - t, 2))
+        tl_s = round(timeline_start_s + t, 2)
+        idx = min(max(start_idx + sec_step, 0), len(gpx_points) - 1)
+        pt = gpx_points[idx]
+        fname = f"hud_{int(round(tl_s * 10)):04d}.png"
+        out_png = out_dir / fname
+        render_telemetry_hud_widget(pt, out_png, canvas_size=canvas_size)
+        entries.append((f"{out_dir.name}/{fname}", tl_s, cur_dur))
+        t = round(t + cur_dur, 2)
+        sec_step += max(1, int(round(step_s)))
+    return entries
 
 
 ACTIVITY_SPEED_THRESHOLDS = {

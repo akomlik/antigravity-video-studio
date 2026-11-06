@@ -115,37 +115,53 @@ def ensure_custom_voice(client) -> str:
     return created_voice.id
 
 
-def synthesize_narration(text: str, out_wav: Path, voice_id: str, client):
-    """Synthesizes warm conversational narration using `gemini-3.8-flash-tts` and normalizes to 48kHz stereo WAV."""
+def synthesize_narration(text: str, out_wav: Path, voice_id: str, client, lang: str = "en"):
+    """Synthesizes warm conversational narration using `gemini-3.8-flash-tts` (v1beta) and normalizes to 48kHz stereo WAV."""
     import subprocess
-    interaction = client.interactions.create(
-        model="gemini-3.8-flash-tts",
-        input=[
-            {
-                "type": "user_input",
-                "content": [
+    import time
+    out_wav.parent.mkdir(parents=True, exist_ok=True)
+    raw_wav = out_wav.with_suffix(".raw24k.wav")
+
+    last_err = None
+    for attempt in range(3):
+        try:
+            interaction = client.interactions.create(
+                model="gemini-3.8-flash-tts",
+                input=[
                     {
-                        "type": "text",
-                        "text": text,
-                        "annotations": [
+                        "type": "user_input",
+                        "content": [
                             {
-                                "type": "speech_metadata",
-                                "style": "warm, upbeat, natural conversational storytelling pace",
+                                "type": "text",
+                                "text": text,
+                                "annotations": [
+                                    {
+                                        "type": "speech_metadata",
+                                        "style": "warm, upbeat, natural conversational storytelling pace",
+                                    }
+                                ],
                             }
                         ],
                     }
                 ],
-            }
-        ],
-        response_format={"type": "audio"},
-        generation_config={"speech_config": [{"voice": voice_id}]},
-    )
-    out_wav.parent.mkdir(parents=True, exist_ok=True)
-    raw_wav = out_wav.with_suffix(".raw24k.wav")
-    raw_wav.write_bytes(base64.b64decode(interaction.output_audio.data))
+                response_format={"type": "audio"},
+                generation_config={"speech_config": [{"voice": voice_id}]},
+            )
+            raw_wav.write_bytes(base64.b64decode(interaction.output_audio.data))
+            last_err = None
+            break
+        except Exception as e:
+            last_err = e
+            print(f"  [Attempt {attempt + 1}/3] Gemini TTS retry ({e})...")
+            time.sleep(2.0 * (attempt + 1))
+
+    if last_err is not None:
+        raise RuntimeError(f"Gemini 3.8 Flash TTS failed after 3 attempts: {last_err}")
+
+    ffmpeg_bin = "/opt/homebrew/bin/ffmpeg" if os.path.exists("/opt/homebrew/bin/ffmpeg") else "ffmpeg"
     subprocess.run(
         [
-            "/opt/homebrew/bin/ffmpeg", "-y",
+            ffmpeg_bin, "-y",
             "-i", str(raw_wav),
             "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
             "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le",
@@ -180,21 +196,29 @@ def main():
         raise FileNotFoundError(f"narration_scripts.json not found in {proj_dir}. Run generate_youtube_metadata.py first.")
 
     scripts = json.loads(scripts_path.read_text(encoding="utf-8"))
-    client = genai.Client()
+    # Always use v1beta so gemini-3.8-flash-tts and custom voice_id are available across google-genai versions
+    client = genai.Client(http_options={"api_version": "v1beta"})
     voice_id = args.voice_id or ensure_custom_voice(client)
 
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    tasks = []
     for lang, val in scripts.items():
         if isinstance(val, dict):
             for seg_key, seg_text in val.items():
                 if only_set and f"{lang}:{seg_key}" not in only_set and lang not in only_set:
                     continue
                 out_wav = proj_dir / f"voiceover_{lang}_{seg_key}.wav"
-                synthesize_narration(seg_text, out_wav, voice_id, client)
+                tasks.append((seg_text, out_wav, lang))
         else:
             if only_set and lang not in only_set:
                 continue
             out_wav = proj_dir / f"voiceover_{lang}.wav"
-            synthesize_narration(val, out_wav, voice_id, client)
+            tasks.append((val, out_wav, lang))
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futs = [pool.submit(synthesize_narration, t_txt, t_wav, voice_id, client, t_lang) for t_txt, t_wav, t_lang in tasks]
+        for fut in as_completed(futs):
+            fut.result()
 
 
 if __name__ == "__main__":

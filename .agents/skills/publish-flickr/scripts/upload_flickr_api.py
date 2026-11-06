@@ -262,9 +262,34 @@ def upload_video_to_flickr(
         "content_type": "3",  # 3 = Video / Other
     }
 
+    # Flickr's upload endpoint non-standardly includes multipart form fields (except 'photo')
+    # in the OAuth 1.0a signature base string. Sign 'data' as form-urlencoded first to get the
+    # exact Authorization header Flickr expects, then send the multipart request with requests.post.
+    import requests
+    from oauthlib.oauth1 import Client as OAuth1Client
+
+    api_key, api_secret, token, token_secret = get_flickr_credentials()
+    oauth_client = OAuth1Client(
+        api_key,
+        client_secret=api_secret,
+        resource_owner_key=token,
+        resource_owner_secret=token_secret,
+    )
+    _, signed_headers, _ = oauth_client.sign(
+        upload_url,
+        http_method="POST",
+        body=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+
     with open(video_path, "rb") as f:
         files = {"photo": (video_path.name, f, "video/mp4")}
-        res = session.post(upload_url, data=data, files=files)
+        res = requests.post(
+            upload_url,
+            data=data,
+            files=files,
+            headers={"Authorization": signed_headers["Authorization"]},
+        )
 
     if res.status_code != 200:
         sys.exit(f"Upload failed (HTTP {res.status_code}): {res.text[:300]}")

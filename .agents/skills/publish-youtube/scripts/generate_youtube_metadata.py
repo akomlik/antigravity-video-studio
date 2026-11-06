@@ -248,125 +248,121 @@ def main():
     story_body_only = re.split(r"(?m)^(?:##\s*5\.|###\s*Published YouTube URLs)", storyboard_text)[0]
     yt_links = list(dict.fromkeys(re.findall(r"https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[A-Za-z0-9_-]+", story_body_only)))
 
-    if "Nina_Pollenca_Loop" in project_name:
-        title_primary = "Saved by Nina's Sharp Eyes! Escorting to Zumba & 21.5 mi Pollença Loop"
-        title_alt_1 = "2026-11-02 · Escorting Nina to Zumba & Pollença Loop (21.5 mi)"
-        title_alt_2 = "Mallorca Morning Ride: Bellevue Zumba Drop-Off, Missing Brake Pad & Badia de Pollença (21.5 mi)"
-        playlists = ["Mallorca", "2026 Mallorca Cycling"]
+    clean_name = project_name.replace("_", " ")
+    title_primary = clean_name
+    title_alt_1 = f"{clean_name} | Mallorca Cycling & Adventure"
+    title_alt_2 = f"{clean_name} — Highlights & Story"
+    playlists = ["Mallorca", "2026 Mallorca Cycling"]
+    summary_lines = []
+    ride_stats = [f"📅 Project: {project_name}"]
+    chapters_en = list(chapters)
+    localizations = {}
+    srt_en, srt_ua, srt_ru = [], [], []
+    narration_scripts = {}
+    tags = ["Mallorca", "Cycling", "Adventure", "Pro Cycle Hire", "Strava", "San Jose Bicycle Club"]
+    hashtags = "#MallorcaCycling #ProCycleHire #CyclingMallorca"
 
-        summary_lines = [
-            "Morning rollout from Port d'Alcúdia below Puig de Sant Martí, escorting Nina on bikes past Ranxo Ses Roques to her outdoor Zumba court at the Bellevue complex.",
-            "",
-            "Right as I rolled up to the tennis court gate, Nina's sharp eyes saved my ride—she spotted my blue Reynolds front brake pad lying on the ground after it had fallen out! I popped the pad back into the Dura-Ace caliper by hand, rode past Pro Cycle Hire in Port de Pollença (closed for winter), and cruised gently south along the Badia de Pollença coast before picking up a celebratory Eroski haul in my San Jose Bicycle Club musette and fixing the brake properly at home.",
-        ]
-        ride_stats = [
-            "📍 Location: Port d'Alcúdia · Bellevue · Port de Pollença · Badia de Pollença, Mallorca",
-            "🚴‍♂️ Distance: 21.5 mi (34.5 km) | Moving Time: 1h 45m | Elevation Gain: 531 ft (162 m)",
-            "📅 Date: November 2, 2026",
-        ]
-        chapters_en = [
-            (0.0, "Escorting Nina to Zumba & Pollença Loop (21.5 mi)"),
-            (11.5, "Passing the horses at Ranxo Ses Roques"),
-            (24.1, "Arriving at the Bellevue tennis courts — Nina's outdoor Zumba stage"),
-            (36.6, "Rolling up behind Nina — she spots my missing front brake pad on the ground!"),
-            (49.8, "Pushed pad back in by hand, coastal spin & SJBC Eroski haul"),
-        ]
-        localizations = {
-            "ua": {
-                "title": "2026-11-02 · Проводжаю Ніну на Зумбу та велоколо через Поєнсу (21.5 милі / 34.5 км)",
-                "description": (
-                    "Ранковий виїзд із Порт-д'Алькудія біля підніжжя Пуч-де-Сант-Марті — проводжаю Ніну на велосипедах повз ранчо Ranxo Ses Roques до її відкритого майданчика для Зумби в комплексі Bellevue.\n\n"
-                    "Щойно я під'їхав до воріт тенісного корту, гостре око Ніни врятувало мою поїздку: вона помітила на землі мою праву передню гальмівну колодку, яка щойно випала! Я вставив колодку назад у супорт вручну, проїхав повз велопрокат Pro Cycle Hire у Порт-де-Поєнса (зачинений на зиму) та обережно прокотився вздовж узбережжя затоки Бадія-де-Поєнса, а на зворотному шляху заїхав у Eroski зі своєю торбинкою San Jose Bicycle Club і вдома надійно полагодив гальма.\n\n"
-                    "⏱️ ЕПІЗОДИ\n"
-                    "00:00 Виїзд із Ніною на Зумбу та коло через Поєнсу (21.5 милі / 34.5 км)\n"
-                    "00:12 Проїжджаємо повз коней біля Ranxo Ses Roques\n"
-                    "00:24 Тенісні корти Bellevue — відкрита сцена Ніни для Зумби\n"
-                    "00:37 Ніна помічає на землі мою передню гальмівну колодку!\n"
-                    "00:50 Колодка на місці, узбережжя Бадія-де-Поєнса та покупки з Eroski"
-                ),
-            },
-            "ru": {
-                "title": "2026-11-02 · Провожаю Нину на Зумбу и велокруг через Пойенсу (21.5 мили / 34.5 км)",
-                "description": (
-                    "Утренний выезд из Порт-д'Алькудия у подножия Пуч-де-Сант-Марти — провожаю Нину на велосипедах мимо ранчо Ranxo Ses Roques к её открытой площадке для Зумбы в комплексе Bellevue.\n\n"
-                    "Как только я подъехал к воротам теннисного корта, зоркий глаз Нины спас мою поездку: она заметила на земле мою правую переднюю тормозную колодку, которая только что выпала! Я вставил колодку обратно в суппорт вручную, проехал мимо велопроката Pro Cycle Hire в Порт-де-Пойенса (закрытого на зиму) и спокойно прокатился вдоль побережья залива Бадия-де-Пойенса, а по дороге домой заехал в Eroski со своей сумкой San Jose Bicycle Club и дома основательно починил тормоза.\n\n"
-                    "⏱️ ЭПИЗОДЫ\n"
-                    "00:00 Выезд с Ниной на Зумбу и круг через Пойенсу (21.5 мили / 34.5 км)\n"
-                    "00:12 Проезжаем мимо лошадей у Ranxo Ses Roques\n"
-                    "00:24 Теннисные корты Bellevue — открытая сцена Нины для Зумбы\n"
-                    "00:37 Нина замечает на земле мою выпавшую тормозную колодку!\n"
-                    "00:50 Колодка на месте, побережье Бадия-де-Пойенса и трофеи из Eroski"
-                ),
-            },
+    # 1. Parse Title Options from Section 1 (including optional UA/RU localized titles)
+    m_pri = re.search(r"\*\s*\*\*Primary.*?\*\*:?\s*`?([^`\n]+)`?", storyboard_text)
+    m_alt1 = re.search(r"\*\s*\*\*Alt 1.*?\*\*:?\s*`?([^`\n]+)`?", storyboard_text)
+    m_arch = re.search(r"\*\s*\*\*Archival.*?\*\*:?\s*`?([^`\n]+)`?", storyboard_text)
+    m_title_ua = re.search(r"\*\s*\*\*(?:Ukrainian|Title UA|UA).*?\*\*:?\s*`?([^`\n]+)`?", storyboard_text)
+    m_title_ru = re.search(r"\*\s*\*\*(?:Russian|Title RU|RU).*?\*\*:?\s*`?([^`\n]+)`?", storyboard_text)
+    if m_pri:
+        title_primary = m_pri.group(1).strip()
+    if m_alt1:
+        title_alt_1 = m_alt1.group(1).strip()
+    if m_arch:
+        title_alt_2 = m_arch.group(1).strip()
+    title_ua_parsed = m_title_ua.group(1).strip() if m_title_ua else title_primary
+    title_ru_parsed = m_title_ru.group(1).strip() if m_title_ru else title_primary
+
+    # 2. Parse Narrative Summary from Section 1
+    m_sum = re.search(r"###\s*Narrative Summary.*?\n(.*?)(?=\n###|\n##|\Z)", storyboard_text, re.DOTALL)
+    if m_sum:
+        for p in m_sum.group(1).strip().split("\n\n"):
+            p_clean = p.strip()
+            if p_clean and not p_clean.startswith("- **") and not p_clean.startswith("```"):
+                summary_lines.append(p_clean)
+
+    # 3. Parse Metadata Header Lines
+    for line in storyboard_text.splitlines()[:25]:
+        l_strip = line.strip()
+        if l_strip.startswith("**Date:**"):
+            ride_stats.append(f"📅 Date: {l_strip.replace('**Date:**', '').strip()}")
+        elif l_strip.startswith("**Route:**"):
+            ride_stats.append(f"🗺️ Route: {l_strip.replace('**Route:**', '').strip()}")
+        elif l_strip.startswith("**Primary Subjects:**"):
+            ride_stats.append(f"👥 Companions: {l_strip.replace('**Primary Subjects:**', '').strip()}")
+        elif l_strip.startswith("**GPX Track:**"):
+            ride_stats.append(f"🚴‍♂️ Telemetry: {l_strip.replace('**GPX Track:**', '').strip()}")
+
+    # 4. Parse Chapters from Section 2 table if not in fcproj
+    if not chapters_en:
+        for row in re.finditer(r"\|\s*\*\*(\d+)\*\*\s*\|\s*\*\*`?([0-9.]+)\s*[–-]\s*([0-9.]+)`?\*\*\s*\|\s*`?[0-9.]+s?`?\s*\|\s*([^\|]+)\|\s*([^\|]+)\|", storyboard_text):
+            sc_num = row.group(1)
+            st_sec = float(row.group(2))
+            action_text = row.group(5).strip()
+            sc_title = f"Scene {sc_num}: {action_text[:40]}"
+            chapters_en.append((st_sec, sc_title))
+
+    # 5. Helper to parse voice-over parts and .srt subtitle cues from Section 4
+    def parse_vo_parts_and_srt(text: str, header_regex: str):
+        m_sec = re.search(header_regex + r".*?\n(.*?)(?=\n###|\n##|\Z)", text, re.DOTALL)
+        if not m_sec:
+            return {}, []
+        sec_body = m_sec.group(1)
+        parts = {}
+        cues = []
+        pattern = re.compile(
+            r"-\s*\*\*(Part|Cue)\s*(\d+)\s*\(`?([0-9.]+)\s*s?\s*[\u2013\u2014-]\s*([0-9.]+)\s*s?`?\):?\*\*:?\s*(.*)"
+        )
+        for line in sec_body.splitlines():
+            m = pattern.match(line.strip())
+            if m:
+                kind_lbl = m.group(1).lower()
+                p_num = m.group(2)
+                st = float(m.group(3))
+                et = float(m.group(4))
+                raw_txt = m.group(5).strip().strip('*').strip('"').strip('«').strip('»').strip()
+                key_name = f"cue{int(p_num):02d}" if kind_lbl == "cue" else f"part{p_num}"
+                parts[key_name] = raw_txt
+                sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", raw_txt) if s.strip()]
+                if len(sentences) > 1:
+                    total_chars = max(sum(len(s) for s in sentences), 1)
+                    cur_st = st
+                    dur = et - st
+                    for s in sentences:
+                        s_dur = dur * (len(s) / total_chars)
+                        cues.append((round(cur_st, 1), round(cur_st + s_dur, 1), s))
+                        cur_st += s_dur
+                else:
+                    cues.append((round(st, 1), round(et, 1), raw_txt))
+        return parts, cues
+
+    en_parts, srt_en = parse_vo_parts_and_srt(storyboard_text, r"###\s*🇺🇸\s*English Master Script")
+    ua_parts, srt_ua = parse_vo_parts_and_srt(storyboard_text, r"###\s*🇺🇦\s*Ukrainian Script")
+    ru_parts, srt_ru = parse_vo_parts_and_srt(storyboard_text, r"###\s*🇷🇺\s*Russian Script")
+
+    narration_scripts = {
+        "en": en_parts,
+        "ua": ua_parts,
+        "ru": ru_parts,
+    }
+
+    # Build Ukrainian & Russian localizations for YouTube
+    if ua_parts:
+        ua_desc = "\n\n".join(ua_parts.values())
+        localizations["ua"] = {
+            "title": title_ua_parsed[:100],
+            "description": f"{ua_desc}\n\n#Майорка #Велоспорт #ProCycleHire",
         }
-        srt_en = [
-            (1.8, 7.2, "Morning ride from Port d'Alcúdia below Puig de Sant Martí,"),
-            (7.2, 13.0, "escorting Nina past the horses at Ranxo Ses Roques to her outdoor Zumba court at Bellevue."),
-            (24.1, 31.4, "Arriving at the Bellevue tennis courts — Nina ready on her outdoor Zumba stage."),
-            (31.4, 36.6, "Monday's Zumba session in full swing on the Bellevue court!"),
-            (36.6, 40.8, 'Nina: "I\'ll go set up the table." — "See you soon, sweetheart, when are you heading back?"'),
-            (40.8, 44.3, 'Nina: "I also want to stop for mushrooms on the way." — "Okay, see you!"'),
-            (44.3, 49.8, 'Nina: "Something fell!" — "What fell?" — "Right there—that blue brake pad of yours fell out!"'),
-            (50.0, 55.2, "Nina's sharp eyes at the gate saved my ride! I popped my fallen brake pad back in by hand,"),
-            (55.2, 60.5, "cruised around Pollença Bay, and grabbed an Eroski haul on the way home."),
-        ]
-        srt_ua = [
-            (1.8, 7.2, "Ранковий виїзд із Порт-д'Алькудія біля Пуч-де-Сант-Марті —"),
-            (7.2, 13.0, "проводжаю Ніну повз коней у Ranxo Ses Roques до її відкритого корту для Зумби в Bellevue."),
-            (24.1, 31.4, "Приїхали до тенісних кортів Bellevue — Ніна готова до заняття."),
-            (31.4, 36.6, "Понеділкова Зумба у розпалі на корті Bellevue!"),
-            (36.6, 40.8, "Ніна: «Піду готувати стіл.» — «Ну все, ластівко, коли ти назад?»"),
-            (40.8, 44.3, "Ніна: «Ще хочу по гриби заїхати.» — «А, ну добре. Окей, давай!»"),
-            (44.3, 49.8, "Ніна: «Щось упало!» — «Що впало?» — «Он там! Це твоє впало синє!»"),
-            (50.0, 55.2, "Гостре око Ніни врятувало поїздку! Я вставив гальмівну колодку вручну,"),
-            (55.2, 60.5, "прокотився вздовж затоки Поєнса і заїхав у Eroski дорогою додому."),
-        ]
-        srt_ru = [
-            (1.8, 7.2, "Утренний выезд из Порт-д'Алькудия у Пуч-де-Сант-Марти —"),
-            (7.2, 13.0, "провожаю Нину мимо лошадей у Ranxo Ses Roques к её открытому корту для Зумбы в Bellevue."),
-            (24.1, 31.4, "Приехали к теннисным кортам Bellevue — Нина готова к занятию."),
-            (31.4, 36.6, "Понедельничная Зумба в самом разгаре на корте Bellevue!"),
-            (36.6, 40.8, "Нина: «Ну ладно, пойду поставлю стол.» — «Ну всё, ласточка, когда ты обратно?»"),
-            (40.8, 44.3, "Нина: «Ещё хочу за грибами заехать.» — «А, ну ладно. Окей, давай!»"),
-            (44.3, 49.8, "Нина: «Что-то упало!» — «Что упало?» — «Вон! Это твоё упало синее!»"),
-            (50.0, 55.2, "Зоркий глаз Нины спас поездку! Я вставил тормозную колодку вручную,"),
-            (55.2, 60.5, "прокатился вдоль залива Пойенса и заехал в Eroski по дороге домой."),
-        ]
-        narration_scripts = {
-            "en": {
-                "part1": "Morning ride from Port d'Alcúdia below Puig de Sant Martí, escorting Nina past the horses at Ranxo Ses Roques to her outdoor Zumba court at Bellevue.",
-                "part2": "Nina's sharp eyes at the gate saved my ride! I popped my fallen brake pad back in by hand, cruised around Pollença Bay, and grabbed an Eroski haul on the way home.",
-            },
-            "ua": {
-                "part1": "Ранковий виїзд із Порт-д'Алькудія біля Пуч-де-Сант-Марті — проводжаю Ніну повз коней у Ranxo Ses Roques до її відкритого корту для Зумби в Bellevue.",
-                "part2": "Гостре око Ніни врятувало поїздку! Я вставив гальмівну колодку вручну, прокотився вздовж затоки Поєнса і заїхав у Eroski дорогою додому.",
-            },
-            "ru": {
-                "part1": "Утренний выезд из Порт-д'Алькудия у Пуч-де-Сант-Марти — провожаю Нину мимо лошадей у Ranxo Ses Roques к её открытому корту для Зумбы в Bellevue.",
-                "part2": "Зоркий глаз Нины спас поездку! Я вставил тормозную колодку вручную, прокатился вдоль залива Пойенса и заехал в Eroski по дороге домой.",
-            },
+    if ru_parts:
+        ru_desc = "\n\n".join(ru_parts.values())
+        localizations["ru"] = {
+            "title": title_ru_parsed[:100],
+            "description": f"{ru_desc}\n\n#Майорка #Велоспорт #ProCycleHire",
         }
-        tags = [
-            "Mallorca cycling", "Port d'Alcudia", "Port de Pollenca", "Badia de Pollenca",
-            "Bellevue Alcudia", "Zumba Mallorca", "San Jose Bicycle Club", "SJBC",
-            "Pro Cycle Hire Mallorca", "Pro Cycle Cafe", "cycling vlog", "disc brake pad",
-            "Insta360", "Spain cycling",
-        ]
-        hashtags = "#MallorcaCycling #PortDePollenca #PortDAlcudia #SanJoseBicycleClub #CyclingVlog"
-    else:
-        clean_name = project_name.replace("_", " ")
-        title_primary = clean_name
-        title_alt_1 = f"{clean_name} | Mallorca Cycling & Adventure"
-        title_alt_2 = f"{clean_name} — Highlights & Story"
-        playlists = ["Mallorca", "2026 Mallorca Cycling"]
-        summary_lines = [f"Highlights and story from {clean_name}."]
-        ride_stats = [f"📅 Project: {project_name}"]
-        chapters_en = chapters
-        localizations = {}
-        srt_en, srt_ua, srt_ru = [], [], []
-        narration_scripts = {}
-        tags = ["Mallorca", "Cycling", "Adventure", "Insta360", "San Jose Bicycle Club"]
-        hashtags = "#Mallorca #Cycling #Adventure"
 
     desc_parts = []
     desc_parts.extend(summary_lines)
@@ -488,6 +484,8 @@ def main():
         "thumbnail_file": thumb_path.name if thumb_ok else None,
         "thumbnail_timestamp_sec": args.thumb_sec,
         "title": title_primary,
+        "title_ua": localizations.get("ua", {}).get("title"),
+        "title_ru": localizations.get("ru", {}).get("title"),
         "title_alternatives": [title_alt_1, title_alt_2],
         "playlists": playlists,
         "description": description_text,

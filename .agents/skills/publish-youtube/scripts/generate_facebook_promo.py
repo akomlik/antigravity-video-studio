@@ -177,6 +177,54 @@ def build_facebook_promo(
         "album": "2026 Fall Mallorca Cycling",
     }
 
+    # Option 4: Mallorca Cycling Facebook Group Edition (73.4K Members Community Standard)
+    # Strictly non-commercial, road & cafe intel, peer rider tone, first comment link
+    opt4_body = ""
+    opt4_comment = ""
+    is_mallorca = "Mallorca" in title or "mallorca" in str(project_dir).lower() or any(
+        kw in desc.lower() for kw in ["mallorca", "alcúdia", "alcudia", "pollença", "pollenca", "buger", "sa pobla", "caimari", "lluc"]
+    )
+
+    if "Buger_coffee" in project_name:
+        opt4_body = (
+            "Decided to skip the brisk early Tuesday group rollout from Port de Pollença this week and wait at home in Malpas-Bonaire until the sun actually warmed up the tarmac.\n\n"
+            "Rolled out solo on a quiet 40-mile loop (64 km / 515 m) across the Sa Pobla flatlands and up to Búger.\n\n"
+            "If you haven't stopped at Forn Can Rafel in the village square (Plaça de la Constitució), it's well worth the gentle climb. Fresh ensaïmades and chocolate pastries, outdoor tables right under the church clock tower, and none of the crowds you get on the main cycling arteries. Right by the square is the famous cascading stone fountain—great spot to refill bottles or cool off on warmer days.\n\n"
+            "On the way back, instead of taking the busy main road, I took Camí Vell de Pollença—a peaceful, narrow lane between ancient dry stone walls and olive groves that connects up toward Pollença, before spinning along the bay into Port de Pollença.\n\n"
+            "How are the morning road temps treating everyone this week? Are you still starting early or waiting for the sun to break through?\n\n"
+            "(Photos attached; short 2-minute ride recap in the first comment 👇)"
+        )
+        opt4_comment = (
+            f"🚴 Short 2-minute 4K ride recap (Búger village square, Camí Vell de Pollença & coastal return): {yt_url}\n"
+            "Clean 4K with captions & multi-language voiceover options in the video description."
+        )
+    elif "SaPobla_Market_Trip" in project_name:
+        opt4_body = (
+            "Took a rest-day recovery excursion to the Sa Pobla Sunday market (Plaça Major) via the 302 bus from Alcúdia.\n\n"
+            "If you ever need a break from the bike or want to stock up on local produce, Sunday morning in Sa Pobla is pure Mallorca. Fresh oranges, local cheeses, pastries, and roasted nuts, without the tourist tour-bus crowds of some of the larger coastal markets.\n\n"
+            "For coffee, Bar Casa Miss right on the square is classic (though packed on Sundays!).\n\n"
+            "What's your favorite local village market on the island for non-riding days?\n\n"
+            "(Couple photos attached; short 3-minute video in the first comment 👇)"
+        )
+        opt4_comment = f"☕ 3-minute video of the Sunday market trip: {yt_url}"
+    elif "Nina_Pollenca_Loop" in project_name:
+        opt4_body = (
+            "Quick 21-mile morning spin (34 km) from Port d'Alcúdia around Badia de Pollença, riding the quiet lanes below Puig de Sant Martí and Ranxo Ses Roques before looping through Pollença and along the bay path.\n\n"
+            "The coastal bike path along Can Cullerassa is in great shape right now—crisp autumn morning air and very light traffic once the early commuters clear out.\n\n"
+            "A quick reminder for everyone doing maintenance before winter: double check your brake pad retaining pins! Rolled backward slightly at a gate and almost lost a front carbon pad on the tarmac—luckily spotted before hitting any descents!\n\n"
+            "Anyone else making the most of the quiet autumn roads around Pollença bay this week?\n\n"
+            "(Photos attached; ride video in the first comment 👇)"
+        )
+        opt4_comment = f"🎬 Short 4K ride recap: {yt_url}"
+    elif is_mallorca:
+        opt4_body = (
+            f"Quiet spin on the island today: {title.replace('2026-', '').replace('2025-', '').strip()}.\n\n"
+            "Crisp morning air, light road traffic, and classic Tramuntana views across the plains.\n\n"
+            "How are road conditions treating everyone out there this week?\n\n"
+            "(Photos attached; short 4K video recap in first comment 👇)"
+        )
+        opt4_comment = f"🚴 Short 4K ride recap: {yt_url}"
+
     promo_data = {
         "project_name": project_name,
         "youtube_url": yt_url,
@@ -200,6 +248,14 @@ def build_facebook_promo(
         },
         "flickr": flickr_data,
     }
+
+    if opt4_body:
+        promo_data["options"]["option_4_mallorca_cycling_group"] = {
+            "name": "Option 4: Mallorca Cycling Facebook Group Edition (73.4K Members Community Standard)",
+            "description": "Strictly non-promotional, road & cafe intel, fellow-rider tone, link in first comment.",
+            "post_text": opt4_body,
+            "first_comment": opt4_comment,
+        }
 
     # Write facebook_promo.md
     md_content = f"""# 📱 Social Promotional Copy: `{project_name}`
@@ -243,6 +299,21 @@ def build_facebook_promo(
 ```
 
 ---
+
+{f'''## 🚴 Option 4: Mallorca Cycling Facebook Group Edition (73.4K Members Community Standard)
+*Tailored specifically for the Mallorca Cycling Facebook community: zero commercial promo, peer-rider tone, authentic road & cafe intel, and YouTube link in the first comment:*
+
+### 📝 Post Text (Attach 1–3 photos from the ride):
+```text
+{opt4_body}
+```
+
+### 💬 First Comment:
+```text
+{opt4_comment}
+```
+
+---''' if opt4_body else ''}
 
 ## 📸 Flickr Video Upload (RU Edition for Family & Classmates in RU/Crimea)
 *Direct 4K video upload for Nina's brother, Alexander's sister in Sevastopol, and WhatsApp classmates who face YouTube restrictions:*
