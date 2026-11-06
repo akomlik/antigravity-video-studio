@@ -49,6 +49,7 @@ def load_config() -> dict:
             "studio_root": ".",
             "hot_media_dir": "~/Movies",
             "cold_media_dir": "/Volumes/Crucial-4T/Movies",
+            "archival_pulls_dir": "~/Movies/Archival_Pulls",
             "cache_dir": "~/Movies/Cache_And_Previews",
             "exports_dir": "~/Movies/Exports",
             "archival_photos_dir": "/Volumes/Crucial-4T/Pictures",
@@ -112,6 +113,20 @@ def get_exports_dir() -> Path:
     p = Path(val).expanduser().resolve()
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+def get_archival_pulls_dir() -> Path:
+    override = os.environ.get("ARCHIVAL_PULLS_DIR")
+    val = override or _STORAGE.get("archival_pulls_dir", "~/Movies/Archival_Pulls")
+    p = Path(val).expanduser().resolve()
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def get_archival_photos_dir() -> Path:
+    override = os.environ.get("ARCHIVAL_PHOTOS_DIR")
+    val = override or _STORAGE.get("archival_photos_dir", "/Volumes/Crucial-4T/Pictures")
+    return Path(val).expanduser().resolve()
 
 
 def get_bgm_root() -> Path:

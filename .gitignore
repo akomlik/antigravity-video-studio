@@ -4,6 +4,7 @@
 .vscode/
 __pycache__/
 *.pyc
+/skills/
 
 # Virtual Environment, Secrets & Local Agent Bindings
 .venv/

@@ -8,7 +8,19 @@ from an @akomlik YouTube archival video in H.264/MP4 format into ~/Movies/Archiv
 import argparse
 import os
 import subprocess
+import sys
 from pathlib import Path
+
+# Add studio root to sys.path to load studio_config dynamically
+_studio_root = Path(__file__).resolve().parents[4]
+if str(_studio_root) not in sys.path:
+    sys.path.insert(0, str(_studio_root))
+
+try:
+    from studio_config import get_archival_pulls_dir
+    DEFAULT_ARCHIVAL_DIR = str(get_archival_pulls_dir())
+except ImportError:
+    DEFAULT_ARCHIVAL_DIR = str(Path.home() / "Movies" / "Archival_Pulls")
 
 os.environ["PATH"] = f"/opt/homebrew/bin:/usr/local/bin:{Path.home() / '.local/bin'}:{os.environ.get('PATH', '')}"
 
@@ -38,6 +50,6 @@ if __name__ == "__main__":
     p.add_argument("--start", type=float, required=True, help="Start time in seconds")
     p.add_argument("--end", type=float, required=True, help="End time in seconds")
     p.add_argument("--label", default="broll", help="Short descriptive tag (e.g. SJC_Olive_Jacket_2025)")
-    p.add_argument("--out-dir", default="~/Movies/Archival_Pulls")
+    p.add_argument("--out-dir", default=DEFAULT_ARCHIVAL_DIR)
     args = p.parse_args()
     fetch_clip(args.video_id, args.start, args.end, Path(args.out_dir).expanduser(), args.label)

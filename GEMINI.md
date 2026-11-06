@@ -29,6 +29,9 @@ Welcome to **Alexander Komlik's (`@akomlik`) Universal AI Video Studio**. Whenev
 
 > **Global Storage Config (`studio.conf`) & Zero-Absolute-Path Law:**
 > All storage locations, external media drives, and catalog paths are centrally defined in [`studio.conf`](./studio.conf) and dynamically resolved by [`studio_config.py`](./studio_config.py). All files, manifests, and catalogs inside the repository **MUST strictly use relative paths** (`path`, `relpath`) against `STUDIO_ROOT` or the active media directory. Never freeze machine-specific absolute paths (`/Users/...`) into project files, manifests, or JSON catalogs!
+>
+> **Zero-Copy & Zero-Crop Archival Pulls Standard:**
+> Stills published from Lightroom Classic into `~/Movies/Archival_Pulls/LR_Published_4K/` are a shared studio asset pool. Never duplicate photos into project folders and never pre-crop them on disk with `sips`/`ffmpeg`. Link via relative symlink (`ln -sf ../../Archival_Pulls/... .`) or relative path; FilmCraft adapts aspect ratios and provides Ken Burns motion bleed natively via GPU shaders.
 
 ---
 
