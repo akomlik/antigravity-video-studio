@@ -2,10 +2,9 @@
 """
 upload_youtube_api.py
 Headless YouTube Data API v3 uploader and localization manager:
-- Reads GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, and GOOGLE_CLOUD_PROJECT
-  from the inherited shell environment (e.g., set via `direnv` or a local `.env` file)
-  on first-time authorization, and caches the OAuth refresh token in
-  `~/.config/antigravity_youtube/token.json` for zero-prompt subsequent runs.
+- Reads GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, GOOGLE_CLOUD_PROJECT,
+  and optionally GOOGLE_OAUTH_REFRESH_TOKEN (via 1Password/direnv for zero-file auth),
+  falling back to caching the OAuth refresh token in `~/.config/antigravity_youtube/token.json`.
 - Uploads 4K MP4 masters with resumable progress (Private by default)
 - Sets English default title/description + Ukrainian (ua -> uk) and Russian (ru) localizations
 - Uploads localized 1080p composite thumbnails (thumbnail.jpg, thumbnail_ua.jpg, thumbnail_ru.jpg)
@@ -53,40 +52,67 @@ def get_youtube_service():
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
 
+    load_dotenv_if_needed()
+    client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
+    refresh_token = os.environ.get("GOOGLE_OAUTH_REFRESH_TOKEN") or os.environ.get("YOUTUBE_OAUTH_REFRESH_TOKEN")
+
     creds = None
-    if TOKEN_FILE.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
+
+    # Priority 1: Zero-file 1Password / direnv refresh token
+    if refresh_token and client_id and client_secret:
+        try:
+            creds = Credentials(
+                None,
+                refresh_token=refresh_token,
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=client_id,
+                client_secret=client_secret,
+                scopes=SCOPES,
+            )
             creds.refresh(Request())
+        except Exception as e:
+            print(f"Warning: Failed to refresh credentials from environment refresh token: {e}")
+            creds = None
+
+    # Priority 2: Cached token.json on disk (fallback)
+    if not creds and TOKEN_FILE.exists():
+        try:
+            creds = Credentials.from_authorized_user_file(str(TOKEN_FILE), SCOPES)
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+                TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
+        except Exception as e:
+            print(f"Warning: Failed to load credentials from {TOKEN_FILE}: {e}")
+            creds = None
+
+    # Priority 3: Interactive OAuth local server flow if not yet authorized
+    if not creds or not creds.valid:
+        project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "antigravity-video-studio")
+        if not client_id or not client_secret:
+            raise RuntimeError(
+                "GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET not found in environment. "
+                "Set them in your shell environment (e.g. via direnv) or in a local .env file."
+            )
+        client_config = {
+            "installed": {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "project_id": project_id,
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "redirect_uris": ["http://localhost"],
+            }
+        }
+        flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
+        creds = flow.run_local_server(port=0)
+
+        # Cache locally on disk only if not injected via 1Password env var
+        if not refresh_token:
             OAUTH_DIR.mkdir(parents=True, exist_ok=True)
             TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
-        else:
-            load_dotenv_if_needed()
-            client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID")
-            client_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
-            project_id = os.environ.get("GOOGLE_CLOUD_PROJECT", "antigravity-video-studio")
-            if not client_id or not client_secret:
-                raise RuntimeError(
-                    "GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET not found in environment. "
-                    "Set them in your shell environment (e.g. via direnv) or in a local .env file."
-                )
-            client_config = {
-                "installed": {
-                    "client_id": client_id,
-                    "client_secret": client_secret,
-                    "project_id": project_id,
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                    "redirect_uris": ["http://localhost"],
-                }
-            }
-            flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
-            creds = flow.run_local_server(port=0)
-        OAUTH_DIR.mkdir(parents=True, exist_ok=True)
-        TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
-        os.chmod(TOKEN_FILE, 0o600)
+            os.chmod(TOKEN_FILE, 0o600)
 
     return build("youtube", "v3", credentials=creds)
 

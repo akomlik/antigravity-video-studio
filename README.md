@@ -290,6 +290,7 @@ op item create --category "API Credential" \
 ### Configured Secrets in this Studio
 - `GEMINI_API_KEY`: Google Gemini API key.
 - `GOOGLE_OAUTH_CLIENT_ID` & `GOOGLE_OAUTH_CLIENT_SECRET`: YouTube Data API v3 OAuth desktop client credentials.
+- `GOOGLE_OAUTH_REFRESH_TOKEN`: YouTube OAuth2 refresh token for zero-file, in-memory credential refreshing.
 - `FLICKR_API_KEY` & `FLICKR_API_SECRET`: Flickr App Garden developer credentials.
 - `FLICKR_OAUTH_TOKEN` & `FLICKR_OAUTH_TOKEN_SECRET`: Flickr OAuth 1.0a access tokens for headless video publishing (`/publish-flickr`).
 
