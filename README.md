@@ -3,7 +3,7 @@
 Welcome to **Antigravity Video Studio v2**! This guide walks you through your complete end-to-end workflow—from writing a 5-line rough draft and dropping raw camera files into `~/Movies/2026/`, to co-developing `Storyboard.md` (with Section 5 YouTube Publishing & Composite Thumbnail specs), rendering GPX route maps & telemetry HUDs, synthesizing warm replicated voice-over (`EN` / `UA` / `RU`), building a broadcast-balanced 4-track timeline in **FilmCraft** (or **DaVinci Resolve**), and publishing 1 or 3 localized 4K editions to YouTube via the YouTube Data API v3.
 
 > **Environment Setup (Bring Your Own Env Manager):**
-> Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET` using whichever method you prefer (`direnv` + 1Password, `.zshrc`, or a local git-ignored `.env` file in the studio root), then launch **Gemini** or **Antigravity** from that shell session so all skills and scripts inherit your environment variables automatically with zero wrapper dependencies:
+> Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `FLICKR_*` credentials using whichever method you prefer (see [Section 9](#9-optional-zero-plaintext-secret-management-with-1password--direnv-alexanders-protocol) for Alexander's 1Password `envvar:*` protocol, or use `.zshrc` / local `.env`), then launch **Gemini** or **Antigravity** from that shell session so all skills and scripts inherit your environment variables automatically with zero wrapper dependencies:
 > ```bash
 > open -a Gemini
 > # or
@@ -263,3 +263,33 @@ This workflow was inspired by the AI-driven video editing architecture and *Digi
 2. **Additional MCP Video Editing Showcases:**
    - **Applorable (`@applorable`):** [Why ArtCraft Beats Adobe for AI Workflows (With MCP)](https://www.youtube.com/watch?v=DBLJZ44TWEg) (FilmCraft & LightCraft MCP integration)
    - **Team 2 Films (`@team2films`):** [DaVinci Resolve 21.1 BEST New Feature TESTED - AI Editing with Claude and ChatGPT](https://www.youtube.com/watch?v=yRxmdTUh7GU)
+
+---
+
+## 9. Optional: Zero-Plaintext Secret Management with 1Password & direnv (Alexander's Protocol)
+
+For zero plaintext secrets on disk, this workspace integrates with Alexander's standard 1Password protocol (`/Users/akomlik/src/ai-workflow/scripts/direnv-manager`):
+
+### How It Works
+1. In `~/Gdrive-gmail/.envrc`, `source direnv-manager --runtime --account "my.1password.com"` is configured.
+2. At shell startup, `direnv-manager` dynamically queries the **`Private`** vault on `my.1password.com` for any items titled `envvar:<VARIABLE_NAME>` (e.g. `envvar:GEMINI_API_KEY`, `envvar:FLICKR_API_KEY`, `envvar:FLICKR_OAUTH_TOKEN`).
+3. If the item category is `API_CREDENTIAL`, `direnv-manager` reads the `credential` field; if `PASSWORD`, `LOGIN`, or `SECURE_NOTE`, it reads `password`.
+4. The secrets are automatically exported into the shell environment (`export VARIABLE_NAME="..."`).
+5. When launching Antigravity, Gemini, or running scripts from this shell, all child processes inherit these environment variables automatically with zero plaintext files on disk.
+
+### Saving New Secrets via `op` CLI
+To add new secrets that follow this protocol without opening the 1Password UI, run:
+```bash
+op item create --category "API Credential" \
+  --title "envvar:<VARIABLE_NAME>" \
+  --vault "Private" \
+  --account "my.1password.com" \
+  "credential[concealed]=<SECRET_VALUE>"
+```
+
+### Configured Secrets in this Studio
+- `GEMINI_API_KEY`: Google Gemini API key.
+- `GOOGLE_OAUTH_CLIENT_ID` & `GOOGLE_OAUTH_CLIENT_SECRET`: YouTube Data API v3 OAuth desktop client credentials.
+- `FLICKR_API_KEY` & `FLICKR_API_SECRET`: Flickr App Garden developer credentials.
+- `FLICKR_OAUTH_TOKEN` & `FLICKR_OAUTH_TOKEN_SECRET`: Flickr OAuth 1.0a access tokens for headless video publishing (`/publish-flickr`).
+

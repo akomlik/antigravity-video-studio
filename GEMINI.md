@@ -51,3 +51,15 @@ Before calling `filmcraft` MCP tools, ensure FilmCraft is running with its worki
 mkdir -p ~/Movies/Cache_And_Previews && cd ~/Movies/Cache_And_Previews
 open -a FilmCraft --args --control 9876
 ```
+
+---
+
+## 5. Secret Management & 1Password Protocol (Alexander's Convention)
+
+Whenever secrets (API keys, OAuth tokens) need to be stored or referenced, always follow Alexander's `direnv-manager` protocol:
+- **Account:** `my.1password.com`
+- **Vault:** `Private`
+- **Category:** `API_CREDENTIAL`
+- **Item Title:** `envvar:<VARIABLE_NAME>` (e.g. `envvar:FLICKR_API_KEY`, `envvar:GEMINI_API_KEY`)
+- **Field:** `credential[concealed]=<secret_value>`
+- `~/Gdrive-gmail/.envrc` automatically loads and exports all `envvar:*` items into the environment at shell startup. Never write raw credentials to Git or plaintext project files.
