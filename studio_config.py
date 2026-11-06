@@ -50,6 +50,7 @@ def load_config() -> dict:
             "hot_media_dir": "~/Movies",
             "cold_media_dir": "/Volumes/Crucial-4T/Movies",
             "archival_pulls_dir": "~/Movies/Archival_Pulls",
+            "lightroom_catalog_dir": "~/Pictures/Lightroom",
             "cache_dir": "~/Movies/Cache_And_Previews",
             "exports_dir": "~/Movies/Exports",
             "archival_photos_dir": "/Volumes/Crucial-4T/Pictures",
@@ -127,6 +128,49 @@ def get_archival_photos_dir() -> Path:
     override = os.environ.get("ARCHIVAL_PHOTOS_DIR")
     val = override or _STORAGE.get("archival_photos_dir", "/Volumes/Crucial-4T/Pictures")
     return Path(val).expanduser().resolve()
+
+
+def get_lightroom_catalog_dir() -> Optional[Path]:
+    override = os.environ.get("LIGHTROOM_CATALOG_DIR")
+    val = override or _STORAGE.get("lightroom_catalog_dir")
+    if not val:
+        return None
+    p = Path(val).expanduser().resolve()
+    return p if p.exists() and p.is_dir() else None
+
+
+def find_active_lightroom_catalog() -> Optional[tuple[Path, Path]]:
+    """
+    Finds the active Lightroom Classic .lrcat file and matching Previews.lrdata folder.
+    Returns (lrcat_path, previews_dir_path) or None if no catalog is found.
+    Handles Lightroom upgrades (e.g. Catalog-v13, Catalog-v13-3) by selecting the newest active catalog.
+    """
+    lr_dir = get_lightroom_catalog_dir()
+    if not lr_dir:
+        return None
+
+    # Exclude backups, old catalogs, and temporary files
+    candidates = [
+        p for p in lr_dir.glob("*.lrcat")
+        if not p.name.endswith((".lock", "-wal", "-shm"))
+        and "Old Lightroom Catalogs" not in str(p)
+        and "Backups" not in str(p)
+    ]
+    if not candidates:
+        return None
+
+    # Sort by mtime descending so active/current catalog is chosen
+    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    active_lrcat = candidates[0]
+
+    previews_dir = active_lrcat.with_name(active_lrcat.stem + " Previews.lrdata")
+    if not previews_dir.exists():
+        for p in lr_dir.glob("*Previews.lrdata"):
+            if p.is_dir():
+                previews_dir = p
+                break
+
+    return active_lrcat, previews_dir
 
 
 def get_bgm_root() -> Path:

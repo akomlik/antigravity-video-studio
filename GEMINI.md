@@ -32,6 +32,9 @@ Welcome to **Alexander Komlik's (`@akomlik`) Universal AI Video Studio**. Whenev
 >
 > **Zero-Copy & Zero-Crop Archival Pulls Standard:**
 > Stills published from Lightroom Classic into `~/Movies/Archival_Pulls/LR_Published_4K/` are a shared studio asset pool. Never duplicate photos into project folders and never pre-crop them on disk with `sips`/`ffmpeg`. Link via relative symlink (`ln -sf ../../Archival_Pulls/... .`) or relative path; FilmCraft adapts aspect ratios and provides Ken Burns motion bleed natively via GPU shaders.
+>
+> **GPX Geospatial Flashback Discovery Standard (`find_gpx_flashbacks.py`):**
+> When a project includes GPX telemetry and `lightroom_catalog_dir` is configured in `studio.conf`, `/storyboard` scans the active `.lrcat` catalog along the route corridor (< 100m) in < 3s. It surfaces both 4K Published Masters ($\ge 3★$) and Unrated Hidden Gems ($0★$) with cached previews staged in `.flashback_candidates/`, allowing co-creation selection and organically populating the 4K publish pool.
 
 ---
 

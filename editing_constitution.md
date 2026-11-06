@@ -67,6 +67,12 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
     - **Zero Duplication:** Video projects must NEVER duplicate full-resolution still files into individual project folders (`~/Movies/<YEAR>/<project>/`). When a project references an archival photo, reference its relative path directly or create a relative symlink inside the project folder (`ln -sf ../../Archival_Pulls/LR_Published_4K/<category>/<file>.jpg .`).
     - **Zero Pre-Cropping on Disk:** Source images must NEVER be cropped destructively on disk (e.g. using `sips` or `ffmpeg` to force `3840x2160`). Sensor aspect ratios (3:2, 16:10, 4:3, vertical) must be kept 100% intact. FilmCraft and modern NLEs handle aspect ratio adaptation, center anchors, and Ken Burns framing natively in the GPU shader pipeline (`scaleToFill` / `scaleToFit`).
     - **Ken Burns Bleed Advantage:** Preserving the full sensor image provides essential extra margin ("bleed") for Ken Burns panning and zooming across the 16:9 frame without resolution degradation, letterbox bars, or edge clipping. Destructive cropping permanently destroys this motion bleed.
+- **GPX Geospatial Flashback Discovery Standard (`find_gpx_flashbacks.py`):**
+    - Whenever a project contains Garmin/Wahoo GPX route telemetry, Stage 0 `/storyboard` automatically scans the active Lightroom Classic catalog along the route's spatial corridor (within 50m–100m) in `< 3s`.
+    - **Dual Candidate Surface:**
+        1. **4K Published Masters ($\ge 3★$):** If the photo is already published in `~/Movies/Archival_Pulls/LR_Published_4K/`, it is marked ready-to-cut and linked via relative symlink.
+        2. **Unrated Hidden Gems ($0★$):** If an unrated photo lies right on the route, its high-resolution rendered JPEG preview is extracted directly from Lightroom's `Previews.lrdata` into `.flashback_candidates/` for review.
+    - **Co-Creation Feedback Loop:** Over time, working on video projects drives Alexander to rate and publish newly discovered historical photos, organically populating the shared 4K Lightroom stock library as a natural side-effect of video editing.
 
 ### ARTICLE V: CURATED FREE MUSIC POOL (`03_Audio_Library/01_Curated_BGM/`), MIXING & TRACK SWAPPING
 

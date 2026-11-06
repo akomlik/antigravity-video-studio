@@ -34,6 +34,13 @@ To maximize creative depth while protecting your 5-hour Argon window:
    ```
    *(Converts `.HEIC` to `.jpg`, extracts 640px proxy thumbnails into `.proxies/`, extracts QuickTime `ISO6709` GPS coordinates and GPX telemetry in Imperial (`mi`, `ft`, `mph`) & Metric, and creates the baseline `Storyboard.md`).*
 
+1b. **Pass 1b — GPX Geospatial Flashback Discovery & Scavenging:**
+   If a `.gpx` file is present in the project folder and `lightroom_catalog_dir` is configured in `studio.conf`:
+   ```bash
+   python3 ./.agents/skills/storyboard/scripts/find_gpx_flashbacks.py --project-dir "<path_to_folder>" --extract-previews
+   ```
+   *(Scans the active Adobe Lightroom Classic catalog along the ride/hike route in < 3s, checks `LR_Published_4K/` status, stages top candidate preview JPEGs into `<path_to_folder>/.flashback_candidates/`, and surfaces both **4K Published Flashbacks** and **Unrated Hidden Gems** for co-creation selection).*
+
 2. **Pass 2 — Creative Storyboard Polish & Memory Weaving (Argon):**
    - Inspect key `.proxies/*_thumb.jpg` thumbnails, converted `.jpg` stills, `.gpx` track points, and any referenced YouTube URLs.
    - Cross-reference `./my_digital_brain.md` to identify emotional flashbacks, past trips, recurring people (Nina, cycling companions), or gear lore.
