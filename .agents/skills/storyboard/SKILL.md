@@ -19,16 +19,25 @@ Publish: option_b (all 3 locales: EN Private + UA/RU Unlisted).
 Thumbnail: "SAVED AT THE GATE" with selfie + brake caliper cutout.
 ```
 
+## The 2-Pass Co-Creation Architecture
+
+To maximize creative depth while protecting your 5-hour Argon window:
+- **Pass 1: Mechanical Ingest & Scaffold (Run on Gemini 3.8 Flash):**
+  Runs all local deterministic tools: converts `.HEIC` $\rightarrow$ `.jpg`, extracts `.proxies/` 640px thumbnails, parses Garmin `.gpx` telemetry, checks camera audio dB levels, and creates the baseline chronological draft of `Storyboard.md`.
+- **Pass 2: Creative Director Polish & Memory Weaving (Run on Gemini 4 Argon — Thinking Low/Medium):**
+  With all proxies and data already extracted on disk, switch to **Gemini 4 Argon**. Argon acts purely as the Creative Director—reading `my_digital_brain.md`, examining key thumbnails, weaving emotional callbacks and nostalgic flashbacks (like Nina at the fountain in 2018), tightening the 5-act narrative arc, scripting punchy trilingual voice-overs, and designing the composite thumbnail. Zero Argon credits burned on shell execution!
+
 ## Execution Sequence
-1. **Step 1 (Automated Prep & Proxy Extraction):** Run `ingest_and_sync_media.py` on the target folder (passing `--skip-bleequp-sync` if BleeqUP files were already fixed):
+1. **Pass 1 — Automated Prep & Proxy Extraction (Flash):** Run `ingest_and_sync_media.py` on the target folder (passing `--skip-bleequp-sync` if BleeqUP files were already fixed):
    ```bash
    python3 ./.agents/skills/ingest-media/scripts/ingest_and_sync_media.py --project-dir "<path_to_folder>" --genre auto
    ```
-   *(Converts `.HEIC` to `.jpg`, extracts 640px proxy thumbnails into `.proxies/`, extracts QuickTime `ISO6709` GPS coordinates and GPX telemetry in Imperial (`mi`, `ft`, `mph`) & Metric, and creates/migrates `Storyboard.md`).*
-2. **Step 2 (Multimodal Visual Inspection & Storyboard Co-Development):**
-   - Inspect all `.proxies/*_thumb.jpg` thumbnails, converted `.jpg` stills, `.gpx` track points, and any referenced YouTube URLs.
-   - Measure live camera audio in clips where the rider or companions speak so `live_dialog_boost` can be planned.
-   - Write or update `<path_to_folder>/Storyboard.md` AND copy it to `04_Project_Catalog/YEAR/<project_name>/Storyboard.md` with **5 structured sections**:
+   *(Converts `.HEIC` to `.jpg`, extracts 640px proxy thumbnails into `.proxies/`, extracts QuickTime `ISO6709` GPS coordinates and GPX telemetry in Imperial (`mi`, `ft`, `mph`) & Metric, and creates the baseline `Storyboard.md`).*
+
+2. **Pass 2 — Creative Storyboard Polish & Memory Weaving (Argon):**
+   - Inspect key `.proxies/*_thumb.jpg` thumbnails, converted `.jpg` stills, `.gpx` track points, and any referenced YouTube URLs.
+   - Cross-reference `./my_digital_brain.md` to identify emotional flashbacks, past trips, recurring people (Nina, cycling companions), or gear lore.
+   - Polish `<path_to_folder>/Storyboard.md` AND copy it to `04_Project_Catalog/YEAR/<project_name>/Storyboard.md` with **5 structured sections**:
      - **Section 1: Story Overview & Narrative Arc** (Imperial + Metric stats).
      - **Section 2: Multi-Phase Music Plan** (`03_Audio_Library/01_Curated_BGM/` tracks, ducking under VO/dialog, `+3.5 dB` swell during pure riding).
      - **Section 3: Scene-by-Scene Visual & Audio Map** (`Scene 00` -> `Scene N`, exact timecodes, `V1` clips/stills, `V2` GPX corner maps/HUD, `A1` live dialog boost, `A4` voiceover cues).

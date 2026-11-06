@@ -29,24 +29,26 @@ Thumbnail: "SAVED AT THE GATE" with selfie + brake caliper cutout.
 ```
 
 Then run the streamlined workflow:
-1. **Stage 0: Co-Develop the Storyboard & Section 5 Spec:**
+1. **Stage 0: 2-Pass Storyboard Co-Creation (`/storyboard`):**
    ```text
    /storyboard ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
    ```
-   - Converts `.HEIC` $\rightarrow$ `.jpg`, extracts `.proxies/` video thumbnails, syncs Garmin `.gpx` telemetry (`mi`, `ft`, `mph`), inspects live camera audio levels, drafts the full `Storyboard.md` (including **Section 5: Production & YouTube Publishing Spec** and the **Composite Thumbnail** layout), and harvests new people/places into [`my_digital_brain.md`](./my_digital_brain.md).
+   - **Pass 1 (Gemini 3.8 Flash):** Converts `.HEIC` $\rightarrow$ `.jpg`, extracts `.proxies/` video thumbnails, syncs Garmin `.gpx` telemetry (`mi`, `ft`, `mph`), inspects live camera audio levels, and builds the baseline structural scaffold.
+   - **Pass 2 (Gemini 4 Argon — Creative Director):** Weaves emotional flashbacks from [`my_digital_brain.md`](./my_digital_brain.md) (e.g. Nina at the 2018 Búger fountain), polishes the narrative arc, writes the trilingual voiceover scripts, and designs the composite thumbnail.
 2. **Stage 1: Interactive Assembly & 4K Export:**
    ```text
    /build-timeline ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
    ```
-   - Presents an interactive in-chat alignment card (`ask_question`, 1 question per turn) to confirm primary language (defaulting to live spoken language), background music (with 10s audio previews via Mac speaker), and publishing mode (`option_a` unlisted by default).
+   - Presents an interactive in-chat alignment card (`ask_question`, 1 question per turn) to confirm primary language (defaulting to live spoken language), background music (with 10s audio previews via Mac speaker), telemetry HUD visibility, and publishing mode.
    - Enforces 100% V1 visual continuity (auto-repairing black gaps), builds the 4-track broadcast mix (`A1` camera speech boosted to `-22 dB`, `A2` music auto-ducked `-6.0 dB`, `A3` SFX, `A4` voiceover), applies 2-axis Ken Burns motion to photos, and exports clean 4K MP4 with native Dip-to-Black and synchronized outro audio fade.
-3. **Stage 2: Headless YouTube Publishing:**
+   - **Always losslessly remuxes `_RU.mp4` by default (`0.2s` `ffmpeg copy`)** into `~/Movies/Exports/YEAR/<project>_RU.mp4` for instant Flickr and WhatsApp sharing with family and classmates in Russia and Crimea who cannot access YouTube.
+3. **Stage 2: Headless YouTube & Flickr Publishing:**
    ```text
    /publish-youtube ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
    ```
    - Mandatory human review gate before upload.
    - Uploads 4K MP4 as `unlisted` by default, sets Imperial-first metadata, clean chapters, and multilingual `.srt` subtitles (`en`, `ua` $\rightarrow$ `uk`, `ru`) with SHA-256 hash caching to save up to 1,200 API quota units.
-   - Prints ready-to-paste Facebook promo directly in chat.
+   - Prints ready-to-paste Facebook promotional copy and **📸 Flickr Publishing Metadata** (date-prefixed Russian title, description, tags, and album recommendation) directly in chat.
 
 ---
 
@@ -89,7 +91,8 @@ Then run the streamlined workflow:
 │ • Uploads via YouTube Data API v3 (inherited env vars + cached OAuth token):                  │
 │   - option_a (Default): 1 English 4K video (Unlisted) + EN/UA/RU titles, descs & .srts        │
 │   - option_b (Milestones): 3 4K editions (EN + UA/RU Unlisted) + pinned switcher comment      │
-│ • Automatically prints ready-to-copy Facebook promotional post in chat                         │
+│ • Automatically losslessly remuxes _RU.mp4 (0.2s) for instant Flickr & WhatsApp sharing        │
+│ • Prints ready-to-copy Facebook promotional post and 📸 Flickr publishing metadata in chat     │
 └───────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 

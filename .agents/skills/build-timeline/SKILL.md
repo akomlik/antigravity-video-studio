@@ -90,11 +90,11 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
 
 ### Step 5: Export 4K MP4 & Metadata Package
 1. **Render 4K Master:** Export `~/Movies/Exports/YEAR/<project_name>.mp4` (`3840x2160`, `H.264`, `AAC 192k`).
-2. **Multilingual Lossless Remux (if `option_b`):** Build `full_audio_ua.m4a` and `full_audio_ru.m4a`, and remux with the 4K video stream in `0.2s` (`ffmpeg -c:v copy`) into `<project_name>_UA.mp4` and `<project_name>_RU.mp4`.
-3. **Metadata & Thumbnails:** Run `generate_youtube_metadata.py` to create:
+2. **Lossless Russian Remux (`_RU.mp4` by Default):** Always build `full_audio_ru.m4a` and losslessly remux with the 4K video stream in `0.2s` (`ffmpeg -c:v copy -c:a aac`) into `<project_name>_RU.mp4` by default (plus `_UA.mp4` if `option_b`). This ensures Alexander always has the Russian-voiced 4K edition ready for instant upload to Flickr (`apkom`) and WhatsApp channels for family (Nina's brother, Alexander's sister in Sevastopol) and classmates who face YouTube restrictions.
+3. **Metadata, Thumbnails & Social/Flickr Package:** Run `generate_youtube_metadata.py` to create:
    - `youtube_metadata.json` (Imperial stats, hook-first title, chapters, localized text)
    - `thumbnail.jpg`, `thumbnail_ua.jpg`, `thumbnail_ru.jpg`
-   - `facebook_promo.md` (Option 1 Curiosity Hook, Direct Story, and Bilingual)
+   - `facebook_promo.md` (Facebook Curiosity Hook + First Comment, Direct Story, Bilingual, and the **📸 Flickr Publishing Box** with Russian title, description, tags, and album recommendation).
 4. **Refresh FilmCraft GUI:** Send `file.open` to FilmCraft so the assembled timeline is ready for live playback.
 
 ---

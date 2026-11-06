@@ -174,3 +174,17 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
         - *Usage Guidance:* Reserve `option_b` for multi-day family milestones or trips where localized audio is genuinely requested; default everyday cycling and excursion vlogs to `option_a`.
 - **YouTube Studio Composite Thumbnail Standard (`thumbnail.mode: "composite_ai"` — Localized per Edition):**
     - Co-design a high-impact 1920×1080 thumbnail in Section 5 of `Storyboard.md` combining: (1) a softly blurred scenic background + sharp hero portrait on the left, (2) a white-outlined sticker cutout of the key story prop/action on the right, and (3) a bold 3–4 word yellow-and-white headline across the top (`headline_text` for `thumbnail.jpg`, plus localized `headline_text_ua` $\rightarrow$ `thumbnail_ua.jpg` and `headline_text_ru` $\rightarrow$ `thumbnail_ru.jpg` for `option_b` editions).
+
+### ARTICLE X: FLICKR PUBLISHING & RUSSIAN EDITION STANDARD (`_RU.mp4`)
+
+- **Bypassing Regional YouTube Blocks for Family & Classmates:**
+    - YouTube is heavily throttled or blocked in Russia and occupied Crimea. Family members (such as Nina's brother and Alexander's sister in Sevastopol) and former Institute classmates on WhatsApp cannot easily watch YouTube releases, but have unrestricted access to Alexander's **Flickr feed (`apkom`)** and direct WhatsApp video sharing.
+- **Default Lossless Remux Law (`_RU.mp4` Always Ready):**
+    - Regardless of whether YouTube uses `option_a` (single video + CC) or `option_b`, `/build-timeline` MUST ALWAYS losslessly remux `<project>_RU.mp4` in **`0.2 seconds`** (`ffmpeg -c:v copy -c:a aac`) and save it to `~/Movies/Exports/YEAR/<project>_RU.mp4`.
+    - This guarantees Alexander always has the Russian-voiced 4K video ready for instant upload to Flickr or WhatsApp without needing to re-render.
+- **Flickr Metadata Package (One-Click Upload via Web or Lightroom Publishing Service):**
+    - On every release, `/publish-youtube` and `/build-timeline` output a dedicated **Flickr Publishing Box** (in chat and appended to `facebook_promo.md`) containing:
+        - **Title:** `YYYY-MM-DD · <Russian Title> (<mi> / <km>)` (matching Alexander's Flickr convention, e.g. `2026-10-27 · Вместо группы: выпечка в Буже и «VIP»-кофе (40.1 мили / 64.5 км)`).
+        - **Description:** Clean Russian story description highlighting landmarks, cafe stops, and route lore.
+        - **Tags:** `Mallorca, cycling, roadbike, BleeqUP, video, <Village>` (comma-separated for one-click Flickr tagging).
+        - **Recommended Album:** e.g., `2026 Fall Mallorca Cycling` in Lightroom Publishing Service / Flickr.

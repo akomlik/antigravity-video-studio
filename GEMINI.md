@@ -2,9 +2,11 @@
 
 Welcome to **Alexander Komlik's (`@akomlik`) Universal AI Video Studio**. Whenever a conversation starts in this workspace, follow these architectural rules and file paths automatically.
 
-> **⚠️ QUOTA PROTECTION RULE (GOOGLE AI PRO PLAN):**
-> - If the user is currently on **Gemini 4 Argon** and asks to run multi-step prep tasks (`/ingest-media`, `/find-music` browser automation, `/interview-brain`, `/swap-music`, or `/relink-archive`), **remind them in 1 line to switch the model dropdown to `Gemini 3.8 Flash`** (or delegate subagent work with `Model: "flash"`) so they don't burn their 5-hour Argon quota!
-> - Reserve **Gemini 4 Argon** strictly for the single-turn creative **Storyboard co-creation** (`/storyboard`), or run the entire pipeline on **Gemini 3.8 Flash** when Argon is on cooldown.
+> **💡 2-PASS STORYBOARD & MODEL SPLIT WORKFLOW (GOOGLE AI PRO PLAN):**
+> - **Pass 1: Ingest & Structural Scaffold (Gemini 3.8 Flash):** Run `/ingest-media` or the initial `/storyboard` pass on **Flash**. Flash handles all shell commands, HEIC $\rightarrow$ JPG conversion, proxy extraction (`.proxies/`), GPX telemetry calculation, and audio dB level analysis at 0% Argon cost.
+> - **Pass 2: Creative Polish & Memory Weaving (Gemini 4 Argon):** Once proxies and the draft `Storyboard.md` are on disk, switch the model dropdown to **Gemini 4 Argon** (Thinking: Low or Medium) for the creative pass. Argon acts purely as the Creative Director—weaving emotional flashbacks from `my_digital_brain.md`, sharpening the narrative arc, scripting trilingual voiceover, and designing the composite thumbnail without wasting quota on shell execution!
+> - **Assembly & Publishing (Gemini 3.8 Flash):** Switch back to **Flash** for `/build-timeline` and `/publish-youtube`.
+> - **Russian Edition (`_RU.mp4`) & Flickr Publishing Standard:** Because YouTube is heavily throttled/blocked in Russia and occupied Crimea, family (Nina's brother, Alexander's sister in Sevastopol) and Institute classmates on WhatsApp rely on Alexander's **Flickr feed (`apkom`)** and WhatsApp channels. Always losslessly remux `<project>_RU.mp4` (`0.2s` `ffmpeg -c:v copy`) by default alongside the primary master, and generate copy-ready Flickr metadata (Date-prefixed Russian title, description, tags, and album).
 
 ---
 

@@ -151,6 +151,32 @@ def build_facebook_promo(
             + (f"{lang_note}" if lang_note else "")
         ).strip()
 
+    # Build Flickr Russian Publishing Metadata
+    ru_title = locs.get("ru", {}).get("title", title)
+    date_match = re.search(r"(\d{4}-\d{2}-\d{2})", project_name)
+    date_str = date_match.group(1) if date_match else ""
+    flickr_title = f"{date_str} · {ru_title}" if date_str and not ru_title.startswith(date_str) else ru_title
+
+    ru_desc = locs.get("ru", {}).get("description", desc)
+    clean_ru_desc = "\n\n".join(
+        [p.strip() for p in ru_desc.split("\n\n") if p.strip() and not p.strip().startswith(("#", "http", "🎵", "🔊", "━━━━━━━━"))][:4]
+    )
+
+    flickr_tags = ["Mallorca", "cycling", "roadbike", "BleeqUP", "video"]
+    for t in meta.get("tags", []):
+        if t not in flickr_tags and len(flickr_tags) < 12:
+            flickr_tags.append(t)
+    tags_str = ", ".join(flickr_tags)
+    ru_video_file = f"{project_name}_RU.mp4"
+
+    flickr_data = {
+        "target_file": ru_video_file,
+        "title": flickr_title,
+        "description": clean_ru_desc,
+        "tags": tags_str,
+        "album": "2026 Fall Mallorca Cycling",
+    }
+
     promo_data = {
         "project_name": project_name,
         "youtube_url": yt_url,
@@ -172,10 +198,11 @@ def build_facebook_promo(
                 "post_text": opt3_body,
             },
         },
+        "flickr": flickr_data,
     }
 
     # Write facebook_promo.md
-    md_content = f"""# 📱 Facebook Promotional Copy: `{project_name}`
+    md_content = f"""# 📱 Social Promotional Copy: `{project_name}`
 
 > **Target Video:** [{title}]({yt_url})  
 > **Facebook Best Practice:** Use **Option 1** with 1–3 still photos attached natively to the Facebook post, then paste the link into the **First Comment** to avoid Facebook's outbound link reach penalty.
@@ -214,6 +241,20 @@ def build_facebook_promo(
 ```text
 {opt3_body}
 ```
+
+---
+
+## 📸 Flickr Video Upload (RU Edition for Family & Classmates in RU/Crimea)
+*Direct 4K video upload for Nina's brother, Alexander's sister in Sevastopol, and WhatsApp classmates who face YouTube restrictions:*
+
+- **Target File:** `~/Movies/Exports/2026/{ru_video_file}` (Russian Voiced Edition)
+- **Flickr Title:** `{flickr_title}`
+- **Flickr Description:**
+```text
+{clean_ru_desc}
+```
+- **Flickr Tags:** `{tags_str}`
+- **Recommended Album:** `2026 Fall Mallorca Cycling` (Lightroom / Flickr Publishing Service)
 """
 
     md_out = project_dir / "facebook_promo.md"
@@ -250,6 +291,17 @@ def print_promo_box(promo: dict):
     print(opt1.get("first_comment", "").strip())
     print("\n--- [OPTION 2: DIRECT ALL-IN-ONE POST] ---")
     print(opt2.get("post_text", "").strip())
+
+    flickr = promo.get("flickr", {})
+    if flickr:
+        print("\n========================================================")
+        print("📸 FLICKR PUBLISHING (RU EDITION FOR FAMILY/CLASSMATES)")
+        print("========================================================")
+        print(f"Target Video: ~/Movies/Exports/2026/{flickr.get('target_file')}")
+        print(f"Title:        {flickr.get('title')}")
+        print(f"Tags:         {flickr.get('tags')}")
+        print(f"Album:        {flickr.get('album')}")
+
     print("\nSaved full copy options -> facebook_promo.md")
     print("========================================================\n")
 
