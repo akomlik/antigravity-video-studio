@@ -214,17 +214,7 @@ def extract_project_metadata(project_dir: Path, edition: str = "ru") -> dict:
             tags.append(f'"{t_clean}"' if " " in t_clean else t_clean)
 
     # 5. Geolocation from GPX or project_manifest.json
-    lat, lon = None, None
-    manifest_p = project_dir / "project_manifest.json"
-    if manifest_p.exists():
-        try:
-            m_data = json.loads(manifest_p.read_text(encoding="utf-8"))
-            gpx_pts = m_data.get("gpx_points") or []
-            if gpx_pts:
-                mid_pt = gpx_pts[len(gpx_pts) // 2]
-                lat, lon = mid_pt.get("lat"), mid_pt.get("lon")
-        except Exception:
-            pass
+    lat, lon = extract_gpx_coordinates(project_dir)
 
     return {
         "project_name": project_name,
@@ -236,6 +226,92 @@ def extract_project_metadata(project_dir: Path, edition: str = "ru") -> dict:
         "lon": lon,
         "album": "2026 Fall Mallorca Cycling",
     }
+
+
+def extract_gpx_coordinates(project_dir: Path) -> tuple[float | None, float | None]:
+    """Finds and parses the project's .gpx track, returning (lat, lon) of the summit peak or midpoint."""
+    candidate_dirs = [project_dir]
+
+    manifest_p = project_dir / "project_manifest.json"
+    gpx_candidates = []
+    if manifest_p.exists():
+        try:
+            m_data = json.loads(manifest_p.read_text(encoding="utf-8"))
+            if m_data.get("gpx_file"):
+                gpx_candidates.append(m_data["gpx_file"])
+            if m_data.get("raw_media_folder"):
+                try:
+                    sys.path.insert(0, str(STUDIO_ROOT))
+                    from studio_config import resolve_media_path
+                    raw_p = resolve_media_path(m_data["raw_media_folder"])
+                    if raw_p.exists() and raw_p not in candidate_dirs:
+                        candidate_dirs.append(raw_p)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    # Fallback to ~/Movies/YEAR/<project_name>
+    date_m = re.search(r"(\d{4})-\d{2}-\d{2}", project_dir.name)
+    year = date_m.group(1) if date_m else "2026"
+    fallback_raw = Path(f"~/Movies/{year}/{project_dir.name}").expanduser()
+    if fallback_raw.exists() and fallback_raw not in candidate_dirs:
+        candidate_dirs.append(fallback_raw)
+
+    # Check Storyboard.md for GPX name
+    sb_p = project_dir / "Storyboard.md"
+    if sb_p.exists():
+        sb_txt = sb_p.read_text(encoding="utf-8")
+        m = re.search(r"\*\*GPX Track:\*\*\s*`?([^`\n\(\)]+\.gpx)`?", sb_txt)
+        if m:
+            gpx_candidates.append(m.group(1).strip())
+
+    found_gpx = None
+    for c_name in gpx_candidates:
+        for c_dir in candidate_dirs:
+            p = c_dir / c_name
+            if p.exists():
+                found_gpx = p
+                break
+        if found_gpx:
+            break
+
+    if not found_gpx:
+        for c_dir in candidate_dirs:
+            gpxs = list(c_dir.glob("*.gpx"))
+            if gpxs:
+                found_gpx = gpxs[0]
+                break
+
+    if not found_gpx:
+        return None, None
+
+    try:
+        root = ET.parse(found_gpx).getroot()
+        pts = []
+        for trkpt in root.iter():
+            if trkpt.tag.endswith("trkpt"):
+                lat = float(trkpt.attrib["lat"])
+                lon = float(trkpt.attrib["lon"])
+                ele = 0.0
+                for c in trkpt.iter():
+                    if c.tag.endswith("ele") and c.text:
+                        ele = float(c.text)
+                pts.append((lat, lon, ele))
+        if not pts:
+            return None, None
+
+        min_ele = min(p[2] for p in pts)
+        max_ele = max(p[2] for p in pts)
+        # If climbing/mountain route with elevation gain > 50m, pick highest elevation (pass/summit); else midpoint
+        if max_ele - min_ele > 50.0:
+            best_pt = max(pts, key=lambda x: x[2])
+        else:
+            best_pt = pts[len(pts) // 2]
+        return best_pt[0], best_pt[1]
+    except Exception as e:
+        print(f"Note reading GPX coordinates from {found_gpx.name}: {e}")
+        return None, None
 
 
 def upload_video_to_flickr(
@@ -403,6 +479,7 @@ def main():
     p.add_argument("--video-file", help="Explicit path to video file override")
     p.add_argument("--title", help="Explicit title override")
     p.add_argument("--album", default="2026 Fall Mallorca Cycling", help="Target Flickr album name")
+    p.add_argument("--geo", help="Explicit GPS coordinates override, e.g. '39.812407,2.889820' (lat,lon)")
     p.add_argument("--privacy", choices=["public", "family", "private"], default="public", help="Flickr privacy setting")
     p.add_argument("--auth", action="store_true", help="Run interactive authorization flow only")
     args = p.parse_args()
@@ -426,6 +503,15 @@ def main():
     is_public = args.privacy == "public"
     is_family = args.privacy in ("family", "public")
 
+    lat = meta.get("lat")
+    lon = meta.get("lon")
+    if args.geo:
+        try:
+            parts = [float(x.strip()) for x in args.geo.split(",")]
+            lat, lon = parts[0], parts[1]
+        except Exception:
+            print(f"Warning: Failed to parse --geo '{args.geo}'")
+
     photo_id = upload_video_to_flickr(
         session,
         video_path=video_file,
@@ -436,8 +522,8 @@ def main():
         is_family=is_family,
     )
 
-    if meta.get("lat") and meta.get("lon"):
-        set_photo_geolocation(session, photo_id, meta["lat"], meta["lon"])
+    if lat and lon:
+        set_photo_geolocation(session, photo_id, lat, lon)
 
     if album:
         assign_photo_to_album(session, photo_id, album)
