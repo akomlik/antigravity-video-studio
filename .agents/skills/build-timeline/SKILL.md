@@ -61,7 +61,14 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
      - `English Only (1 4K Master, Unlisted)`
      - `Option B — 3 Separate Voiced Videos (EN + UA + RU)`
 
-**Automatic Persistence:** Once Alexander selects his choices and submits the form, the agent writes the selected language, music tracks, HUD setting, and publishing mode directly into Section 5 of `Storyboard.md` on disk. **Zero window switching, zero manual file edits.**
+5. **Question 5: Flickr Publishing Choice**
+   - Options:
+     - `(Recommended) Russian Edition (_RU.mp4) — For family & classmates (bypasses YouTube censorship)`
+     - `Both EN Master + RU Edition`
+     - `English Master Only`
+     - `Skip Flickr for now`
+
+**Automatic Persistence:** Once Alexander selects his choices and submits the form, the agent writes the selected language, music tracks, HUD setting, and publishing modes (YouTube and Flickr) directly into Section 5 of `Storyboard.md` on disk. **Zero window switching, zero manual file edits.**
 
 ---
 
