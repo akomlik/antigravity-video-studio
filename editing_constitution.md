@@ -27,8 +27,8 @@
     - **Stage 1 — Conversational `/build-timeline` (Zero-IDE, Interactive Timeline Assembly):**
         1. Presents an in-chat clickable alignment card (`ask_question`) for Primary Voice-Over Language, Music Track #1 & #2 (with 10-second Mac speaker preview via `afplay`), and Publishing Mode (`option_a` default).
         2. Automatically writes settings into `Storyboard.md` on disk (no manual YAML/markdown editing in external IDEs!).
-        3. Builds the 4-track timeline in FilmCraft MCP, exports clean 4K `.mp4` to `~/Movies/Exports/YEAR/`, and generates `facebook_promo.md` and metadata package.
-        4. Invites human visual review directly via FilmCraft GUI playback (completely replacing tedious `cut_table.md` spreadsheets).
+        3. Builds the 4-track `.fcproj` timeline (`schema_version: 17`), loads it live into the **FilmCraft GUI**, and **pauses at a Mandatory Pre-Render Gate** so Alexander can play/scrub the timeline in FilmCraft first.
+        4. **Only after Alexander approves the live FilmCraft timeline**, exports the clean 4K `.mp4` and lossless Russian edition (`_RU.mp4`) to `~/Movies/Exports/YEAR/`, and generates `facebook_promo.md` and metadata package.
     - **Stage 2 — `/publish-youtube` (Headless Release):**
         - Uploads the 4K MP4 (`unlisted` default), sets metadata & localized titles/subtitles, posts language switcher comment, and prints copy-ready Facebook post in chat.
 

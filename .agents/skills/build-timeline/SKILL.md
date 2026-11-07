@@ -95,20 +95,30 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
 
 ---
 
-### Step 5: Export 4K MP4 & Metadata Package
-1. **Render 4K Master:** Export `~/Movies/Exports/YEAR/<project_name>.mp4` (`3840x2160`, `H.264`, `AAC 192k`).
+### Step 5: Load `.fcproj` in FilmCraft GUI & Mandatory Live Preview Gate (BEFORE 4K Render!)
+1. **Build & Save Valid `schema_version: 17` `.fcproj`:** Write `04_Project_Catalog/YEAR/<project_name>/<project_name>.fcproj` with all video clips (`V1`), overlays/PiP/HUD (`V2`), camera audio (`A1`), music (`A2`), SFX (`A3`), and synthesized voice-over (`A4`).
+2. **Open Live in FilmCraft GUI:** Launch or refresh `FilmCraft.app` (`v0.18.0+`) with the `.fcproj` file so Alexander can press Spacebar and play the timeline immediately:
+   ```bash
+   cd ~/Movies/Cache_And_Previews && open -a FilmCraft --args --control 9876 "<absolute_path_to_fcproj>"
+   ```
+3. **🛑 MANDATORY PRE-RENDER GATE (NEVER RENDER MP4 WITHOUT USER OK):**
+   - **STOP HERE** before running any full-timeline 4K MP4 export (`ffmpeg` or `render.export`).
+   - Ask Alexander in chat:
+     *"Timeline `.fcproj` is built and loaded in FilmCraft! Please play/scrub it in FilmCraft and let me know if any cuts, audio levels, or overlays need tweaking—or say **'OK to render'** to export the final 4K MP4 and Russian edition."*
+
+---
+
+### Step 6: Export 4K MP4, Russian Edition (`_RU.mp4`) & Metadata Package (Only After User Approves Timeline)
+1. **Render 4K Master:** Once Alexander approves the timeline in FilmCraft, export `~/Movies/Exports/YEAR/<project_name>.mp4` (`3840x2160`, `H.264`, `AAC 192k`).
 2. **Lossless Russian Remux (`_RU.mp4` by Default):** Always build `full_audio_ru.m4a` and losslessly remux with the 4K video stream in `0.2s` (`ffmpeg -c:v copy -c:a aac`) into `<project_name>_RU.mp4` by default (plus `_UA.mp4` if `option_b`). This ensures Alexander always has the Russian-voiced 4K edition ready for instant upload to Flickr (`apkom`) and WhatsApp channels for family (Nina's brother, Alexander's sister in Sevastopol) and classmates who face YouTube restrictions.
 3. **Metadata, Thumbnails & Social/Flickr Package:** Run `generate_youtube_metadata.py` to create:
    - `youtube_metadata.json` (Imperial stats, hook-first title, chapters, localized text)
    - `thumbnail.jpg`, `thumbnail_ua.jpg`, `thumbnail_ru.jpg`
    - `facebook_promo.md` (Facebook Curiosity Hook + First Comment, Direct Story, Bilingual, and the **📸 Flickr Publishing Box** with Russian title, description, tags, and album recommendation).
-4. **Refresh FilmCraft GUI:** Send `file.open` to FilmCraft so the assembled timeline is ready for live playback.
 
 ---
 
-### Step 6: Visual Review & Upload Approval Gate
+### Step 7: Final Upload Approval Gate
 1. Present the export summary, hook-first title, and thumbnail previews in chat.
-2. Invite Alexander to watch the exported `.mp4` or scrub the live timeline in FilmCraft.
-3. **MANDATORY UPLOAD GATE (NEVER AUTO-UPLOAD):** Pause and ask:
-   *"Timeline assembled and 4K MP4 exported to `~/Movies/Exports/YEAR/<project_name>.mp4`. Would you like to review in FilmCraft first, or are you ready to upload to YouTube (`/publish-youtube`)?"*
-4. Any timeline adjustments requested by Alexander (*"make scene 2 shorter"*, *"swap music"*) are made directly in plain text in chat!
+2. **MANDATORY UPLOAD GATE (NEVER AUTO-UPLOAD):** Pause and ask:
+   *"4K MP4 (`<project_name>.mp4` and `_RU.mp4`) exported to `~/Movies/Exports/YEAR/`. Ready to publish to YouTube (`/publish-youtube`) and Flickr (`/publish-flickr`)?"*

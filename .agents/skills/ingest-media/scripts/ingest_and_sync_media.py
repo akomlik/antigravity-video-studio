@@ -85,9 +85,10 @@ def convert_heic_to_jpg(project_dir: Path):
 
 
 def generate_video_proxy_thumb(video_path: Path, proxy_dir: Path, duration_s: float):
-    """Extracts a lightweight 640px JPEG thumbnail at 25% into the video clip for fast AI vision inspection."""
+    """Extracts a lightweight 640px JPEG thumbnail at 25% into the video clip AND a multi-frame contact strip for clips >= 10s."""
     proxy_dir.mkdir(parents=True, exist_ok=True)
     thumb_path = proxy_dir / f"{video_path.stem}_thumb.jpg"
+    strip_path = proxy_dir / f"{video_path.stem}_strip.jpg"
     if not thumb_path.exists():
         if shutil.which("ffmpeg"):
             seek_s = max(0.0, round(duration_s * 0.25, 2))
@@ -111,6 +112,17 @@ def generate_video_proxy_thumb(video_path: Path, proxy_dir: Path, duration_s: fl
                     check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
                 )
                 ql_png.unlink(missing_ok=True)
+    # For clips >= 10s, also generate a 2x3 (6-frame) contact sheet across the clip so no multi-stage action or encounter is missed!
+    if duration_s >= 10.0 and not strip_path.exists() and shutil.which("ffmpeg"):
+        interval = max(1.5, round(duration_s / 6.2, 2))
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", str(video_path),
+                "-vf", f"fps=1/{interval},scale=480:-1,tile=3x2",
+                "-frames:v", "1", "-q:v", "4", str(strip_path)
+            ],
+            check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
     return f".proxies/{thumb_path.name}" if thumb_path.exists() else None
 
 
@@ -477,11 +489,15 @@ def recommend_music_tracks(genre: str, studio_root: Path):
 
 
 def parse_media_utc(item_info: dict, gpx_points: list) -> dt.datetime:
-    """Accurately resolves UTC timestamp of a clip/photo from BleeqUP epoch filename, ISO8601, or EXIF."""
+    """Accurately resolves UTC timestamp of a clip/photo from ranger-sync EXIF/QuickTime metadata, ISO8601, or BleeqUP epoch filename."""
+    from zoneinfo import ZoneInfo
+
     fname = item_info.get("filename", "")
     m_epoch = re.search(r"(?:VIDEO|IMG)_(\d{13})\b", fname)
-    if m_epoch:
-        return dt.datetime.fromtimestamp(int(m_epoch.group(1)) / 1000.0, tz=dt.timezone.utc)
+    epoch_dt = (
+        dt.datetime.fromtimestamp(int(m_epoch.group(1)) / 1000.0, tz=dt.timezone.utc)
+        if m_epoch else None
+    )
 
     raw = (item_info.get("creation_time_utc") or "").strip()
     if raw:
@@ -492,19 +508,36 @@ def parse_media_utc(item_info: dict, gpx_points: list) -> dt.datetime:
         try:
             parsed = dt.datetime.fromisoformat(norm)
             if parsed.tzinfo is None:
-                # EXIF local time without tz: infer local offset from GPX date if in Europe/Madrid (+1/+2)
+                # EXIF local time without tz: infer timezone from GPX region (Europe/Madrid vs America/Los_Angeles)
                 if gpx_points:
+                    lat0, lon0 = gpx_points[0]["lat"], gpx_points[0]["lon"]
+                    if 35.0 <= lat0 <= 45.0 and -10.0 <= lon0 <= 15.0:
+                        tz_local = ZoneInfo("Europe/Madrid")
+                        return parsed.replace(tzinfo=tz_local).astimezone(dt.timezone.utc)
+                    elif 32.0 <= lat0 <= 42.0 and -125.0 <= lon0 <= -114.0:
+                        tz_local = ZoneInfo("America/Los_Angeles")
+                        return parsed.replace(tzinfo=tz_local).astimezone(dt.timezone.utc)
+
                     gpx_start = gpx_points[0]["time"]
-                    # Try +01:00 (CET) or +02:00 (CEST) or UTC, pick whichever lands inside the GPX time window
+                    gpx_end = gpx_points[-1]["time"]
+
+                    def dist_to_gpx_window(c: dt.datetime) -> float:
+                        if gpx_start <= c <= gpx_end:
+                            return 0.0
+                        return min(abs((c - gpx_start).total_seconds()), abs((c - gpx_end).total_seconds()))
+
                     candidates = [
                         parsed.replace(tzinfo=dt.timezone(dt.timedelta(hours=h))).astimezone(dt.timezone.utc)
-                        for h in (0, 1, 2, -7, -8)
+                        for h in (1, 2, 0, -7, -8)
                     ]
-                    return min(candidates, key=lambda c: abs((c - gpx_start).total_seconds()))
+                    return min(candidates, key=dist_to_gpx_window)
                 return parsed.replace(tzinfo=dt.timezone.utc)
             return parsed.astimezone(dt.timezone.utc)
         except ValueError:
             pass
+
+    if epoch_dt is not None:
+        return epoch_dt
 
     return gpx_points[0]["time"] if gpx_points else dt.datetime.now(dt.timezone.utc)
 
