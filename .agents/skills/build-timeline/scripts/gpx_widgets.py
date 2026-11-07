@@ -262,6 +262,59 @@ def render_live_telemetry_hud_series(
     return entries
 
 
+def render_character_callout_badge(
+    name_line: str,
+    role_line: str,
+    out_png: Path,
+    position: str = "bottom_left",
+    accent_color: tuple[int, int, int, int] = (255, 184, 28, 255),
+    canvas_size: tuple[int, int] = (3840, 2160),
+) -> Path:
+    """
+    Renders a 4K transparent overlay PNG with a sleek frosted-glass Character Identification Callout
+    ("Who's Who in the Frame", e.g., 'NINA KOMLIK' / 'Wife & Riding Partner · Together 40+ Years' or
+    'LEFT TO RIGHT: PAULA · ALEXANDER · JEFF' / 'San Jose Bicycle Club · April 2016 First Mallorca Trip').
+    Positions: 'bottom_left' (default, above YouTube CC safe zone), 'bottom_right', 'top_left'.
+    """
+    w, h = canvas_size
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img, "RGBA")
+
+    font_name = _load_font(44, bold=True)
+    font_role = _load_font(30, bold=False)
+
+    nb = draw.textbbox((0, 0), name_line, font=font_name)
+    rb = draw.textbbox((0, 0), role_line, font=font_role)
+    text_w = max(nb[2] - nb[0], rb[2] - rb[0])
+    card_w = max(680, text_w + 110)
+    card_h = 148
+
+    if position == "bottom_right":
+        x0 = w - card_w - 84
+        y0 = h - card_h - 240
+    elif position == "top_left":
+        x0 = 72
+        y0 = 72
+    else:
+        # bottom_left (y0 = h - 388 keeps it safely above YouTube's bottom CC subtitle band!)
+        x0 = 84
+        y0 = h - card_h - 240
+
+    x1, y1 = x0 + card_w, y0 + card_h
+
+    draw.rounded_rectangle([x0 - 4, y0 + 6, x1 + 4, y1 + 10], radius=26, fill=(0, 0, 0, 125))
+    draw.rounded_rectangle([x0, y0, x1, y1], radius=22, fill=(14, 19, 28, 232), outline=(255, 255, 255, 70), width=2)
+    # Left vertical accent bar
+    draw.rounded_rectangle([x0 + 18, y0 + 22, x0 + 28, y1 - 22], radius=5, fill=accent_color)
+
+    draw.text((x0 + 48, y0 + 22), name_line, font=font_name, fill=accent_color)
+    draw.text((x0 + 48, y0 + 82), role_line, font=font_role, fill=(240, 244, 250, 245))
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_png, "PNG", compress_level=1)
+    return out_png
+
+
 ACTIVITY_SPEED_THRESHOLDS = {
     "cycling_ride": 2.0,
     "cycling": 2.0,

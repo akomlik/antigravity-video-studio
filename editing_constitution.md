@@ -8,9 +8,13 @@
 
 ### ARTICLE I: STAGE 0 COLLABORATIVE Storyboard.md & AUTOMATIC MEMORY HARVESTING
 
-- **Stage 0 — `Storyboard.md` First:**
+- **Stage 0 — `Storyboard.md` First & The Upfront "Controlling Idea" (`Сверхзадача`) Law:**
+    - Every short film must be built around **ONE clear Controlling Idea / Central Thesis ("Сверхзадача")** chosen *before* scripting scenes (inspired by Igor's professional critique).
+    - **The "One Spine + Memory Banking" Rule:** Never pack 4–5 competing life stories into a single 2–3 minute ride vlog. During `/storyboard`, the agent proposes 2–3 candidate Controlling Ideas via `ask_question` (e.g., *(A) Resilience: How cycling & friends helped overcome cancer*, *(B) Partnership: How shared passions make a marriage with Nina even stronger*, or *(C) The Peloton Brotherhood: The extraordinary characters you meet on two wheels*). Once one thesis is selected, every scene, flashback (max 1–2 per film), and closing takeaway serves that single idea. Any extra memories discovered along the way are **harvested into `my_digital_brain.md` and banked for future videos**!
     - Every project folder must have a **`Storyboard.md`** file (synced to `04_Project_Catalog/YEAR/<project_name>/Storyboard.md`).
-    - If `Storyboard.md` is missing or is an unpopulated skeleton, the agent MUST first run `ingest_and_sync_media.py` (which converts `.HEIC` to `.jpg`, extracts `.proxies/` video thumbnails, and reads EXIF/QuickTime GPS/timestamps), visually inspect the proxy thumbnails, and populate `Storyboard.md` with:
+    - If `Storyboard.md` is missing or is an unpopulated skeleton, the agent MUST first run `ingest_and_sync_media.py` (which converts `.HEIC` to `.jpg`, extracts `.proxies/` video thumbnails, and reads EXIF/QuickTime GPS/timestamps), visually inspect the proxy thumbnails, align on the **Single Controlling Idea**, and populate `Storyboard.md` with:
+        - **The Controlling Idea (1-Sentence North Star Thesis & Final Takeaway)**
+        - **Character Roster & First-Appearance Callout Badges ("Who's Who in the Frame")**
         - **Narrative Overview & Comedic/Emotional Arc**
         - **Scene-by-Scene Breakdown (`Scene 00` $\rightarrow$ `Scene N`)** with exact file ranges, timestamps, GPS coordinates, and visual descriptions.
         - **Two-Phase or Multi-Phase Musical Structure** (e.g., Phase 1 Rolling Cadence $\rightarrow$ Phase 2 Scenic Reveal or Market Comedy).
@@ -108,7 +112,9 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
 
 - **Action, Excursions & Parties (85% Hard Cuts / 15% Dissolves):** Use clean beat-aligned hard cuts within scenes, reserving `Cross Dissolve` (`0.5s`) for scene boundaries and flashback transitions (such as entering/exiting `Scene 00`).
 - **Archival Slideshows (`1.0s` Cross Dissolves):** For 1980–1984 university slideshows and 1977+ B&W retrospectives, apply smooth `1.0s` (30 frames) `Cross Dissolve` transitions between slides and a `1.5s` `Dip to Black` between chronological eras.
-- **Storyboard Punchline Captions (`V2`):** When `Storyboard.md` highlights a specific narrative joke or callback (e.g., *"Scene 00: July 2025 — Last sighting of the €20 jacket at SJC"*, *"€20 -> €30 inflation (+ he's in Alcúdia every Tuesday!)"*, or *"Saved by Nina's sharp eyes: Front disc brake pad on the ground!"*), generate clean lower-third text overlays on `V2`.
+- **Storyboard Punchline Captions & First-Appearance Character Callout Badges (`V2`):**
+    - **Character Identification Law ("Who's Who in the Frame"):** Viewers outside Alexander's immediate circle do not automatically know who is who when multiple riders or companions appear on screen. The first time a key person (e.g., **Nina**, **Bruce**, **Lisa**, **Ian**, **Pete**, **Brian**, **Chas**, **Paula**, **Jeff**, or university classmates) appears clearly in a video clip or still photo, place a sleek `3.0s–3.5s` frosted-glass **Character Callout Badge** on `V2` via `render_character_callout_badge()` in `gpx_widgets.py` (e.g., `NINA KOMLIK · Wife & Riding Partner` / `НИНА · Моя жена и спутница`, or `Left to Right: Paula · Alexander · Jeff (SJBC, April 2016)`).
+    - **Narrative Punchline Captions (`V2`):** When `Storyboard.md` highlights a specific narrative joke, archival flashback year, or callback (e.g., *"APRIL 2016 · FIRST DI2 RENTAL AT PRO CYCLE HIRE"*, *"€20 -> €30 inflation (+ he's in Alcúdia every Tuesday!)"*, or *"Saved by Nina's sharp eyes: Front disc brake pad on the ground!"*), generate clean glassmorphic pill overlays on `V2`.
 - **Color & Monochrome Integrity:** Conform iPhone 15 Pro `BT.2020` HDR clips to `Rec.709` linear light. Never apply color LUTs or saturation adjustments to 1977+ black-and-white film scans.
 
 ### ARTICLE VII: DIRECT TIMELINE ASSEMBLY & FILMCRAFT PLAYBACK REVIEW

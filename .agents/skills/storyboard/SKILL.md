@@ -44,6 +44,8 @@ To maximize creative depth while protecting your 5-hour Argon window:
 2. **Pass 2 — Creative Storyboard Polish & Memory Weaving (Argon):**
    - Inspect key `.proxies/*_thumb.jpg` thumbnails, converted `.jpg` stills, `.gpx` track points, and any referenced YouTube URLs.
    - Cross-reference `./my_digital_brain.md` to identify emotional flashbacks, past trips, recurring people (Nina, cycling companions), or gear lore.
+   - **Upfront "Controlling Idea" (`Сверхзадача`) Alignment Gate:** Before writing the full scene map, present 2–3 candidate **Controlling Ideas** via `ask_question` (*"What single emotional takeaway should this film build toward?"*). Once chosen, keep **1 Primary Narrative Spine + at most 1–2 supporting flashbacks**; bank any tangential memories into `my_digital_brain.md` for future rides so the film never feels over-stuffed.
+   - **Character Identification Plan ("Who's Who in the Frame"):** List every named person appearing on camera and specify their **First-Appearance Character Callout Badge** (`name`, `role/relationship`, `timestamp_s`, and `position`) so outside viewers immediately know who is who.
    - Polish `<path_to_folder>/Storyboard.md` AND copy it to `04_Project_Catalog/YEAR/<project_name>/Storyboard.md` with **5 structured sections**:
      - **Section 1: Story Overview & Narrative Arc** (Imperial + Metric stats).
      - **Section 2: Multi-Phase Music Plan** (`03_Audio_Library/01_Curated_BGM/` tracks, ducking under VO/dialog, `+3.5 dB` swell during pure riding).
