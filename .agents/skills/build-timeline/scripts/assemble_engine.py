@@ -125,6 +125,21 @@ def make_volume_effect(fade_in_s=None, fade_out_s=None, duration_s=0.0):
     ]
 
 
+def make_static_motion(src_w, src_h, seq_w=3840, seq_h=2160):
+    return {
+        "effect": "motion",
+        "enabled": True,
+        "params": {
+            "position": {"value": {"Vec2": {"x": seq_w / 2.0, "y": seq_h / 2.0}}},
+            "scale": {"value": {"Float": 100.0}},
+            "scale_width": {"value": {"Float": 100.0}},
+            "uniform_scale": {"value": {"Bool": True}},
+            "rotation": {"value": {"Float": 0.0}},
+            "anchor": {"value": {"Vec2": {"x": src_w / 2.0, "y": src_h / 2.0}}},
+            "anti_flicker": {"value": {"Float": 0.0}},
+        },
+    }
+
 def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom_in=True, start_pos=None, end_pos=None, start_scale=None, end_scale=None):
     """Creates a full-bleed 2-axis motion effect with true-center anchor and Ken Burns scale + pan keyframing."""
     dur_ticks = int(duration_s * TICKS_PER_SEC)
@@ -375,7 +390,9 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
             vinfo = items.get(media_id, {}).get("kind", {}).get("Media", {}).get("info", {}).get("video") or {}
             src_w = vinfo.get("width", 1920)
             src_h = vinfo.get("height", 1080)
-            if name.lower().endswith((".jpg", ".jpeg", ".png", ".heic")):
+            # Still images: apply Ken Burns unless the still is a pre-composed full-frame 16:9 graphic (e.g. Strava comparison card, infographic, or 4K/HUD canvas)
+            is_static_graphic = "-4k." in name.lower() or "graphic" in name.lower() or "card" in name.lower() or (src_w == seq_w and src_h == seq_h and "strava" in name.lower())
+            if name.lower().endswith((".jpg", ".jpeg", ".png", ".heic")) and not is_static_graphic:
                 it["scale_to_frame"] = False
                 effects = it.get("effects", [])
                 effects = [e for e in effects if e.get("effect") != "motion"]
@@ -383,6 +400,13 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
                 still_zoom_toggle = not still_zoom_toggle
                 it["effects"] = effects
                 print(f"Applied full-bleed 2-axis Ken Burns motion to {name} ({src_w}x{src_h} -> {seq_w}x{seq_h}, {dur_s:.1f}s)")
+            elif is_static_graphic:
+                it["scale_to_frame"] = True
+                effects = it.get("effects", [])
+                effects = [e for e in effects if e.get("effect") != "motion"]
+                effects.insert(0, make_static_motion(src_w, src_h, seq_w, seq_h))
+                it["effects"] = effects
+                print(f"Preserved static full-frame graphic framing for {name} ({src_w}x{src_h})")
             else:
                 it["scale_to_frame"] = True
                 for eff in it.get("effects", []):
