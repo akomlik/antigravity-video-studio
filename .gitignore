@@ -5,6 +5,7 @@
 __pycache__/
 *.pyc
 /skills/
+.cache/
 
 # Virtual Environment, Secrets & Local Agent Bindings
 .venv/
