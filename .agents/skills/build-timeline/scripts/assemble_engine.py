@@ -374,19 +374,19 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
         verify_and_repair_v1_continuity(seq)
         all_v1_items = v1.get("items", [])
         max_src_w = max(
-            (items.get(str(it["item"]), {}).get("kind", {}).get("Media", {}).get("info", {}).get("video") or {}).get("width", 1920)
+            (items.get(str(it.get("item", it.get("media_id"))), {}).get("kind", {}).get("Media", {}).get("info", {}).get("video") or {}).get("width", 1920)
             for it in all_v1_items
         )
         seq_w, seq_h = (3840, 2160) if max_src_w > 1920 else (1920, 1080)
-        seq["settings"]["width"] = seq_w
-        seq["settings"]["height"] = seq_h
-        seq["settings"]["preset"] = f"{seq_w}x{seq_h} 30"
+        seq.setdefault("settings", {})["width"] = seq_w
+        seq.setdefault("settings", {})["height"] = seq_h
+        seq.setdefault("settings", {})["preset"] = f"{seq_w}x{seq_h} 30"
 
         still_zoom_toggle = True
         for it in all_v1_items:
             name = it.get("name", "")
             dur_s = it.get("duration", 0) / TICKS_PER_SEC
-            media_id = str(it["item"])
+            media_id = str(it.get("item", it.get("media_id")))
             vinfo = items.get(media_id, {}).get("kind", {}).get("Media", {}).get("info", {}).get("video") or {}
             src_w = vinfo.get("width", 1920)
             src_h = vinfo.get("height", 1080)

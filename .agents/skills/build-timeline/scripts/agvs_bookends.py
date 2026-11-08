@@ -61,6 +61,19 @@ def load_apple_font(role: str, size: int) -> ImageFont.FreeTypeFont:
     Bans all unicode emojis in Pillow rendering.
     """
     candidates = {
+        "card_title": [
+            ("/System/Library/Fonts/Avenir Next.ttc", 8),             # Heavy
+            ("/System/Library/Fonts/Avenir Next.ttc", 0),             # Bold
+            ("/System/Library/Fonts/Supplemental/Futura.ttc", 4),      # Condensed ExtraBold
+        ],
+        "card_subtitle": [
+            ("/System/Library/Fonts/Avenir Next.ttc", 2),             # Demi Bold
+            ("/System/Library/Fonts/HelveticaNeue.ttc", 6),            # Medium
+        ],
+        "stamp_mono": [
+            ("/System/Library/Fonts/Supplemental/AmericanTypewriter.ttc", 2),  # Bold
+            ("/System/Library/Fonts/SFNSMono.ttf", None),
+        ],
         "hero_title": [
             ("/System/Library/Fonts/Avenir Next.ttc", 8),             # Heavy
             ("/System/Library/Fonts/Supplemental/Futura.ttc", 4),      # Condensed ExtraBold
@@ -550,8 +563,8 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     canvas = create_warm_parchment_canvas(w, h)
 
     # 1. Pre-render Realistic Soft Drop Shadow for Right Polaroid Zone (rotated -2.0°)
-    # Polaroid dimensions: 1864 x 1164, center: cx=2670, cy=1025
-    pw, ph = 1864, 1164
+    # Polaroid dimensions: 1864 x 1184, center: cx=2670, cy=1025
+    pw, ph = 1864, 1184
     shadow_card = Image.new("RGBA", (pw, ph), (35, 31, 29, 130))
     shadow_card_rot = shadow_card.rotate(-2.0, resample=Image.Resampling.BICUBIC, expand=True)
     sw, sh = shadow_card_rot.size
@@ -566,19 +579,19 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     draw = ImageDraw.Draw(canvas)
 
     # 2. Left Zone: Top Vintage Distressed Rubber Stamp (X: 130, Y: 110)
-    f_stamp = load_apple_font("stamp_typewriter", 30)
-    f_motto = load_apple_font("body_bold", 26)
+    f_stamp = load_apple_font("stamp_typewriter", 38)
+    f_motto = load_apple_font("card_subtitle", 36)
 
-    stamp_w, stamp_h = 860, 116
+    stamp_w, stamp_h = 1120, 144
     stamp_img = Image.new("RGBA", (stamp_w, stamp_h), (0, 0, 0, 0))
     sd = ImageDraw.Draw(stamp_img)
     sd.rounded_rectangle([2, 2, stamp_w - 3, stamp_h - 3], radius=6, outline=COLOR_POSTMARK_CRIMSON, width=4)
     sd.rounded_rectangle([8, 8, stamp_w - 9, stamp_h - 9], radius=4, outline=COLOR_POSTMARK_CRIMSON, width=2)
-    sd.text((26, 18), "AGVS // ANTIGRAVITY VIDEO STUDIO", font=f_stamp, fill=COLOR_POSTMARK_CRIMSON)
-    sd.text((28, 64), spec.get("studio_motto", "").upper(), font=f_motto, fill=COLOR_UMBER_INK)
+    sd.text((28, 18), "AGVS // ANTIGRAVITY VIDEO STUDIO", font=f_stamp, fill=COLOR_POSTMARK_CRIMSON)
+    sd.text((30, 78), spec.get("studio_motto", "").upper(), font=f_motto, fill=COLOR_ESPRESSO_INK)
 
     stamp_rot = stamp_img.rotate(-1.5, resample=Image.Resampling.BICUBIC, expand=True)
-    canvas.paste(stamp_rot, (130, 105), stamp_rot)
+    canvas.paste(stamp_rot, (130, 95), stamp_rot)
 
     # 3. Left Zone: iMovie-Style Location Headline (X: 130, Y: 250)
     f_hero = load_apple_font("hero_title", 96)
@@ -629,34 +642,34 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
         # 6px postmark crimson inner line
         b_draw.line(projected_pts, fill=COLOR_POSTMARK_CRIMSON, width=6, joint="curve")
 
-    # Start Pin (Forest Green)
+    # Start Pin (Forest Green with 18px radius)
     spx, spy = int(start_px[0]), int(start_px[1])
-    b_draw.ellipse([spx - 14, spy - 14, spx + 14, spy + 14], fill=COLOR_FOREST_GREEN, outline=(252, 249, 242, 255), width=3)
-    b_draw.ellipse([spx - 4, spy - 4, spx + 4, spy + 4], fill=(252, 249, 242, 255))
-    # Start pill label
-    f_pill = load_apple_font("body_bold", 24)
+    b_draw.ellipse([spx - 18, spy - 18, spx + 18, spy + 18], fill=COLOR_FOREST_GREEN, outline=(252, 249, 242, 255), width=4)
+    b_draw.ellipse([spx - 6, spy - 6, spx + 6, spy + 6], fill=(252, 249, 242, 255))
+    # Start pill label (38pt Avenir Next Bold)
+    f_pill = load_apple_font("section_header", 38)
     st_label = "START · BONAIRE"
     s_bbox = b_draw.textbbox((0, 0), st_label, font=f_pill)
-    sw = s_bbox[2] - s_bbox[0] + 24
-    sh = s_bbox[3] - s_bbox[1] + 14
+    sw = s_bbox[2] - s_bbox[0] + 32
+    sh = s_bbox[3] - s_bbox[1] + 20
     slx = min(map_w - sw - 20, max(20, spx - sw // 2))
-    sly = min(map_h - sh - 20, max(20, spy - 38 - sh))
-    b_draw.rounded_rectangle([slx, sly, slx + sw, sly + sh], radius=6, fill=COLOR_POLAROID_PAPER, outline=COLOR_UMBER_INK, width=2)
-    b_draw.text((slx + 12, sly + 6), st_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
+    sly = min(map_h - sh - 20, max(20, spy - 48 - sh))
+    b_draw.rounded_rectangle([slx, sly, slx + sw, sly + sh], radius=10, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
+    b_draw.text((slx + 16, sly + 10), st_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
 
-    # Summit Pin (Postmark Crimson)
+    # Summit Pin (Postmark Crimson with 18px radius)
     sum_px = int(summit_px[0]), int(summit_px[1])
-    b_draw.ellipse([sum_px[0] - 14, sum_px[1] - 14, sum_px[0] + 14, sum_px[1] + 14], fill=COLOR_POSTMARK_CRIMSON, outline=(252, 249, 242, 255), width=3)
-    b_draw.ellipse([sum_px[0] - 4, sum_px[1] - 4, sum_px[0] + 4, sum_px[1] + 4], fill=(252, 249, 242, 255))
-    # Summit pill label
+    b_draw.ellipse([sum_px[0] - 18, sum_px[1] - 18, sum_px[0] + 18, sum_px[1] + 18], fill=COLOR_POSTMARK_CRIMSON, outline=(252, 249, 242, 255), width=4)
+    b_draw.ellipse([sum_px[0] - 6, sum_px[1] - 6, sum_px[0] + 6, sum_px[1] + 6], fill=(252, 249, 242, 255))
+    # Summit pill label (38pt Avenir Next Bold)
     sum_label = "TURNAROUND · MORTITX"
     sm_bbox = b_draw.textbbox((0, 0), sum_label, font=f_pill)
-    smw = sm_bbox[2] - sm_bbox[0] + 24
-    smh = sm_bbox[3] - sm_bbox[1] + 14
+    smw = sm_bbox[2] - sm_bbox[0] + 32
+    smh = sm_bbox[3] - sm_bbox[1] + 20
     smlx = min(map_w - smw - 20, max(20, sum_px[0] - smw // 2))
-    smly = min(map_h - smh - 20, max(20, sum_px[1] + 24))
-    b_draw.rounded_rectangle([smlx, smly, smlx + smw, smly + smh], radius=6, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=2)
-    b_draw.text((smlx + 12, smly + 6), sum_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
+    smly = min(map_h - smh - 20, max(20, sum_px[1] + 32))
+    b_draw.rounded_rectangle([smlx, smly, smlx + smw, smly + smh], radius=10, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
+    b_draw.text((smlx + 16, smly + 10), sum_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
 
     # Compass rose in top-right of map box
     draw_compass_rose(b_draw, cx=map_w - 75, cy=85, r=42)
@@ -679,7 +692,7 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     draw.line([(tx0, ty0), (tx1, ty0)], fill=COLOR_UMBER_INK, width=3)
     draw.line([(tx0, ty1), (tx1, ty1)], fill=COLOR_UMBER_INK, width=3)
 
-    f_ticket = load_apple_font("stamp_typewriter", 34)
+    f_ticket = load_apple_font("stamp_typewriter", 46)
     dist_val = f"{spec.get('distance_mi', 35.2):.1f}"
     ele_val = f"{spec.get('elevation_ft', 1650):,}"
     ticket_str = f"DATE: {spec.get('date_str', '2026-11-05')}     •     {spec.get('short_title', 'SOLO COLL DE FEMENIA ON ZERO-T')}     •     {dist_val} MI  |  {ele_val} FT CLIMBING"
@@ -708,8 +721,8 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
     canvas = create_warm_parchment_canvas(w, h)
 
     # 1. Pre-render Realistic Soft Drop Shadow for Left Polaroid (rotated +1.5°)
-    # Left Polaroid: 1664 x 1052, center: cx=1075, cy=1030
-    pw, ph = 1664, 1052
+    # Left Polaroid: 1664 x 1072, center: cx=1075, cy=1030
+    pw, ph = 1664, 1072
     shadow_card = Image.new("RGBA", (pw, ph), (35, 31, 29, 130))
     shadow_card_rot = shadow_card.rotate(1.5, resample=Image.Resampling.BICUBIC, expand=True)
     sw, sh = shadow_card_rot.size
@@ -731,24 +744,34 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
     # Inset credits container with subtle paper border
     draw.rounded_rectangle([rx0, ry0, rx1, ry1], radius=14, fill=COLOR_POLAROID_PAPER, outline=COLOR_POLAROID_BORDER, width=2)
 
-    # Header
-    f_h1 = load_apple_font("hero_title", 52)
-    f_h2 = load_apple_font("section_header", 30)
+    # Header (62pt Heavy, 36pt Bold)
+    f_h1 = load_apple_font("hero_title", 62)
+    f_h2 = load_apple_font("section_header", 36)
     draw.text((rx0 + 56, ry0 + 44), "CREATED BY ALEXANDER KOMLIK", font=f_h1, fill=COLOR_ESPRESSO_INK)
-    draw.text((rx0 + 58, ry0 + 112), "AN ANTIGRAVITY VIDEO STUDIO PRODUCTION", font=f_h2, fill=COLOR_POSTMARK_CRIMSON)
+    draw.text((rx0 + 58, ry0 + 124), "AN ANTIGRAVITY VIDEO STUDIO PRODUCTION", font=f_h2, fill=COLOR_POSTMARK_CRIMSON)
+
+    # Contact Pill Badge (38pt stamp_mono)
+    f_contact = load_apple_font("stamp_mono", 38)
+    contact_str = "@akomlik   •   github.com/akomlik/antigravity-video-studio"
+    cb = draw.textbbox((0, 0), contact_str, font=f_contact)
+    cw = cb[2] - cb[0]
+    px0 = rx0 + 56
+    py0 = ry0 + 184
+    px1 = rx1 - 56
+    py1 = py0 + 64
+    draw.rounded_rectangle([px0, py0, px1, py1], radius=12, fill=COLOR_TICKET_BG, outline=COLOR_UMBER_INK, width=2)
+    draw.text((px0 + (px1 - px0 - cw) // 2, py0 + 12), contact_str, font=f_contact, fill=COLOR_ESPRESSO_INK)
 
     # Horizontal divider rule with centered diamond ornament
-    div_y = ry0 + 172
+    div_y = py1 + 28
     draw.line([(rx0 + 48, div_y), (rx1 - 48, div_y)], fill=COLOR_UMBER_INK, width=3)
-    # Diamond ornament
     dcx = (rx0 + rx1) // 2
     draw.polygon([(dcx, div_y - 8), (dcx + 8, div_y), (dcx, div_y + 8), (dcx - 8, div_y)], fill=COLOR_POSTMARK_CRIMSON)
 
-    f_cat = load_apple_font("section_header", 34)
-    f_item = load_apple_font("body_bold", 32)
-    f_sub = load_apple_font("body_regular", 28)
+    f_cat = load_apple_font("section_header", 42)
+    f_item = load_apple_font("body_bold", 42)
 
-    def draw_wrapped_line(x: int, y: int, text: str, font, fill, max_w: int = rw - 130, line_h: int = 40) -> int:
+    def draw_wrapped_line(x: int, y: int, text: str, font, fill, max_w: int = rw - 130, line_h: int = 52) -> int:
         words = text.split()
         lines = []
         cur = ""
@@ -772,39 +795,24 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
 
     # 1. THE PELOTON & CAST
     draw.text((rx0 + 56, cur_y), "THE PELOTON & CAST", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
-    cur_y += 42
+    cur_y += 50
     for c in spec.get("cast_credits", [])[:4]:
-        cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {c}", f_item, COLOR_ESPRESSO_INK, line_h=40)
-    cur_y += 18
+        cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {c}", f_item, COLOR_ESPRESSO_INK, line_h=50)
+    cur_y += 32
 
-    # 2. MACHINERY & OPTICS
-    draw.text((rx0 + 56, cur_y), "MACHINERY & OPTICS", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
-    cur_y += 42
+    # 2. MACHINERY & TELEMETRY
+    draw.text((rx0 + 56, cur_y), "MACHINERY & TELEMETRY", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
+    cur_y += 50
     steed_str = f"• {spec.get('steed_credit')}"
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, steed_str, f_item, COLOR_ESPRESSO_INK, line_h=38)
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• BleeqUP Ranger AI Glasses (100% Organic Head-Turns) • iPhone 15 Pro", f_item, COLOR_ESPRESSO_INK, line_h=38)
-    cur_y += 18
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, steed_str, f_item, COLOR_ESPRESSO_INK, line_h=50)
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• BleeqUP Ranger AI Glasses (100% Organic Head-Turns) • iPhone 15 Pro", f_item, COLOR_ESPRESSO_INK, line_h=50)
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• Garmin Edge 840 • my_digital_brain.md • AGVS Engine v2.0", f_item, COLOR_ESPRESSO_INK, line_h=50)
+    cur_y += 32
 
-    # 3. TELEMETRY & ARCHIVE
-    draw.text((rx0 + 56, cur_y), "TELEMETRY & ARCHIVE", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
-    cur_y += 42
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• Garmin Edge 840 (Smoothed — 0% Fake Altimeter Spikes)", f_item, COLOR_ESPRESSO_INK, line_h=38)
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• my_digital_brain.md (Cross-Era Lifetime Lore & Archival Pulls)", f_item, COLOR_ESPRESSO_INK, line_h=38)
-    cur_y += 18
-
-    # 4. STUDIO ENGINE & MAIN HERO
-    draw.text((rx0 + 56, cur_y), "STUDIO ENGINE & MAIN HERO", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
-    cur_y += 42
-    hero_title = spec.get("main_hero", "Antigravity Video Studio (AGVS v2.0)")
-    repo_url = spec.get("github_repo", "github.com/akomlik/antigravity-video-studio")
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {hero_title}", f_item, COLOR_ESPRESSO_INK, line_h=38)
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• Open Source: {repo_url}", f_item, COLOR_POSTMARK_CRIMSON, line_h=38)
-    cur_y += 18
-
-    # 5. FUEL & CATERING
+    # 3. FUEL & CATERING
     draw.text((rx0 + 56, cur_y), "FUEL & CATERING", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
-    cur_y += 42
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {spec.get('fuel_sponsors')}", f_item, COLOR_ESPRESSO_INK, line_h=38)
+    cur_y += 50
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {spec.get('fuel_sponsors')}", f_item, COLOR_ESPRESSO_INK, line_h=50)
 
     # 3. Bottom Stamp Strip (Y: 1920 to 2060, X: 130 to 3690)
     tx0, ty0 = 130, 1920
@@ -813,16 +821,17 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
     draw.line([(tx0, ty0), (tx1, ty0)], fill=COLOR_UMBER_INK, width=3)
     draw.line([(tx0, ty1), (tx1, ty1)], fill=COLOR_UMBER_INK, width=3)
 
-    f_strip = load_apple_font("stamp_typewriter", 30)
-    foot_line1 = "0% GRAVITY GUARANTEED ON DESCENTS ONLY   •   NO ARGON QUOTAS WERE HARMED IN THIS RENDER"
+    f_strip = load_apple_font("stamp_mono", 40)
+    foot_line1 = "0% GRAVITY GUARANTEED ON DESCENTS ONLY   •   NO ARGON QUOTAS WERE HARMED"
     fb1 = draw.textbbox((0, 0), foot_line1, font=f_strip)
     tw1 = fb1[2] - fb1[0]
-    draw.text((tx0 + (tx1 - tx0 - tw1) // 2, ty0 + 32), foot_line1, font=f_strip, fill=COLOR_ESPRESSO_INK)
+    draw.text((tx0 + (tx1 - tx0 - tw1) // 2, ty0 + 26), foot_line1, font=f_strip, fill=COLOR_ESPRESSO_INK)
 
+    repo_url = spec.get("github_repo", "github.com/akomlik/antigravity-video-studio")
     foot_line2 = f"AGVS STUDIO ENGINE   •   {repo_url.upper()}"
     fb2 = draw.textbbox((0, 0), foot_line2, font=f_strip)
     tw2 = fb2[2] - fb2[0]
-    draw.text((tx0 + (tx1 - tx0 - tw2) // 2, ty0 + 82), foot_line2, font=f_strip, fill=COLOR_POSTMARK_CRIMSON)
+    draw.text((tx0 + (tx1 - tx0 - tw2) // 2, ty0 + 78), foot_line2, font=f_strip, fill=COLOR_POSTMARK_CRIMSON)
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(out_png)
@@ -840,7 +849,7 @@ def render_polaroid_border_png(
     video_h: int,
     margin_top: int = 32,
     margin_side: int = 32,
-    margin_bottom: int = 120,
+    margin_bottom: int = 140,
     script_text: str | None = None,
     out_png: Path | None = None,
 ) -> Path:
@@ -857,9 +866,9 @@ def render_polaroid_border_png(
     # Cut out the inner video window
     d.rectangle([margin_side, margin_top, margin_side + video_w, margin_top + video_h], fill=(0, 0, 0, 0))
 
-    # Bottom margin script text
+    # Bottom margin script text (52pt)
     if script_text:
-        f_script = load_apple_font("postcard_script", 42)
+        f_script = load_apple_font("postcard_script", 52)
         bbox = d.textbbox((0, 0), script_text, font=f_script)
         tw = bbox[2] - bbox[0]
         th = bbox[3] - bbox[1]
@@ -897,9 +906,9 @@ def composite_intro_bookend_mp4(
     vw, vh = 1800, 1012
     margin_top = 32
     margin_side = 32
-    margin_bottom = 120
+    margin_bottom = 140
     pw = vw + margin_side * 2   # 1864
-    ph = vh + margin_top + margin_bottom  # 1164
+    ph = vh + margin_top + margin_bottom  # 1184
 
     border_png = out_mp4.parent / "polaroid_intro_border.png"
     render_polaroid_border_png(
@@ -916,7 +925,7 @@ def composite_intro_bookend_mp4(
 
     # Position in Right Zone: center is cx=2670, cy=1025
     pos_x = int(2670 - pw / 2)  # 1738
-    pos_y = int(1025 - ph / 2)  # 443
+    pos_y = int(1025 - ph / 2)  # 433
 
     filtergraph = (
         f"[1:v]trim=start={clip_start_s}:duration={duration_s},setpts=PTS-STARTPTS,"
@@ -988,9 +997,9 @@ def composite_outro_bookend_mp4(
     vw, vh = 1600, 900
     margin_top = 32
     margin_side = 32
-    margin_bottom = 120
+    margin_bottom = 140
     pw = vw + margin_side * 2   # 1664
-    ph = vh + margin_top + margin_bottom  # 1052
+    ph = vh + margin_top + margin_bottom  # 1072
 
     border_png = out_mp4.parent / "polaroid_outro_border.png"
     render_polaroid_border_png(
@@ -1007,7 +1016,7 @@ def composite_outro_bookend_mp4(
 
     # Position in Left Zone: center is cx=1075, cy=1030
     pos_x = int(1075 - pw / 2)  # 243
-    pos_y = int(1030 - ph / 2)  # 504
+    pos_y = int(1030 - ph / 2)  # 494
 
     filtergraph = (
         f"[1:v]trim=start={clip_start_s}:duration={duration_s},setpts=PTS-STARTPTS,"

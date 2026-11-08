@@ -4,9 +4,10 @@ gpx_widgets.py
 Generates 4K UHD (3840x2160) transparent PNG overlays directly from a Garmin/Strava .gpx file:
 1. Corner Route Map Widget (top-right card showing the full route loop, progress trail up to the clip's
    exact UTC timestamp, glowing current-location pin, and Imperial mile/elevation header).
-2. Dynamic Telemetry HUD Overlay (bottom-left or bottom-right telemetry gauges for Speed MPH, Power W,
-   Heart Rate BPM, and Gradient % / Elevation FT, synced 1-to-1 with each video clip's UTC timestamp
-   and dynamically triggered only when interesting telemetry thresholds are exceeded).
+2. Dynamic Telemetry HUD Overlay (top-left or bottom-left telemetry gauges for Speed MPH, Power W,
+   Heart Rate BPM, and Gradient % / Elevation FT, synced 1-to-1 with each video clip's UTC timestamp).
+3. AGVS Vintage Field Cards: Warm Vintage Parchment callouts and lower-thirds with strict macOS Apple typography
+   and iPhone 15 Pro (6.1" display) font scaling.
 """
 
 import datetime as dt
@@ -15,6 +16,18 @@ import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
+
+
+# ---------------------------------------------------------------------------
+# Color Palette: Warm Mediterranean Parchment & Postage Ink
+# ---------------------------------------------------------------------------
+COLOR_PARCHMENT_FILL  = (244, 239, 230, 242)  # rgba(244, 239, 230, 0.95) (#F4EFE6)
+COLOR_ESPRESSO_INK    = (35, 31, 29, 255)      # #231F1D (Primary titles, names, metrics)
+COLOR_UMBER_INK       = (74, 63, 53, 255)      # #4A3F35 (Roles, subtitles, labels)
+COLOR_BORDER_UMBER    = (92, 80, 67, 255)      # #5C5043 (Outer 3px border)
+COLOR_NEATLINE        = (216, 207, 192, 255)  # #D8CFC0 (Inner 1px neatline)
+COLOR_CRIMSON         = (184, 58, 42, 255)     # #B83A2A (Accent stripe, highlights)
+COLOR_FOREST_GREEN    = (45, 106, 79, 255)     # #2D6A4F (Start pin, normal metrics)
 
 
 def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -82,22 +95,108 @@ def load_gpx_stream(gpx_path: Path) -> list[dict]:
     return pts
 
 
-def _load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
-    candidates = [
-        "/System/Library/Fonts/SFNSMono.ttf",
-        "/System/Library/Fonts/Supplemental/DIN Condensed Bold.ttf" if bold else "/System/Library/Fonts/SFNS.ttf",
-        "/System/Library/Fonts/HelveticaNeue.ttc",
-        "/System/Library/Fonts/Helvetica.ttc",
-    ]
-    for c in candidates:
-        if Path(c).exists():
+# ---------------------------------------------------------------------------
+# Strict macOS Apple Font Loader (Zero Monospace, Zero Emojis)
+# ---------------------------------------------------------------------------
+def load_apple_font(role: str, size: int) -> ImageFont.FreeTypeFont:
+    """
+    Loads native macOS .ttc/.ttf fonts with explicit face indices for Pillow rendering.
+    Enforces bold Apple editorial typography and bans all unicode emojis.
+    """
+    candidates = {
+        "card_title": [
+            ("/System/Library/Fonts/Avenir Next.ttc", 8),             # Heavy
+            ("/System/Library/Fonts/Avenir Next.ttc", 0),             # Bold
+            ("/System/Library/Fonts/Supplemental/Futura.ttc", 4),      # Condensed ExtraBold
+        ],
+        "card_subtitle": [
+            ("/System/Library/Fonts/Avenir Next.ttc", 2),             # Demi Bold
+            ("/System/Library/Fonts/HelveticaNeue.ttc", 6),            # Medium
+        ],
+        "stamp_mono": [
+            ("/System/Library/Fonts/Supplemental/AmericanTypewriter.ttc", 2),  # Bold
+            ("/System/Library/Fonts/Supplemental/Courier New Bold.ttf", None),
+        ],
+        "postcard_script": [
+            ("/System/Library/Fonts/Supplemental/Georgia Italic.ttf", None),
+            ("/System/Library/Fonts/Supplemental/SnellRoundhand.ttc", 1),       # Bold
+        ],
+        "hero_title": [
+            ("/System/Library/Fonts/Avenir Next.ttc", 8),             # Heavy
+            ("/System/Library/Fonts/Supplemental/Futura.ttc", 4),
+        ],
+        "section_header": [
+            ("/System/Library/Fonts/Avenir Next.ttc", 0),             # Bold
+        ],
+        "body_regular": [
+            ("/System/Library/Fonts/HelveticaNeue.ttc", 0),            # Regular
+            ("/System/Library/Fonts/Avenir Next.ttc", 7),             # Regular
+        ],
+    }
+
+    for path, idx in candidates.get(role, candidates["card_subtitle"]):
+        p = Path(path)
+        if p.exists():
             try:
-                return ImageFont.truetype(c, size)
+                if idx is not None and path.endswith(".ttc"):
+                    return ImageFont.truetype(str(p), size=size, index=idx)
+                return ImageFont.truetype(str(p), size=size)
             except Exception:
-                pass
+                continue
     return ImageFont.load_default()
 
 
+def _load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+    """Backwards-compatible wrapper routing to strict Apple font faces."""
+    role = "card_title" if bold else "card_subtitle"
+    return load_apple_font(role, size)
+
+
+# ---------------------------------------------------------------------------
+# Reusable AGVS Vintage Field Card Helper
+# ---------------------------------------------------------------------------
+def draw_vintage_card(
+    canvas: Image.Image,
+    box: tuple[int, int, int, int],
+    accent_side: str = "left",
+    radius: int = 18,
+    accent_color: tuple[int, int, int, int] = COLOR_CRIMSON,
+) -> None:
+    """
+    Renders the unified Warm Vintage Parchment card on `canvas` with:
+    - Soft 28px Gaussian blur drop shadow rgba(25, 20, 16, 0.38) offset (+6px, +10px).
+    - Card fill: Warm aged parchment rgba(244, 239, 230, 0.95) (#F4EFE6).
+    - Outer border: 3px solid Umber Ink #5C5043 (radius=18).
+    - Inner neatline: 1px inset border #D8CFC0 (8px inside outer border).
+    - Accent stripe: 14px solid Crimson #B83A2A on left edge (or 10px on top edge).
+    """
+    x0, y0, x1, y1 = box
+    cw = max(10, x1 - x0)
+    ch = max(10, y1 - y0)
+
+    # 1. Fast local drop shadow (Gaussian blur on card-sized sub-image)
+    pad = 48
+    s_img = Image.new("RGBA", (cw + pad * 2, ch + pad * 2), (0, 0, 0, 0))
+    s_draw = ImageDraw.Draw(s_img)
+    s_draw.rounded_rectangle([pad, pad, pad + cw, pad + ch], radius=radius, fill=(25, 20, 16, 97))
+    s_blur = s_img.filter(ImageFilter.GaussianBlur(14))
+    canvas.alpha_composite(s_blur, (x0 - pad + 6, y0 - pad + 10))
+
+    # 2. Card base and neatline
+    draw = ImageDraw.Draw(canvas)
+    draw.rounded_rectangle([x0, y0, x1, y1], radius=radius, fill=COLOR_PARCHMENT_FILL, outline=COLOR_BORDER_UMBER, width=3)
+    draw.rounded_rectangle([x0 + 8, y0 + 8, x1 - 8, y1 - 8], radius=max(4, radius - 6), outline=COLOR_NEATLINE, width=1)
+
+    # 3. Accent stripe
+    if accent_side == "left":
+        draw.rounded_rectangle([x0 + 18, y0 + 16, x0 + 32, y1 - 16], radius=4, fill=accent_color)
+    elif accent_side == "top":
+        draw.rounded_rectangle([x0 + 24, y0 + 12, x1 - 24, y0 + 22], radius=4, fill=accent_color)
+
+
+# ---------------------------------------------------------------------------
+# Corner Map Widget
+# ---------------------------------------------------------------------------
 def render_corner_map_widget(
     gpx_points: list[dict],
     target_idx: int,
@@ -106,33 +205,30 @@ def render_corner_map_widget(
     canvas_size: tuple[int, int] = (3840, 2160),
 ) -> Path:
     """
-    Renders a 4K transparent overlay PNG with a sleek top-right GPX Route Map card
+    Renders a 4K transparent overlay PNG with a Warm Vintage Parchment GPX Route Map card
     showing the full loop, progress trail up to target_idx, and glowing current pin.
     """
     w, h = canvas_size
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img, "RGBA")
 
-    # Card geometry (top-right corner with 72px margin)
-    card_w, card_h = 680, 520
-    x0 = w - card_w - 72
-    y0 = 72
+    card_w, card_h = 760, 560
+    x0 = w - card_w - 96
+    y0 = 96
     x1, y1 = x0 + card_w, y0 + card_h
 
-    # Subtle drop shadow + frosted dark glass card
-    draw.rounded_rectangle([x0 - 4, y0 + 6, x1 + 4, y1 + 10], radius=32, fill=(0, 0, 0, 110))
-    draw.rounded_rectangle([x0, y0, x1, y1], radius=28, fill=(14, 19, 28, 215), outline=(255, 255, 255, 55), width=2)
+    draw_vintage_card(img, (x0, y0, x1, y1), accent_side="left", radius=22, accent_color=COLOR_CRIMSON)
+    draw = ImageDraw.Draw(img)
 
     # Header bar inside card
     pt = gpx_points[min(max(target_idx, 0), len(gpx_points) - 1)]
     tot_mi = gpx_points[-1]["dist_mi"] if gpx_points else 0.0
-    font_hdr = _load_font(26, bold=True)
-    font_sub = _load_font(22, bold=False)
+    font_hdr = load_apple_font("card_title", 32)
+    font_sub = load_apple_font("card_subtitle", 26)
 
     hdr_text = f"MILE {pt['dist_mi']:.1f} / {tot_mi:.1f} MI  ·  {pt['ele_ft']} FT"
-    draw.text((x0 + 30, y0 + 22), hdr_text, font=font_hdr, fill=(255, 138, 43, 255))
-    draw.text((x0 + 30, y0 + 56), scene_label[:36], font=font_sub, fill=(230, 236, 245, 235))
-    draw.line([(x0 + 24, y0 + 94), (x1 - 24, y0 + 94)], fill=(255, 255, 255, 35), width=2)
+    draw.text((x0 + 48, y0 + 22), hdr_text, font=font_hdr, fill=COLOR_CRIMSON)
+    draw.text((x0 + 48, y0 + 64), scene_label[:38], font=font_sub, fill=COLOR_UMBER_INK)
+    draw.line([(x0 + 42, y0 + 106), (x1 - 32, y0 + 106)], fill=COLOR_NEATLINE, width=2)
 
     # Compute lat/lon bounding box with cosine latitude aspect correction
     lats = [p["lat"] for p in gpx_points]
@@ -144,10 +240,10 @@ def render_corner_map_widget(
     dx = max((max_lon - min_lon) * cos_lat, 1e-5)
     dy = max(max_lat - min_lat, 1e-5)
 
-    pad_x, pad_y = 46, 36
-    map_x0, map_y0 = x0 + pad_x, y0 + 108 + pad_y
+    pad_x, pad_y = 52, 40
+    map_x0, map_y0 = x0 + pad_x, y0 + 120 + pad_y
     map_w = card_w - 2 * pad_x
-    map_h = (card_h - 108) - 2 * pad_y
+    map_h = (card_h - 120) - 2 * pad_y
 
     scale = min(map_w / dx, map_h / dy)
     ox = map_x0 + (map_w - dx * scale) / 2.0
@@ -158,30 +254,33 @@ def render_corner_map_widget(
         py = oy + (max_lat - lat) * scale
         return (px, py)
 
-    # Full route loop in muted slate-blue
+    # Full route loop in muted umber casing
     full_xy = [to_xy(p["lat"], p["lon"]) for p in gpx_points[::3]]
     if len(full_xy) >= 2:
-        draw.line(full_xy, fill=(130, 150, 175, 115), width=6, joint="curve")
+        draw.line(full_xy, fill=(180, 168, 150, 160), width=6, joint="curve")
 
-    # Completed progress trail in vibrant Strava/Garmin orange
+    # Completed progress trail in vibrant Crimson
     done_xy = [to_xy(p["lat"], p["lon"]) for p in gpx_points[: max(target_idx + 1, 2) : 2]]
     if len(done_xy) >= 2:
-        draw.line(done_xy, fill=(255, 105, 30, 245), width=9, joint="curve")
+        draw.line(done_xy, fill=COLOR_CRIMSON, width=8, joint="curve")
 
     # Start marker (green dot)
     sx, sy = to_xy(gpx_points[0]["lat"], gpx_points[0]["lon"])
-    draw.ellipse([sx - 8, sy - 8, sx + 8, sy + 8], fill=(46, 213, 115, 230), outline=(255, 255, 255, 220), width=2)
+    draw.ellipse([sx - 9, sy - 9, sx + 9, sy + 9], fill=COLOR_FOREST_GREEN, outline=(252, 249, 242, 255), width=2)
 
-    # Current scene location pin (glowing outer ring + white/red center)
+    # Current scene location pin
     cx, cy = to_xy(pt["lat"], pt["lon"])
-    draw.ellipse([cx - 22, cy - 22, cx + 22, cy + 22], fill=(255, 90, 30, 75))
-    draw.ellipse([cx - 13, cy - 13, cx + 13, cy + 13], fill=(255, 71, 43, 255), outline=(255, 255, 255, 255), width=4)
+    draw.ellipse([cx - 24, cy - 24, cx + 24, cy + 24], fill=(184, 58, 42, 75))
+    draw.ellipse([cx - 14, cy - 14, cx + 14, cy + 14], fill=COLOR_CRIMSON, outline=(252, 249, 242, 255), width=3)
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_png, "PNG", compress_level=1)
     return out_png
 
 
+# ---------------------------------------------------------------------------
+# Telemetry HUD Widget (Warm Vintage Parchment & Scaled iPhone 15 Pro 4K Fonts)
+# ---------------------------------------------------------------------------
 def render_telemetry_hud_widget(
     pt: dict,
     out_png: Path,
@@ -189,41 +288,42 @@ def render_telemetry_hud_widget(
     canvas_size: tuple[int, int] = (3840, 2160),
 ) -> Path:
     """
-    Renders a 4K transparent overlay PNG with a sleek bottom-left Telemetry HUD
-    showing Speed (MPH), Power (W), Heart Rate (BPM), and Gradient (%) in Imperial units.
+    Renders a 4K transparent overlay PNG with a Warm Vintage Parchment Telemetry HUD
+    at top-left (X: 96, Y: 96) showing Speed MPH, Power W, Heart Rate BPM, and Grade % in Imperial units.
+    - Values in 72pt Avenir Next Heavy.
+    - Units in 32pt Avenir Next Bold.
+    - Labels in 26pt Avenir Next Demi Bold.
+    - Zero emojis.
     """
     w, h = canvas_size
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img, "RGBA")
 
-    # Top-left telemetry bar (balances top-right map widget and never collides with bottom subtitles/YouTube UI)
-    hud_w, hud_h = 980, 190
-    x0 = 72
-    y0 = 72
+    hud_w, hud_h = 1380, 240
+    x0, y0 = 96, 96
     x1, y1 = x0 + hud_w, y0 + hud_h
 
-    draw.rounded_rectangle([x0 - 4, y0 + 6, x1 + 4, y1 + 10], radius=28, fill=(0, 0, 0, 110))
-    draw.rounded_rectangle([x0, y0, x1, y1], radius=24, fill=(14, 19, 28, 215), outline=(255, 255, 255, 55), width=2)
+    draw_vintage_card(img, (x0, y0, x1, y1), accent_side="left", radius=22, accent_color=COLOR_CRIMSON)
+    draw = ImageDraw.Draw(img)
 
-    font_val = _load_font(64, bold=True)
-    font_unit = _load_font(22, bold=True)
-    font_lbl = _load_font(20, bold=False)
+    font_val = load_apple_font("hero_title", 72)
+    font_unit = load_apple_font("section_header", 32)
+    font_lbl = load_apple_font("card_subtitle", 26)
 
     metrics = [
-        ("SPEED", f"{pt['spd_mph']:.1f}", "MPH", (64, 210, 255, 255)),
-        ("POWER", f"{pt['pwr']}", "WATTS", (255, 184, 28, 255)),
-        ("HEART RATE", f"{pt['hr']}", "BPM ♥", (255, 92, 112, 255)),
-        ("GRADE", f"{pt['grad_pct']:+.1f}%", f"{pt['ele_ft']} FT", (85, 239, 196, 255)),
+        ("SPEED", f"{pt['spd_mph']:.1f}", "MPH", COLOR_CRIMSON),
+        ("POWER", f"{pt['pwr']}", "WATTS", COLOR_CRIMSON),
+        ("HEART RATE", f"{pt['hr']}", "BPM", COLOR_CRIMSON),
+        ("GRADE", f"{pt['grad_pct']:+.1f}%", f"{pt['ele_ft']} FT", COLOR_FOREST_GREEN),
     ]
 
-    col_w = hud_w // 4
+    col_w = (hud_w - 44) // 4
     for idx, (label, val, unit, accent_col) in enumerate(metrics):
-        cx = x0 + idx * col_w + 30
+        cx = x0 + 44 + idx * col_w + 24
         if idx > 0:
-            draw.line([(x0 + idx * col_w, y0 + 26), (x0 + idx * col_w, y1 - 26)], fill=(255, 255, 255, 35), width=2)
-        draw.text((cx, y0 + 20), label, font=font_lbl, fill=(170, 182, 200, 230))
-        draw.text((cx, y0 + 50), val, font=font_val, fill=(255, 255, 255, 255))
-        draw.text((cx, y0 + 132), unit, font=font_unit, fill=accent_col)
+            draw.line([(x0 + 44 + idx * col_w, y0 + 26), (x0 + 44 + idx * col_w, y1 - 26)], fill=COLOR_NEATLINE, width=2)
+        draw.text((cx, y0 + 24), label, font=font_lbl, fill=COLOR_UMBER_INK)
+        draw.text((cx, y0 + 64), val, font=font_val, fill=COLOR_ESPRESSO_INK)
+        draw.text((cx, y0 + 160), unit, font=font_unit, fill=accent_col)
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_png, "PNG", compress_level=1)
@@ -239,11 +339,7 @@ def render_live_telemetry_hud_series(
     step_s: float = 1.0,
     canvas_size: tuple[int, int] = (3840, 2160),
 ) -> list[tuple[str, float, float]]:
-    """
-    Renders a 1 Hz (1-second step) series of 4K transparent Telemetry HUD PNGs from gpx_points
-    starting at start_idx, so Speed (MPH), Power (W), Heart Rate (BPM), and Grade (%) tick live
-    every second on screen. Returns a list of (relative_filename, timeline_start_s, step_dur_s).
-    """
+    """Renders a 1 Hz series of 4K transparent Telemetry HUD PNGs."""
     out_dir.mkdir(parents=True, exist_ok=True)
     entries: list[tuple[str, float, float]] = []
     t = 0.0
@@ -262,53 +358,109 @@ def render_live_telemetry_hud_series(
     return entries
 
 
+# ---------------------------------------------------------------------------
+# Character Callout Badge (Warm Vintage Parchment & iPhone 15 Pro 4K Scaling)
+# ---------------------------------------------------------------------------
 def render_character_callout_badge(
     name_line: str,
     role_line: str,
     out_png: Path,
     position: str = "bottom_left",
-    accent_color: tuple[int, int, int, int] = (255, 184, 28, 255),
+    accent_color: tuple[int, int, int, int] = COLOR_CRIMSON,
     canvas_size: tuple[int, int] = (3840, 2160),
 ) -> Path:
     """
-    Renders a 4K transparent overlay PNG with a sleek frosted-glass Character Identification Callout
-    ("Who's Who in the Frame", e.g., 'NINA KOMLIK' / 'Wife & Riding Partner · Together 40+ Years' or
-    'LEFT TO RIGHT: PAULA · ALEXANDER · JEFF' / 'San Jose Bicycle Club · April 2016 First Mallorca Trip').
-    Positions: 'bottom_left' (default, above YouTube CC safe zone), 'bottom_right', 'top_left'.
+    Renders a 4K transparent overlay PNG with a Warm Vintage Parchment Character Card.
+    - Line 1: 64pt card_title (Avenir Next Bold/Heavy) in Deep Espresso #231F1D (with @akomlik in Crimson).
+    - Line 2: 44pt card_subtitle (Avenir Next Demi Bold) in Warm Umber #4A3F35.
+    - Dimensions: Width 1850..2450px, Height 215px (270px if Line 2 wraps).
+    - Positions:
+        'bottom_left': X: 96, Y: 1730 (or Y: 1675 if wrapped)
+        'top_left':    X: 96, Y: 96
+        'bottom_right': X: w - card_w - 96, Y: 1730
     """
     w, h = canvas_size
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img, "RGBA")
 
-    font_name = _load_font(44, bold=True)
-    font_role = _load_font(30, bold=False)
+    font_name = load_apple_font("card_title", 64)
+    font_role = load_apple_font("card_subtitle", 44)
 
-    nb = draw.textbbox((0, 0), name_line, font=font_name)
-    rb = draw.textbbox((0, 0), role_line, font=font_role)
-    text_w = max(nb[2] - nb[0], rb[2] - rb[0])
-    card_w = max(680, text_w + 110)
-    card_h = 148
+    # Measure text dimensions
+    dummy = Image.new("RGBA", (100, 100))
+    d_measure = ImageDraw.Draw(dummy)
 
+    # Clean emojis if any crept in
+    clean_name = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", name_line).strip()
+    clean_role = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", role_line).strip()
+
+    nb = d_measure.textbbox((0, 0), clean_name, font=font_name)
+    rb = d_measure.textbbox((0, 0), clean_role, font=font_role)
+    name_w = nb[2] - nb[0]
+    role_w = rb[2] - rb[0]
+
+    # Evaluate wrapping for Line 2 if it exceeds comfortable single-line width
+    role_lines = [clean_role]
+    card_w = max(1850, min(2450, max(name_w, role_w) + 140))
+    max_text_w = card_w - 140
+
+    if role_w > max_text_w:
+        words = clean_role.split()
+        wrapped = []
+        cur = ""
+        for word in words:
+            cand = f"{cur} {word}".strip() if cur else word
+            cb = d_measure.textbbox((0, 0), cand, font=font_role)
+            if cb[2] - cb[0] <= max_text_w:
+                cur = cand
+            else:
+                if cur:
+                    wrapped.append(cur)
+                cur = word
+        if cur:
+            wrapped.append(cur)
+        role_lines = wrapped
+
+    is_wrapped = len(role_lines) > 1
+    card_h = 270 if is_wrapped else 215
+
+    # Placement coordinates
     if position == "bottom_right":
-        x0 = w - card_w - 84
-        y0 = h - card_h - 240
+        x0 = w - card_w - 96
+        y0 = h - card_h - 215
     elif position == "top_left":
-        x0 = 72
-        y0 = 72
-    else:
-        # bottom_left (y0 = h - 388 keeps it safely above YouTube's bottom CC subtitle band!)
-        x0 = 84
-        y0 = h - card_h - 240
+        x0 = 96
+        y0 = 96
+    else:  # bottom_left
+        x0 = 96
+        y0 = 1675 if is_wrapped else 1730
 
     x1, y1 = x0 + card_w, y0 + card_h
 
-    draw.rounded_rectangle([x0 - 4, y0 + 6, x1 + 4, y1 + 10], radius=26, fill=(0, 0, 0, 125))
-    draw.rounded_rectangle([x0, y0, x1, y1], radius=22, fill=(14, 19, 28, 232), outline=(255, 255, 255, 70), width=2)
-    # Left vertical accent bar
-    draw.rounded_rectangle([x0 + 18, y0 + 22, x0 + 28, y1 - 22], radius=5, fill=accent_color)
+    # Render card
+    draw_vintage_card(img, (x0, y0, x1, y1), accent_side="left", radius=18, accent_color=accent_color)
+    draw = ImageDraw.Draw(img)
 
-    draw.text((x0 + 48, y0 + 22), name_line, font=font_name, fill=accent_color)
-    draw.text((x0 + 48, y0 + 82), role_line, font=font_role, fill=(240, 244, 250, 245))
+    # Draw Line 1 with @akomlik highlighted in crimson if present
+    text_x = x0 + 54
+    line1_y = y0 + 32
+    if "@akomlik" in clean_name:
+        parts = clean_name.split("@akomlik")
+        cur_x = text_x
+        if parts[0]:
+            draw.text((cur_x, line1_y), parts[0], font=font_name, fill=COLOR_ESPRESSO_INK)
+            cur_x += d_measure.textbbox((0, 0), parts[0], font=font_name)[2]
+        draw.text((cur_x, line1_y), "@akomlik", font=font_name, fill=COLOR_CRIMSON)
+        cur_x += d_measure.textbbox((0, 0), "@akomlik", font=font_name)[2]
+        if len(parts) > 1 and parts[1]:
+            draw.text((cur_x, line1_y), parts[1], font=font_name, fill=COLOR_ESPRESSO_INK)
+    else:
+        draw.text((text_x, line1_y), clean_name, font=font_name, fill=COLOR_ESPRESSO_INK)
+
+    # Draw Line 2 (one or two wrapped lines)
+    line2_y = line1_y + 72
+    for rl in role_lines:
+        draw.text((text_x, line2_y), rl, font=font_role, fill=COLOR_UMBER_INK)
+        line2_y += 50
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_png, "PNG", compress_level=1)
@@ -339,19 +491,7 @@ def should_show_telemetry_hud(
     window_s: float = 3.0,
     speed_threshold_mph: float | None = None,
 ) -> bool:
-    """
-    Evaluates whether the Telemetry HUD should be visible on a clip (Studio v2.1 standard):
-    - mode == 'off': Always False (suppressed across all clips).
-    - mode == 'always': Always True for video clips (stills remain False).
-    - mode == 'auto':
-        - False for still photo clips (.jpg, .jpeg, .png, .heic).
-        - False for stationary scenes below the activity-aware speed threshold (cafe, counter, terrace, gates).
-        - True for actual moving scenes above threshold:
-            * cycling_ride: > 2.0 mph (3.2 km/h)
-            * run:          > 1.5 mph (2.4 km/h)
-            * hike_outdoor: > 0.8 mph (1.3 km/h)
-    """
-    # 1. Stills are always suppressed (clean frame for Ken Burns stills)
+    """Evaluates whether the Telemetry HUD should be visible on a clip."""
     if clip_name.lower().endswith((".jpg", ".jpeg", ".png", ".heic")):
         return False
 
@@ -361,16 +501,13 @@ def should_show_telemetry_hud(
     if mode_clean == "always":
         return True
 
-    # Resolve threshold based on activity type
     if speed_threshold_mph is None:
         act_key = (activity_type or "cycling_ride").strip().lower()
         speed_threshold_mph = ACTIVITY_SPEED_THRESHOLDS.get(act_key, 2.0)
 
-    # 2. If rolling speed is directly provided
     if rolling_speed_mph is not None:
         return rolling_speed_mph > speed_threshold_mph
 
-    # 3. If GPX stream and timestamp are provided, calculate rolling speed over window
     if gpx_points and clip_ts is not None:
         pts_in_win = [p for p in gpx_points if abs((p["time"] - clip_ts).total_seconds()) <= window_s]
         if pts_in_win:
