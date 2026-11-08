@@ -214,6 +214,51 @@
       "notes": "Auto-fetched from CreatorMix (Album: Tracers)",
       "path": "03_Audio_Library/01_Curated_BGM/01_Rolling_Cadence/118bpm_CoastalSynthwave_Cruise_Creatormix.mp3",
       "relpath": "01_Rolling_Cadence/118bpm_CoastalSynthwave_Cruise_Creatormix.mp3"
+    },
+    {
+      "filename": "120bpm_SunnyHouse_SunNeverSets_Creatormix.mp3",
+      "path": "03_Audio_Library/01_Curated_BGM/01_Rolling_Cadence/120bpm_SunnyHouse_SunNeverSets_Creatormix.mp3",
+      "relpath": "01_Rolling_Cadence/120bpm_SunnyHouse_SunNeverSets_Creatormix.mp3",
+      "category": "01_Rolling_Cadence",
+      "bpm": 120,
+      "beat_interval_s": 0.5,
+      "mood": "SunnyHouse",
+      "title": "Sun Never Sets",
+      "artist": "CreatorMix",
+      "album": "Soul",
+      "source_site": "CreatorMix",
+      "duration_s": 171,
+      "notes": "Auto-fetched from CreatorMix (Album: Soul)"
+    },
+    {
+      "filename": "120bpm_SunnyHouse_ToTheLights_Creatormix.mp3",
+      "path": "03_Audio_Library/01_Curated_BGM/01_Rolling_Cadence/120bpm_SunnyHouse_ToTheLights_Creatormix.mp3",
+      "relpath": "01_Rolling_Cadence/120bpm_SunnyHouse_ToTheLights_Creatormix.mp3",
+      "category": "01_Rolling_Cadence",
+      "bpm": 120,
+      "beat_interval_s": 0.5,
+      "mood": "SunnyHouse",
+      "title": "To The Lights",
+      "artist": "CreatorMix",
+      "album": "Obsession",
+      "source_site": "CreatorMix",
+      "duration_s": 166,
+      "notes": "Auto-fetched from CreatorMix (Album: Obsession)"
+    },
+    {
+      "filename": "118bpm_CoastalSynthwave_ChasingNeon_Creatormix.mp3",
+      "path": "03_Audio_Library/01_Curated_BGM/01_Rolling_Cadence/118bpm_CoastalSynthwave_ChasingNeon_Creatormix.mp3",
+      "relpath": "01_Rolling_Cadence/118bpm_CoastalSynthwave_ChasingNeon_Creatormix.mp3",
+      "category": "01_Rolling_Cadence",
+      "bpm": 118,
+      "beat_interval_s": 0.508,
+      "mood": "CoastalSynthwave",
+      "title": "Chasing Neon",
+      "artist": "CreatorMix",
+      "album": "Tracers",
+      "source_site": "CreatorMix",
+      "duration_s": 157,
+      "notes": "Auto-fetched from CreatorMix (Album: Tracers)"
     }
   ]
 }
