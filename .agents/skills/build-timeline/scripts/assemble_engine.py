@@ -142,10 +142,9 @@ def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom
 
     if start_pos is None or end_pos is None:
         if src_h > src_w:
-            # Portrait photo: smooth vertical sweep from upper face/subject down over torso/details
-            pan_y = seq_h * 0.20
-            start_pos = (cx, cy + pan_y)
-            end_pos = (cx, cy - pan_y)
+            # Portrait photo: bring faces into view with generous headroom
+            start_pos = (cx, cy + seq_h * 0.52)
+            end_pos = (cx, cy + seq_h * 0.46)
         else:
             # Landscape photo: gentle diagonal pan + zoom across the frame
             pan_x = seq_w * 0.025
@@ -442,14 +441,20 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
             next_id += 1
             print(f"Applied synchronized 2.2s Audio Outro Fade to closing music clip {last_music_clip.get('name')}")
 
-    # 3. Sanitize Subtitles in Caption Tracks & Set Burn-In Visibility
+    # 3. Sanitize Subtitles in Caption Tracks & Preserve Visibility in Timeline UI
+    # Always keep caption tracks enabled=True in .fcproj so all 3 language subtitle tracks
+    # (English, Українська, Русский) remain visible on the FilmCraft timeline UI!
+    # Clean MP4 export (without burnt-in captions) is controlled separately via --settings '{"burnCaptions": false}'.
     if seq.get("caption_tracks"):
         for ct in seq["caption_tracks"]:
-            ct["enabled"] = bool(burn_captions)
+            ct["enabled"] = True
             for cap in ct.get("captions", []):
                 orig_text = cap.get("text", "")
                 cap["text"] = sanitize_caption_text(orig_text)
-        print(f"Sanitized caption glyphs in {len(seq['caption_tracks'])} track(s) (burn_captions={burn_captions})")
+                cap.setdefault("speaker", None)
+                cap.setdefault("cue_id", None)
+                cap.setdefault("settings", "")
+        print(f"Sanitized caption glyphs in {len(seq['caption_tracks'])} track(s) (caption tracks enabled=True in timeline)")
 
     data["next_id"] = next_id
     fcproj_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
