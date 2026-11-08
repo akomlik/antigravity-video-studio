@@ -259,6 +259,21 @@
       "source_site": "CreatorMix",
       "duration_s": 157,
       "notes": "Auto-fetched from CreatorMix (Album: Tracers)"
+    },
+    {
+      "filename": "085bpm_WarmChillhop_Snails_Creatormix.mp3",
+      "path": "03_Audio_Library/01_Curated_BGM/04_Warm_Social_And_Retro/085bpm_WarmChillhop_Snails_Creatormix.mp3",
+      "relpath": "04_Warm_Social_And_Retro/085bpm_WarmChillhop_Snails_Creatormix.mp3",
+      "category": "04_Warm_Social_And_Retro",
+      "bpm": 85,
+      "beat_interval_s": 0.706,
+      "mood": "WarmChillhop",
+      "title": "Snails",
+      "artist": "CreatorMix",
+      "album": "Say I Will",
+      "source_site": "CreatorMix",
+      "duration_s": 175,
+      "notes": "Auto-fetched from CreatorMix (Album: Say I Will)"
     }
   ]
 }

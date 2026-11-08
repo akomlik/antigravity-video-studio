@@ -80,11 +80,13 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
 
 ### ARTICLE V: CURATED FREE MUSIC POOL (`03_Audio_Library/01_Curated_BGM/`), MIXING & TRACK SWAPPING
 
-- **Track Assignment Standard:**
+- **Track Assignment Standard & Zero-Script Project Law (`timeline_spec.json` + `build_timeline.py`):**
+    - **The Zero-Script Project Law:** Project folders (`04_Project_Catalog/YEAR/<project>/`) are **100% declarative data** (`Storyboard.md` + `timeline_spec.json` + `narration_scripts.json`). **Never create, clone, or run per-project Python scripts** (`assemble_<project>.py`, `build_<project>_overlays.py`). All timeline assembly, overlay rendering, 1Hz live HUD generation, and RMS audio calibration are executed exclusively by the shared studio engine (`.agents/skills/build-timeline/scripts/build_timeline.py`), which enforces `check_zero_project_scripts_preflight()` and `verify_music_non_reuse()`.
     - `V1`: Primary Video & Background Blur Fill Track
-    - `V2`: Foreground Uncropped Stills, Archival B-Roll & Storyboard Caption Overlays
+    - `V2`: Warm Vintage Parchment Character Callout Badges, Flashback Memory Cards & Bilingual Speech Cards
+    - `V3`: **Live 1Hz Dynamic Telemetry HUD (`live_hud/hud_XXXX.png`) & GPX Corner Route Maps** (never static HUDs; fades in on first second of run, holds at 100% solid opacity across internal 1s boundaries so the card never blinks, and fades out on the last second)
     - `A1`: Native Camera Audio (Tire roll, freewheel clicks, speech, market punchlines, toasts, café banter)
-    - `A2`: Dedicated Background Music Track (`03_Audio_Library/01_Curated_BGM/`) — **kept completely separate on `A2` for one-command swapping (`/swap-music`)**
+    - `A2`: Dedicated Background Music Track (`03_Audio_Library/01_Curated_BGM/`) — **dynamically RMS-calibrated via `measure_mean_volume_db` to `-20.5 dB` RMS mean during riding/visuals and `-27.0 dB` RMS mean under speech/VO (never hardcode a fixed dB gain!)**
     - `A3`: Subtle Contextual Sound Effects (`03_Audio_Library/02_SFX/catalog.json` — 209 Brehov cinematic WAVs across `01_Whooshes_Soft` through `19_Ambient_Pads`, aligned by `peak_ms` so the sound peak lands on the exact frame of motion/caption reveal)
 - **Anti-Monotony & Mandatory Music Non-Reuse Law:**
     - **Never reuse the same background music track across video projects.** Every ride, hike, party, and event deserves its own distinct musical identity.

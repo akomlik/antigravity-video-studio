@@ -340,7 +340,77 @@ def apply_v017_essential_sound_via_cli(cli_bin: str, fcproj_path: Path, seq: dic
         print(f"Note: Essential Sound batch returned non-zero ({res.stderr.strip()[:200]})")
 
 
-def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_captions: bool = False):
+def verify_music_non_reuse(fcproj_path: Path, seq: dict, items: dict, strict: bool = True):
+    """
+    Article I Anti-Monotony & Mandatory Music Non-Reuse Law:
+    Never reuse the same background music track across video projects.
+    Scans all other projects in 04_Project_Catalog/ and halts if an A2 track is reused.
+    """
+    bgm_names = set()
+    audio_tracks = seq.get("audio_tracks", [])
+    for idx, track in enumerate(audio_tracks):
+        tname = (track.get("name") or "").lower()
+        if idx == 1 or "music" in tname or "bgm" in tname:
+            for it in track.get("items", []):
+                name = it.get("name")
+                if name and name.endswith(".mp3"):
+                    bgm_names.add(name)
+                mid = str(it.get("item", it.get("media_id")))
+                media = items.get(mid, {})
+                file_p = media.get("kind", {}).get("Media", {}).get("media", {}).get("File", {}).get("path")
+                if file_p and file_p.endswith(".mp3"):
+                    bgm_names.add(Path(file_p).name)
+
+    if not bgm_names:
+        return
+
+    studio_root = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+    catalog_dir = studio_root / "04_Project_Catalog"
+    current_proj_dir = fcproj_path.parent.resolve()
+
+    conflicts = []
+    for other_proj in catalog_dir.glob("*/*"):
+        if not other_proj.is_dir() or other_proj.resolve() == current_proj_dir:
+            continue
+        for bgm in bgm_names:
+            for ext in ("*.fcproj", "Storyboard.md"):
+                for f in other_proj.glob(ext):
+                    text = f.read_text(errors="ignore")
+                    if bgm in text:
+                        conflicts.append((bgm, other_proj.name, f.name))
+
+    if conflicts:
+        lines = [f"  - '{c[0]}' already used in {c[1]} ({c[2]})" for c in conflicts]
+        msg = (
+            f"\n🚨 FATAL ERROR: Article I Music Non-Reuse Law Violation!\n"
+            f"The following track(s) in {fcproj_path.parent.name} were already used in past projects:\n"
+            + "\n".join(lines)
+            + "\n\nEvery ride, hike, party, and event MUST have its own unique musical identity.\n"
+            "Please select a fresh track from 03_Audio_Library/01_Curated_BGM/ or run `fetch_creatormix_catalog.py`.\n"
+        )
+        if strict:
+            raise ValueError(msg)
+        else:
+            print(f"WARNING: {msg}")
+    else:
+        for bgm in bgm_names:
+            print(f"✅ Music Non-Reuse Check Passed: Track '{bgm}' is unique to {fcproj_path.parent.name}.")
+
+
+def verify_zero_project_scripts(fcproj_path: Path):
+    """Enforces the Zero-Script Project Law: no per-project assemble_*.py or build_*_overlays.py scripts allowed."""
+    proj_dir = fcproj_path.parent
+    rogue = list(proj_dir.glob("assemble_*.py")) + list(proj_dir.glob("build_*_overlays.py"))
+    if rogue:
+        names = ", ".join(p.name for p in rogue)
+        raise RuntimeError(
+            f"\n🚨 FATAL ERROR: Zero-Script Project Law Violation in {proj_dir.name}!\n"
+            f"Found banned per-project script(s): {names}\n"
+            f"Projects must be 100% declarative (`timeline_spec.json` + `Storyboard.md`) and built via `build_timeline.py`."
+        )
+
+
+def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_captions: bool = False, allow_used_music: bool = False):
     """Applies Studio v2 quality standards (4K UHD, Ken Burns, Essential Sound auto-ducking, Dip to Black) and exports master MP4."""
     env_status = verify_filmcraft_environment(auto_sync_cli=True, check_remote=True)
     cli_bin = env_status.get("cli_binary") or "/opt/homebrew/bin/filmcraft-cli"
@@ -366,6 +436,10 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
             print("Clearing duplicate occluding items from V2 track.")
             seq["video_tracks"][1]["items"] = []
             seq["video_tracks"][1]["transitions"] = []
+
+    # 1b. Enforce Zero-Script Project Law & Article I Music Non-Reuse Law
+    verify_zero_project_scripts(fcproj_path)
+    verify_music_non_reuse(fcproj_path, seq, items, strict=not allow_used_music)
 
     # 2. Auto-detect 4K UHD (3840x2160) when sources exceed 1080p, enforce V1 visual continuity, apply scale_to_frame=True, Ken Burns & Dip-to-Black
     video_tracks = seq.get("video_tracks", [])
@@ -508,11 +582,12 @@ def main():
     p.add_argument("--project", required=True, help="Path to .fcproj project file")
     p.add_argument("--export-mp4", help="Optional path to output master MP4")
     p.add_argument("--burn-captions", action="store_true", help="Burn captions into video (default: False in Studio v2)")
+    p.add_argument("--allow-used-music", action="store_true", help="Allow tracks already used in past projects (default: False)")
     args = p.parse_args()
 
     fcproj = Path(args.project).expanduser().resolve()
     mp4 = Path(args.export_mp4).expanduser().resolve() if args.export_mp4 else None
-    polish_and_render_project(fcproj, mp4, burn_captions=args.burn_captions)
+    polish_and_render_project(fcproj, mp4, burn_captions=args.burn_captions, allow_used_music=args.allow_used_music)
 
 
 if __name__ == "__main__":

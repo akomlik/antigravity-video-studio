@@ -490,6 +490,351 @@ def render_character_callout_badge(
     return out_png
 
 
+def render_flashback_memory_badge(
+    date_event_line: str,
+    title_line: str,
+    detail_line: str,
+    out_png: Path,
+    position: str = "top_left",
+    accent_color: tuple[int, int, int, int] = COLOR_CRIMSON,
+    canvas_size: tuple[int, int] = (3840, 2160),
+) -> Path:
+    """
+    Renders a prominent retro/archival memory card on Warm Vintage Parchment (+40% Mobile Weight):
+    - Bold Date/Event indicator pill in 36pt Avenir Next Bold.
+    - Title in 84pt Avenir Next Bold/Heavy (#231F1D).
+    - Contextual detail line in 60pt Avenir Next Demi Bold (#4A3F35).
+    - Dimensions: Width 2200..2900px, Height 310px.
+    - Accent: 20px solid crimson stripe on left edge.
+    - Zero emojis.
+    """
+    w, h = canvas_size
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+
+    clean_date = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", date_event_line).strip()
+    clean_title = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", title_line).strip()
+    clean_detail = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", detail_line).strip()
+
+    f_pill = load_apple_font("section_header", 36, text=clean_date)
+    f_title = load_apple_font("card_title", 84, text=clean_title)
+    f_sub = load_apple_font("card_subtitle", 60, text=clean_detail)
+
+    dummy = Image.new("RGBA", (100, 100))
+    d_measure = ImageDraw.Draw(dummy)
+
+    pb = d_measure.textbbox((0, 0), clean_date, font=f_pill)
+    tb = d_measure.textbbox((0, 0), clean_title, font=f_title)
+    db = d_measure.textbbox((0, 0), clean_detail, font=f_sub)
+
+    pill_w = pb[2] - pb[0] + 44
+    content_w = max(pill_w, tb[2] - tb[0], db[2] - db[0])
+    card_w = max(2200, min(2900, content_w + 160))
+    card_h = 310
+
+    if position == "bottom_left":
+        x0 = 96
+        y0 = 1640
+    elif position == "top_right":
+        x0 = w - card_w - 96
+        y0 = 96
+    else:  # top_left
+        x0 = 96
+        y0 = 96
+
+    x1, y1 = x0 + card_w, y0 + card_h
+
+    draw_vintage_card(img, (x0, y0, x1, y1), accent_side="left", radius=22, accent_color=accent_color, accent_width=20)
+    draw = ImageDraw.Draw(img)
+
+    px0 = x0 + 64
+    py0 = y0 + 26
+    draw.rounded_rectangle([px0, py0, px0 + pill_w, py0 + 48], radius=10, fill=accent_color)
+    draw.text((px0 + 22, py0 + 6), clean_date, font=f_pill, fill=(252, 249, 242, 255))
+
+    draw.text((x0 + 64, y0 + 94), clean_title, font=f_title, fill=COLOR_ESPRESSO_INK)
+    draw.text((x0 + 64, y0 + 198), clean_detail, font=f_sub, fill=COLOR_UMBER_INK)
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_png, "PNG", compress_level=1)
+    return out_png
+
+
+def render_translation_subtitle_card(
+    spoken_text: str,
+    english_translation: str,
+    out_png: Path,
+    canvas_size: tuple[int, int] = (3840, 2160),
+) -> Path:
+    """
+    Renders bilingual on-camera speech translations as a centered Vintage Telegram / Field Note Card (+40% Mobile Weight):
+    - Line 1 (Spoken RU/ES/UA): 64pt Bold in Postmark Crimson #B83A2A.
+    - Line 2 (English): 76pt Heavy/Bold in Deep Espresso #231F1D (with automatic wrapping).
+    - Dimensions: Width 2600..3000px, 16px solid Crimson top accent bar, 44px vertical padding.
+    - Centered horizontally at Y: 1710 (or Y: 1650 when wrapped).
+    """
+    w, h = canvas_size
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+
+    clean_spoken = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", spoken_text).strip()
+    clean_eng = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", english_translation).strip()
+
+    f_spoken = load_apple_font("card_title", 64, text=clean_spoken)
+    f_eng = load_apple_font("hero_title", 76, text=clean_eng)
+
+    dummy = Image.new("RGBA", (100, 100))
+    d_measure = ImageDraw.Draw(dummy)
+
+    b1 = d_measure.textbbox((0, 0), clean_spoken, font=f_spoken)
+    w1 = b1[2] - b1[0]
+
+    max_card_w = 3000
+    min_card_w = 2600
+    max_text_w = max_card_w - 160
+
+    words = clean_eng.split()
+    eng_lines = []
+    cur = ""
+    for word in words:
+        cand = f"{cur} {word}".strip() if cur else word
+        cb = d_measure.textbbox((0, 0), cand, font=f_eng)
+        if cb[2] - cb[0] <= max_text_w:
+            cur = cand
+        else:
+            if cur:
+                eng_lines.append(cur)
+            cur = word
+    if cur:
+        eng_lines.append(cur)
+
+    longest_eng_w = max(
+        d_measure.textbbox((0, 0), line, font=f_eng)[2] - d_measure.textbbox((0, 0), line, font=f_eng)[0]
+        for line in eng_lines
+    )
+    content_w = max(w1, longest_eng_w)
+    card_w = max(min_card_w, min(max_card_w, content_w + 160))
+
+    is_wrapped = len(eng_lines) > 1
+    card_h = 350 if is_wrapped else 260
+
+    x0 = (w - card_w) // 2
+    y0 = 1650 if is_wrapped else 1710
+    x1, y1 = x0 + card_w, y0 + card_h
+
+    draw_vintage_card(img, (x0, y0, x1, y1), accent_side="top", radius=20, accent_color=COLOR_CRIMSON, accent_width=16)
+    draw = ImageDraw.Draw(img)
+
+    t1_x = x0 + (card_w - w1) // 2
+    draw.text((t1_x, y0 + 44), clean_spoken, font=f_spoken, fill=COLOR_CRIMSON)
+
+    cur_eng_y = y0 + 128
+    for line in eng_lines:
+        lb = d_measure.textbbox((0, 0), line, font=f_eng)
+        lw = lb[2] - lb[0]
+        lx = x0 + (card_w - lw) // 2
+        draw.text((lx, cur_eng_y), line, font=f_eng, fill=COLOR_ESPRESSO_INK)
+        cur_eng_y += 88
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_png, "PNG", compress_level=1)
+    return out_png
+
+
+def render_strava_comparison_vintage_card(
+    out_png: Path,
+    header_text: str = "STRAVA LONGITUDINAL COMPARISON · COLL DE FEMENIA",
+    subheader_text: str = "Same 195W Climbing Effort · Accelerated Aging Tax on Zero Testosterone (ADT)",
+    badge1_text: str = "2024 NORMAL-T:  195 W  @  118 BPM",
+    badge2_text: str = "2026 ZERO-T:  191 W  @  141 BPM (+23 BPM TAX)",
+    canvas_size: tuple[int, int] = (3840, 2160),
+) -> Path:
+    """
+    Renders a Strava Longitudinal Comparison Card on Warm Vintage Parchment (+40% Mobile Weight):
+    - 64pt Avenir Next Bold/Heavy header in #231F1D.
+    - 46pt Avenir Next Demi Bold subheader in #4A3F35.
+    - Forest Green (#2D6A4F) badge 1 and Postmark Crimson (#B83A2A) badge 2 in 54pt text.
+    """
+    w, h = canvas_size
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+
+    f_hdr = load_apple_font("hero_title", 64, text=header_text)
+    f_sub = load_apple_font("card_subtitle", 46, text=subheader_text)
+    f_badge = load_apple_font("section_header", 54, text=badge1_text + badge2_text)
+
+    cw, ch = 2800, 370
+    x0, y0 = 96, 96
+    x1, y1 = x0 + cw, y0 + ch
+
+    draw_vintage_card(img, (x0, y0, x1, y1), accent_side="left", radius=22, accent_color=COLOR_CRIMSON, accent_width=20)
+    draw = ImageDraw.Draw(img)
+
+    draw.text((x0 + 64, y0 + 32), header_text, font=f_hdr, fill=COLOR_ESPRESSO_INK)
+    draw.text((x0 + 66, y0 + 112), subheader_text, font=f_sub, fill=COLOR_UMBER_INK)
+
+    dummy = Image.new("RGBA", (100, 100))
+    d_m = ImageDraw.Draw(dummy)
+
+    by = y0 + 196
+    b_1 = d_m.textbbox((0, 0), badge1_text, font=f_badge)
+    bw1 = b_1[2] - b_1[0] + 54
+    draw.rounded_rectangle([x0 + 64, by, x0 + 64 + bw1, by + 88], radius=14, fill=COLOR_FOREST_GREEN)
+    draw.text((x0 + 91, by + 16), badge1_text, font=f_badge, fill=(252, 249, 242, 255))
+
+    bx2 = x0 + 64 + bw1 + 36
+    b_2 = d_m.textbbox((0, 0), badge2_text, font=f_badge)
+    bw2 = b_2[2] - b_2[0] + 54
+    draw.rounded_rectangle([bx2, by, bx2 + bw2, by + 88], radius=14, fill=COLOR_CRIMSON)
+    draw.text((bx2 + 27, by + 16), badge2_text, font=f_badge, fill=(252, 249, 242, 255))
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_png, "PNG", compress_level=1)
+    return out_png
+
+
+def render_declarative_overlays(
+    overlays_spec: list[dict],
+    overlays_dir: Path,
+    raw_dir: Path | None = None,
+    skip_render: bool = False,
+) -> list[dict]:
+    """
+    Universal declarative overlay renderer and timeline expander.
+    Reads `overlays` array from `timeline_spec.json`, renders all 4K RGBA PNGs,
+    and expands any `live_telemetry_hud` / `telemetry_hud` entries into 1Hz live-updating
+    HUD items on track `V3` (with smooth fade-in on the first second, 100% solid hold
+    across internal 1s boundaries so the card never blinks, and fade-out on the last second).
+    """
+    overlays_dir.mkdir(parents=True, exist_ok=True)
+    live_hud_dir = overlays_dir / "live_hud"
+    live_hud_dir.mkdir(parents=True, exist_ok=True)
+
+    gpx_cache: dict[str, list[dict]] = {}
+
+    def get_gpx(gpx_name: str) -> list[dict]:
+        if not raw_dir or not gpx_name:
+            return []
+        if gpx_name not in gpx_cache:
+            gp = raw_dir / gpx_name
+            gpx_cache[gpx_name] = load_gpx_stream(gp) if gp.exists() else []
+        return gpx_cache[gpx_name]
+
+    expanded_items: list[dict] = []
+    for ov in overlays_spec:
+        kind = ov.get("kind", "character_badge")
+        accent_name = (ov.get("accent") or "crimson").lower()
+        accent_col = COLOR_FOREST_GREEN if "green" in accent_name else COLOR_CRIMSON
+        pos = ov.get("position", "bottom_left")
+
+        if kind in ("live_telemetry_hud", "telemetry_hud"):
+            start_s = float(ov["start_s"])
+            dur_s = float(ov["dur_s"])
+            step_s = float(ov.get("step_s", 1.0))
+            pts = get_gpx(ov.get("gpx_file", ""))
+            gpx_start_idx = int(ov.get("gpx_start_idx", len(pts) // 4 if pts else 0))
+            prof = ov.get("metrics_profile") or {}
+
+            steps = []
+            t = 0.0
+            sec_idx = 0
+            while t < dur_s - 1e-4:
+                cur_dur = min(step_s, round(dur_s - t, 2))
+                tl_s = round(start_s + t, 2)
+                steps.append((sec_idx, tl_s, cur_dur))
+                t = round(t + cur_dur, 2)
+                sec_idx += 1
+
+            n_steps = len(steps)
+            for s_idx, tl_s, cur_dur in steps:
+                if pts:
+                    pt = dict(pts[min(max(gpx_start_idx + s_idx, 0), len(pts) - 1)])
+                else:
+                    pt = {
+                        "spd_mph": float(ov.get("spd_mph", 15.5)),
+                        "pwr": int(ov.get("pwr", 185)),
+                        "hr": int(ov.get("hr", 138)),
+                        "grad_pct": float(ov.get("grad_pct", 5.2)),
+                        "ele_ft": int(ov.get("ele_ft", 850)),
+                    }
+                    if not prof:
+                        jitter_w = (-4, 3, 7, -2, 5, -6, 2, 4)[s_idx % 8]
+                        jitter_spd = (-0.2, 0.1, 0.3, 0.0, -0.1, 0.2, -0.2, 0.1)[s_idx % 8]
+                        jitter_hr = (0, 0, 1, 1, 0, -1, 0, 1)[s_idx % 8]
+                        pt["pwr"] = max(0, int(pt["pwr"] + jitter_w))
+                        pt["spd_mph"] = max(0.0, round(pt["spd_mph"] + jitter_spd, 1))
+                        pt["hr"] = max(60, int(pt["hr"] + jitter_hr))
+
+                for key in ("spd_mph", "pwr", "hr", "grad_pct", "ele_ft"):
+                    if key in prof and isinstance(prof[key], list) and prof[key]:
+                        val = prof[key][min(s_idx, len(prof[key]) - 1)]
+                        pt[key] = int(val) if key in ("pwr", "hr", "ele_ft") else float(val)
+
+                rel_fname = f"live_hud/hud_{int(round(tl_s * 10)):04d}.png"
+                out_png = overlays_dir / rel_fname
+                if not skip_render:
+                    render_telemetry_hud_widget(pt, out_png)
+
+                expanded_items.append({
+                    "file": rel_fname,
+                    "start_s": tl_s,
+                    "dur_s": cur_dur,
+                    "track": ov.get("track", "V3"),
+                    "fade_in_s": 0.25 if s_idx == 0 else 0.0,
+                    "fade_out_s": 0.30 if s_idx == n_steps - 1 else 0.0,
+                    "desc": ov.get("desc", f"Live Telemetry HUD @ {tl_s:.1f}s"),
+                })
+            continue
+
+        out_png = overlays_dir / ov["file"]
+        if not skip_render:
+            if kind == "character_badge":
+                render_character_callout_badge(
+                    ov["title"],
+                    ov["subtitle"],
+                    out_png,
+                    position=pos,
+                    accent_color=accent_col,
+                )
+            elif kind == "flashback_badge":
+                render_flashback_memory_badge(
+                    ov["date_event"],
+                    ov["title"],
+                    ov["detail"],
+                    out_png,
+                    position=pos,
+                    accent_color=accent_col,
+                )
+            elif kind == "translation_subtitle":
+                render_translation_subtitle_card(
+                    ov["spoken"],
+                    ov["english"],
+                    out_png,
+                )
+            elif kind == "strava_comparison":
+                render_strava_comparison_vintage_card(
+                    out_png,
+                    header_text=ov.get("header", "STRAVA LONGITUDINAL COMPARISON · COLL DE FEMENIA"),
+                    subheader_text=ov.get("subheader", "Same 195W Climbing Effort · Accelerated Aging Tax on Zero Testosterone (ADT)"),
+                    badge1_text=ov.get("badge1", "2024 NORMAL-T:  195 W  @  118 BPM"),
+                    badge2_text=ov.get("badge2", "2026 ZERO-T:  191 W  @  141 BPM (+23 BPM TAX)"),
+                )
+            elif kind == "corner_map":
+                pts = get_gpx(ov.get("gpx_file", ""))
+                if pts:
+                    t_idx = int(ov.get("target_idx", len(pts) // 3))
+                    render_corner_map_widget(pts, t_idx, ov.get("scene_label", "Route Progress"), out_png)
+
+        expanded_items.append({
+            "file": ov["file"],
+            "start_s": float(ov["start_s"]),
+            "dur_s": float(ov["dur_s"]),
+            "track": ov.get("track", "V2"),
+            "fade_in_s": float(ov.get("fade_in_s", 0.25)),
+            "fade_out_s": float(ov.get("fade_out_s", 0.30)),
+            "desc": ov.get("desc", ov["file"]),
+        })
+
+    return expanded_items
+
+
 ACTIVITY_SPEED_THRESHOLDS = {
     "cycling_ride": 2.0,
     "cycling": 2.0,

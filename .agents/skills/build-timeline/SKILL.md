@@ -105,22 +105,32 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
 
 ---
 
-### Step 5: Load `.fcproj` in FilmCraft GUI & Mandatory Live Preview Gate (BEFORE 4K Render!)
-1. **Build & Save Valid `schema_version: 17` `.fcproj`:** Write `04_Project_Catalog/YEAR/<project_name>/<project_name>.fcproj` with all video clips (`V1`), overlays/PiP/HUD (`V2`), camera audio (`A1`), music (`A2`), SFX (`A3`), and synthesized voice-over (`A4`).
-2. **Open Live in FilmCraft GUI:** Launch or refresh `FilmCraft.app` (`v0.18.0+`) with the `.fcproj` file so Alexander can press Spacebar and play the timeline immediately:
-   ```bash
-   cd ~/Movies/Cache_And_Previews && open -a FilmCraft --args --control 9876 "<absolute_path_to_fcproj>"
-   ```
+### Step 5: Declarative Timeline Build (`timeline_spec.json` + `build_timeline.py`) & Mandatory Live Preview Gate
+1. **Zero-Script Project Law (Strictly Enforced):**
+   - **NEVER create or clone per-project Python scripts** (`assemble_<project>.py` or `build_<project>_overlays.py`) inside `04_Project_Catalog/YEAR/<project_name>/`.
+   - Write the declarative `04_Project_Catalog/YEAR/<project_name>/timeline_spec.json` and run:
+     ```bash
+     python3 .agents/skills/build-timeline/scripts/build_timeline.py --project-dir "04_Project_Catalog/YEAR/<project_name>"
+     ```
+   - `build_timeline.py` automatically:
+     - Enforces `check_zero_project_scripts_preflight()` and `check_bgm_non_reuse_preflight()`.
+     - Renders all Warm Vintage Parchment character/flashback/subtitle cards (`V2`) and **1Hz Live Dynamic Telemetry HUD series (`live_hud/hud_XXXX.png` on `V3`)** via `render_declarative_overlays()`.
+     - Measures the raw RMS mean volume of the selected BGM track (`measure_mean_volume_db`) and dynamically calibrates its gain to **`-20.5 dB` RMS mean** during riding/visual swells and **`-27.0 dB` RMS mean** under speech/VO.
+     - Builds and polishes `<project_name>.fcproj` (`schema_version: 17`) with all 3 soft subtitle tracks (`C1` EN, `C2` UA, `C3` RU) enabled in the timeline UI.
+2. **Open Live in FilmCraft GUI:** `build_timeline.py` automatically launches `FilmCraft.app` (`v0.18.0+`) with the `.fcproj` file so Alexander can press Spacebar and play the timeline immediately.
 3. **🛑 MANDATORY PRE-RENDER GATE (NEVER RENDER MP4 WITHOUT USER OK):**
-   - **STOP HERE** before running any full-timeline 4K MP4 export (`ffmpeg` or `render.export`).
+   - **STOP HERE** before running `--render-export`.
    - Ask Alexander in chat:
      *"Timeline `.fcproj` is built and loaded in FilmCraft! Please play/scrub it in FilmCraft and let me know if any cuts, audio levels, or overlays need tweaking—or say **'OK to render'** to export the final 4K MP4 and Russian edition."*
 
 ---
 
 ### Step 6: Export 4K MP4, Russian Edition (`_RU.mp4`) & Metadata Package (Only After User Approves Timeline)
-1. **Render 4K Master:** Once Alexander approves the timeline in FilmCraft, export `~/Movies/Exports/YEAR/<project_name>.mp4` (`3840x2160`, `H.264`, `AAC 192k`).
-2. **Lossless Russian Remux (`_RU.mp4` by Default):** Always build `full_audio_ru.m4a` and losslessly remux with the 4K video stream in `0.2s` (`ffmpeg -c:v copy -c:a aac`) into `<project_name>_RU.mp4` by default (plus `_UA.mp4` if `option_b`). This ensures Alexander always has the Russian-voiced 4K edition ready for instant upload to Flickr (`apkom`) and WhatsApp channels for family (Nina's brother, Alexander's sister in Sevastopol) and classmates who face YouTube restrictions.
+1. **Render 4K Master & Lossless Russian Remux (`_RU.mp4`):** Once Alexander approves the timeline in FilmCraft, run:
+   ```bash
+   python3 .agents/skills/build-timeline/scripts/build_timeline.py --project-dir "04_Project_Catalog/YEAR/<project_name>" --render-export
+   ```
+   *(Or if only audio/subtitles changed after a render, pass `--mux-audio-only` to remux in `0.4s` without re-encoding 4K video frames!)*
 3. **Metadata, Thumbnails & Social/Flickr Package:** Run `generate_youtube_metadata.py` to create:
    - `youtube_metadata.json` (Imperial stats, hook-first title, chapters, localized text)
    - `thumbnail.jpg`, `thumbnail_ua.jpg`, `thumbnail_ru.jpg`
