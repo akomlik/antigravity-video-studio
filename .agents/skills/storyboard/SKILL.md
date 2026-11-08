@@ -67,8 +67,11 @@ To maximize creative depth while protecting your 5-hour Argon window:
          - `en_only`: 1 English 4K video (`unlisted`) with `captions.en.srt`.
          - `option_b`: Special Occasions Only — 3 separate 4K video uploads (EN Master `unlisted` + UA/RU unlisted voiced editions). Always requires explicit confirmation before upload!
        - `thumbnail`: `style: composite_ai` (`headline_text`, `hero_image`, `prop_cutout`) modeled after YouTube Studio's "Ask Suggestions" composite layout.
+       - `ai_creative_artifacts`: Propose 2–3 **100% Native Studio AI Creative Candidates** (zero BleeqUP app dependency!) generated via `.agents/skills/storyboard/scripts/generate_ai_creative_assets.py` (`gemini-3-pro-image-preview` + `gemini-omni-1.1-flash`):
+         - **`paint_morph` (Artistic Painting $\leftrightarrow$ Reality Morph):** Synthesizes a `16:9` impasto oil painting, watercolor, or anime twin from any raw photo/video frame and melts it seamlessly into the real shot (ideal for cold opens or poetic endings).
+         - **`fpv_drone` (Native 3rd-Person Multi-POV Tracking — Per-Ride Photo Reference + 4 POV Templates):** Uses the photo of Alexander with his bike taken on that day's ride (`--rider-ref <IMG_*.jpg>`, never hardcoded since kit and bike change ride to ride!) + a raw POV road clip (`--source <VIDEO_*.MP4>`), and lets Alexander choose from **4 POV Templates** (`crane_above_to_behind`, `side_tracking`, `low_rear_chase`, `front_lead`) or a **Custom Prompt** (`--viewpoint custom --prompt "..."`).
+         - **`living_memory` (Living Archival Photograph):** Animates historical Lightroom photos (`P110*.jpg`, 1977+ B&W film scans) into warm 5.0s living memories (e.g., turning and clinking wine glasses).
 3. **Step 3 (Automatic Memory Harvesting into `my_digital_brain.md`):**
    - Append any new people, companions, recurring gear/wardrobe, or cross-year links into `./my_digital_brain.md`.
-4. **Step 4 (Interactive Co-Design Prompt):**
-   - Present the updated `Storyboard.md` (highlighting the Scene Map, characters, and proposed Thumbnail Headline + Hero/Prop pairing) and ask:
-     **"Storyboard.md is ready! Would you like to tweak any story details, or run `/build-timeline` to select your music/language in chat and assemble the 4K video?"**
+4. **Step 4 (Interactive Co-Design Prompt & AI Creative Artifact Selection):**
+   - Present the updated `Storyboard.md` (highlighting the Scene Map, characters, proposed Thumbnail, and candidate **AI Creative Artifacts**) and use `ask_question` to let Alexander select which AI-generated artifacts (if any) to synthesize and weave into the timeline before running `/build-timeline`.

@@ -8,10 +8,14 @@ description: Universal pre-processor for any video project folder (cycling ride,
 ## Model & Execution Instructions
 1. Execute this skill using **Gemini 3.8 Flash** to preserve Gemini 4 Argon quota.
 2. Treat `scripts/ingest_and_sync_media.py` as a black box—do not read its source code into context.
-3. If the target folder was already fixed by `ranger-sync` (`bleequp-ranger-sync`), pass `--skip-bleequp-sync`:
+3. Run `ingest_and_sync_media.py` on the target folder (add `--force-resync` if you want to re-run `ranger-sync` on an already-synced folder, or `--skip-bleequp-sync` to skip):
    ```bash
-   python3 ./.agents/skills/ingest-media/scripts/ingest_and_sync_media.py --project-dir "<path_to_folder>" --genre auto --skip-bleequp-sync
+   python3 ./.agents/skills/ingest-media/scripts/ingest_and_sync_media.py --project-dir "<path_to_folder>" --genre auto
    ```
+   *(What this does automatically:*
+   - *Converts `.HEIC` $\rightarrow$ `.jpg` and copies all EXIF + GPS + macOS Finder `FileCreateDate`/`FileModifyDate` from `.HEIC` to `.jpg`.*
+   - *Runs `ranger-sync apply --auto-shift --rename-shifted --write-filesystem` to auto-detect BleeqUP Camera SoC sleep-oscillator drift (both whole-ride drift and mid-ride Camera Settings sync overlaps), rename shifted BleeqUP 13-digit epoch filenames to their true capture time, inject GPX coordinates, and align macOS Finder creation/modification dates across all BleeqUP and iPhone files so Quick Look scrolls in 100% chronological shot order.*
+   - *Extracts `.proxies/*_thumb.jpg` + `*_strip.jpg` and runs `verify_and_refine_bleequp_stop_sync` (`gemini-3.8-flash`) to catch and refine any subtle `10–300s` stop-arrival RTC drift.)*
 4. Read the resulting `project_manifest.json` summary block (`detected_genre`, `storyboard_status`, `recommended_music_candidates`, and `project_summary`) and report:
    - Detected Project Genre (`cycling_ride`, `hike_outdoor`, `social_event`, or `archival_slideshow`).
    - Status of `Storyboard.md` (`existing`, `created_skeleton_needs_refinement` — if skeleton, immediately transition into `/storyboard` visual inspection!).

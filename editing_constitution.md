@@ -215,3 +215,28 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
     - **Facebook Algorithm Best Practice:** Attach 1–3 authentic photos (e.g., the bakery display, the village fountain, the bike at the cafe), share the route story with distance/elevation, and put the YouTube link in the **First Comment** (`link in first comment 👇`) so Facebook doesn't penalize post reach.
 - **Dedicated FB Promo Generator Option 4 (`mallorca_community`):**
     - Every cycling project located on Mallorca (`GPX` coordinates in Mallorca bounding box) MUST generate a dedicated **Option 4: Mallorca Cycling Facebook Group Edition** in `facebook_promo.md` alongside Options 1–3.
+
+### ARTICLE XII: NATIVE AI CREATIVE ARTIFACTS & LIVING MEMORIES (ZERO BLEEQUP DEPENDENCY)
+
+- **100% Independence from Third-Party AI Tracking (`generate_ai_creative_assets.py`):**
+    - Alexander never needs to enable BleeqUP's proprietary AI tracking feature or rely on watermarked third-party app exports (`BleeqUp_Motion_*.jpg` / `BleeqUp_Remix_*_ai.MP4`).
+    - All artistic stylizations, painting-to-reality morphs, 3rd-person FPV drone swoops, and living archival memories are synthesized **100% natively in-studio** from raw camera photos/videos (`IMG_*`, `VIDEO_*`) and Lightroom archival stills (`P110*.jpg`) via `.agents/skills/storyboard/scripts/generate_ai_creative_assets.py` using **`gemini-3-pro-image-preview`** (`2K 16:9` keyframe synthesis) + **`gemini-omni-1.1-flash`** (`1080p 16:9` motion & first-to-last-frame transitions).
+- **Three Signature Studio AI Creative Modes:**
+    1. **`paint_morph` (Artistic Painting $\leftrightarrow$ Reality Morph):**
+        - Synthesizes a gallery-grade `16:9` artistic twin (`impasto_oil`, `watercolor`, or `anime`) directly from any raw photo or video frame via `gemini-3-pro-image-preview`, then uses `gemini-omni-1.1-flash` (`--first-frame` + `--last-frame`) to melt the living painting seamlessly into the real camera shot (for cold opens) or freeze reality into a painting (for poetic endings).
+    2. **`fpv_drone` (Native 3rd-Person Multi-POV Tracking — Zero Hardcoding, Per-Ride Photo Reference):**
+        - Because Alexander's cycling kit and bicycle change from ride to ride (e.g., rental bikes in Mallorca vs California road bikes, or different jerseys/vests each day), **never hardcode a rider or bike reference**.
+        - Instead, mirror and surpass the BleeqUP workflow using the **ride-specific photo of Alexander with his bike** taken during or after that day's ride (`--rider-ref <IMG_*.jpg>`):
+            1. **Select Source Video Clip:** Pick a raw POV road clip (`--source <VIDEO_*.MP4> --timestamp <sec>`).
+            2. **Select Ride-Specific Rider + Bike Photo:** Pass that day's photo of Alexander with his bike (`--rider-ref <IMG_*.jpg>`). `generate_ai_creative_assets.py` dynamically extracts the visual spec of that day's kit & bike via `gemini-2.5-flash` and locks the visual identity via `gemini-3-pro-image-preview` + `gemini-omni-1.1-flash` (`<IMAGE_REF_0>`).
+            3. **Choose from 4 POV Templates or Custom Prompt (`--viewpoint`):**
+                - `crane_above_to_behind` (High Drone Swoop -> Low Rear-3/4 Chase)
+                - `side_tracking` (Pro-Peloton Low Motorcycle Side-Profile Tracking)
+                - `low_rear_chase` (Close Pro-Peloton Rear-3/4 Follow)
+                - `front_lead` (Low Front-3/4 Lead Camera Looking Back at Rider)
+                - `custom` (Custom camera trajectory via `--prompt "..."`)
+    3. **`living_memory` (Living Archival Photograph):**
+        - Takes a historical Lightroom photograph (`P110*.jpg`, 1977+ B&W film scans, or 1980s university photos) and animates a warm, subtle `5.0s` living memory (e.g., Alexander and Nina turning to each other and clinking wine glasses at Bar Nàutica in 2017) via `gemini-omni-1.1-flash`.
+        - **Audio Hygiene Rule for AI Clips:** When weaving a `living_memory`, `paint_morph`, or `fpv_drone` clip into the timeline under `A4` Voice-Over, suppress any random AI-generated speech on `A1` while optionally preserving subtle ambient sound or crisp spot SFX (such as wine glasses clinking or ocean waves) at `-12 dB`.
+- **Interactive Co-Design in `/storyboard` & `/build-timeline`:**
+    - During `/storyboard` co-design, the agent proposes 2–3 story-driven **AI Creative Artifact Candidates** (`ai_creative_artifacts` in `Storyboard.md` Section 5/6) and presents an interactive choice (`ask_question`) allowing Alexander to pick which AI artifacts to generate and weave into the timeline.

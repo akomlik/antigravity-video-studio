@@ -15,10 +15,11 @@ Turns any finished 4K `.mp4` export and `.fcproj` project into a complete YouTub
 4. **YouTube Chapter Parser Rule:** YouTube uses the **last** `00:00` timestamp block in a video's description to label the scrub-bar chapters. Therefore, inline `🇺🇦 УКРАЇНСЬКОЮ` and `🇷🇺 ПО-РУССКИ` blocks inside the English description must **never** include `00:00` chapter lists (localized chapters belong strictly inside `localizations["ua"]` and `localizations["ru"]`).
 5. **Mandatory Recording Date (`recordingDetails.recordingDate`):** Every uploaded or updated video (including `EN`, `UA`, and `RU` editions) MUST set `recordingDetails.recordingDate` (`YYYY-MM-DDT00:00:00.000Z`, derived from `recording_date` in `youtube_metadata.json` or the `YYYY-MM-DD` project folder prefix) via `part="snippet,status,localizations,recordingDetails"`.
 6. **Environment Inheritance & Zero-File 1Password Integration:** Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and optionally `GOOGLE_OAUTH_REFRESH_TOKEN` via your preferred environment manager (`direnv` + 1Password `envvar:*` protocol). When `GOOGLE_OAUTH_REFRESH_TOKEN` is present in the environment, credentials refresh completely in-memory with zero tokens or json files stored on disk. If absent, it safely falls back to caching in `~/.config/antigravity_youtube/token.json`.
-7. **Automated Facebook Promotional Package (`facebook_promo.md`):** Automatically generates three copy-ready Facebook post strategies upon metadata generation and post-upload completion, saving to `04_Project_Catalog/YEAR/<project_name>/facebook_promo.md` and printing the ready-to-copy box directly to the console:
-   - **Option 1 (The Curiosity Hook — Algorithm-Optimized):** Zero outbound links in the post text (prevents Facebook's feed reach suppression) + personal backstory and cliffhanger, with the YouTube link and language edition notes formatted for the First Comment.
-   - **Option 2 (Direct Story Narrative):** All-in-one post with emoji highlights and embedded video link.
+7. **Automated Facebook Promotional Package (`facebook_promo.md`):** Automatically generates copy-ready Facebook post strategies upon metadata generation and post-upload completion, saving to `04_Project_Catalog/YEAR/<project_name>/facebook_promo.md` and printing the ready-to-copy box directly to the console:
+   - **Option 1 (Direct YouTube Link Card — Default & Proven 265+ Views Standard):** Story hook + direct YouTube URL in the post body (without attaching separate photo files, so Facebook renders the full-width clickable 16:9 `YOUTUBE.COM` preview card from `thumbnail.jpg`), plus optional Flickr RU link.
+   - **Option 2 (Story + Highlights + Direct Link):** All-in-one post with emoji highlights and embedded video link.
    - **Option 3 (Bilingual / Classmates):** English story hook + UA/RU localized context for European and Ukrainian friends.
+   - **Option 4 (Mallorca Cycling Facebook Group Card):** Short punchy rider note + `#procyclehire` + direct YouTube URL so the full-bleed clickable `YOUTUBE.COM` preview card renders in the group feed.
 
 ## Step 1: Generate Metadata Package, `.srt` Tracks & Composite Thumbnail
 Run `generate_youtube_metadata.py`:
@@ -61,5 +62,4 @@ When `upload_youtube_api.py` finishes, it automatically prints the copy-ready Fa
 
 To share on Facebook:
 1. Open `facebook_promo.md`.
-2. Copy the **Option 1 Post Text** and paste into Facebook (attach 1–3 still photos from the project for maximum algorithmic reach).
-3. Post the update, then immediately paste the **Option 1 First Comment** (which includes the clean YouTube link and localized language edition notes).
+2. Copy the **Option 1 Post Text** (or **Option 4** for the *Mallorca Cycling* group) and paste directly into Facebook **without attaching separate photo files** so Facebook renders the full-width clickable 16:9 `YOUTUBE.COM` preview card from your composite thumbnail.

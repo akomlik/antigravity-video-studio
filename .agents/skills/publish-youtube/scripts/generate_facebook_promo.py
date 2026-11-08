@@ -119,16 +119,16 @@ def build_facebook_promo(
         desc_paras = [p.strip() for p in desc.split("\n\n") if p.strip() and not p.startswith("━") and not p.startswith("📊") and not p.startswith("⏱️") and not p.startswith("🎵") and not p.startswith("#")]
         lead_summary = desc_paras[0] if desc_paras else f"Highlights and scenes from {clean_title}."
         second_summary = desc_paras[1] if len(desc_paras) > 1 else ""
+        flickr_url = meta.get("published_flickr_url", "")
+        flickr_line = f"\n🇷🇺 На русском языке (Flickr): {flickr_url}" if flickr_url else ""
 
         opt1_body = (
             f"{lead_summary}\n\n"
             + (f"{second_summary}\n\n" if second_summary else "")
-            + "(Link to the full video in the first comment below! 👇)"
+            + f"🎬 Watch the 4K video on YouTube:\n{yt_url}"
+            + flickr_line
         )
-        opt1_comment = (
-            f"🎬 Watch the full video here: {yt_url}\n"
-            + (f"{lang_note}" if lang_note else "")
-        ).strip()
+        opt1_comment = ""
 
         bullet_points = []
         for ch in chapters[:4]:
@@ -140,7 +140,8 @@ def build_facebook_promo(
         opt2_body = (
             f"{lead_summary}\n\n"
             f"Highlights:\n{bullets_str}\n\n"
-            f"🎬 Watch the full video:\n👉 {yt_url}"
+            f"🎬 Watch the full video:\n{yt_url}"
+            + flickr_line
         )
 
         ua_lead = locs.get("ua", {}).get("description", "").split("\n\n")[0] if locs.get("ua") else ""
@@ -217,27 +218,26 @@ def build_facebook_promo(
         )
         opt4_comment = f"🎬 Short 4K ride recap: {yt_url}"
     elif is_mallorca:
+        has_pch = "pro cycle" in desc.lower() or "pch" in project_name.lower()
+        pch_tag = " with #procyclehire" if has_pch else ""
         opt4_body = (
-            f"Quiet spin on the island today: {title.replace('2026-', '').replace('2025-', '').strip()}.\n\n"
-            "Crisp morning air, light road traffic, and classic Tramuntana views across the plains.\n\n"
-            "How are road conditions treating everyone out there this week?\n\n"
-            "(Photos attached; short 4K video recap in first comment 👇)"
+            f"Awesome morning ride on the island today{pch_tag}! 🚴💪👍 — {title}\n\n"
+            f"{yt_url}"
         )
-        opt4_comment = f"🚴 Short 4K ride recap: {yt_url}"
+        opt4_comment = ""
 
     promo_data = {
         "project_name": project_name,
         "youtube_url": yt_url,
         "options": {
-            "option_1_curiosity_hook": {
-                "name": "Option 1: The Curiosity Hook (Algorithm-Optimized)",
-                "description": "Zero external links in post body (avoids FB reach suppression) + curiosity cliffhanger. Post YouTube link in the first comment.",
+            "option_1_direct_card": {
+                "name": "Option 1: Direct YouTube Link Card (Personal Feed — Recommended)",
+                "description": "Paste directly with the YouTube URL (do not attach separate photos so Facebook renders the full-width clickable 16:9 YouTube thumbnail card).",
                 "post_text": opt1_body,
-                "first_comment": opt1_comment,
             },
             "option_2_direct_story": {
-                "name": "Option 2: Direct Story Narrative (All-in-One)",
-                "description": "Engaging narrative with bullet highlights and YouTube link embedded directly in the post.",
+                "name": "Option 2: Story + Highlights + Direct Link",
+                "description": "Engaging narrative with chapter highlights and YouTube link embedded directly in the post.",
                 "post_text": opt2_body,
             },
             "option_3_bilingual": {
@@ -251,37 +251,31 @@ def build_facebook_promo(
 
     if opt4_body:
         promo_data["options"]["option_4_mallorca_cycling_group"] = {
-            "name": "Option 4: Mallorca Cycling Facebook Group Edition (73.4K Members Community Standard)",
-            "description": "Strictly non-promotional, road & cafe intel, fellow-rider tone, link in first comment.",
+            "name": "Option 4: Mallorca Cycling Facebook Group (Direct YouTube Preview Card)",
+            "description": "Short punchy rider note + #procyclehire + direct YouTube URL so Facebook renders the full-width clickable 16:9 video preview card.",
             "post_text": opt4_body,
-            "first_comment": opt4_comment,
         }
 
     # Write facebook_promo.md
     md_content = f"""# 📱 Social Promotional Copy: `{project_name}`
 
 > **Target Video:** [{title}]({yt_url})  
-> **Facebook Best Practice:** Use **Option 1** with 1–3 still photos attached natively to the Facebook post, then paste the link into the **First Comment** to avoid Facebook's outbound link reach penalty.
+> **Facebook Best Practice (Proven 265+ Views Standard):** Paste the **direct YouTube URL** inside the post body **without attaching separate photos** so Facebook renders the full-width clickable 16:9 `YOUTUBE.COM` thumbnail card!
 
 ---
 
-## 🚀 Option 1: The Curiosity Hook (Algorithm-Optimized — Recommended)
-*Attach 1–3 still photos from the project, post this text, then immediately add the first comment below:*
+## 🚀 Option 1: Direct YouTube Link Card (Personal Feed — Recommended)
+*Paste directly into Facebook (do not attach separate photos so the full-bleed clickable YouTube card renders):*
 
 ### 📝 Post Text:
 ```text
 {opt1_body}
 ```
 
-### 💬 First Comment:
-```text
-{opt1_comment}
-```
-
 ---
 
-## 📖 Option 2: Direct Story Narrative (All-in-One)
-*Single-step post with the YouTube link directly in the post body:*
+## 📖 Option 2: Story + Highlights + Direct Link
+*Narrative + chapter bullet points + direct YouTube & Flickr links:*
 
 ### 📝 Post Text:
 ```text
@@ -300,17 +294,12 @@ def build_facebook_promo(
 
 ---
 
-{f'''## 🚴 Option 4: Mallorca Cycling Facebook Group Edition (73.4K Members Community Standard)
-*Tailored specifically for the Mallorca Cycling Facebook community: zero commercial promo, peer-rider tone, authentic road & cafe intel, and YouTube link in the first comment:*
+{f'''## 🚴 Option 4: Mallorca Cycling Facebook Group (Direct YouTube Preview Card)
+*Proven format (70+ likes, 265+ views): short rider note + `#procyclehire` + direct YouTube URL so the full-width clickable `YOUTUBE.COM` preview card renders:*
 
-### 📝 Post Text (Attach 1–3 photos from the ride):
+### 📝 Post Text:
 ```text
 {opt4_body}
-```
-
-### 💬 First Comment:
-```text
-{opt4_comment}
 ```
 
 ---''' if opt4_body else ''}
@@ -346,21 +335,22 @@ def build_facebook_promo(
 
 def print_promo_box(promo: dict):
     opts = promo.get("options", {})
-    opt1 = opts.get("option_1_curiosity_hook", {})
+    opt1 = opts.get("option_1_direct_card", opts.get("option_1_curiosity_hook", {}))
     opt2 = opts.get("option_2_direct_story", {})
-    opt3 = opts.get("option_3_bilingual", {})
+    opt4 = opts.get("option_4_mallorca_cycling_group", {})
 
     print("\n========================================================")
     print("📱 SUGGESTED FACEBOOK PROMOTIONAL COPY")
     print("========================================================")
-    print("💡 Recommended Strategy (Algorithm-Optimized):")
-    print("   Post Option 1 text (with 1-3 project photos), then paste")
-    print("   the link into the FIRST COMMENT to avoid FB reach penalties.\n")
-    print("--- [OPTION 1: POST TEXT] ---")
+    print("💡 Proven Strategy (265+ Views Standard):")
+    print("   Paste directly WITH the YouTube link (and no extra photos)")
+    print("   so Facebook renders the giant clickable 16:9 YOUTUBE.COM card!\n")
+    print("--- [OPTION 1: PERSONAL FEED (DIRECT LINK CARD)] ---")
     print(opt1.get("post_text", "").strip())
-    print("\n--- [OPTION 1: FIRST COMMENT] ---")
-    print(opt1.get("first_comment", "").strip())
-    print("\n--- [OPTION 2: DIRECT ALL-IN-ONE POST] ---")
+    if opt4:
+        print("\n--- [OPTION 4: MALLORCA CYCLING GROUP (DIRECT LINK CARD)] ---")
+        print(opt4.get("post_text", "").strip())
+    print("\n--- [OPTION 2: STORY + HIGHLIGHTS + DIRECT LINK] ---")
     print(opt2.get("post_text", "").strip())
 
     flickr = promo.get("flickr", {})

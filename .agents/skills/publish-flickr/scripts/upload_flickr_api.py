@@ -472,6 +472,54 @@ def register_in_flickr_index(entry: dict, flickr_url: str):
     print(f"✓ Registered in {FLICKR_INDEX_PATH.name}")
 
 
+def cross_link_flickr_on_youtube(entry: dict, flickr_url: str):
+    """Automatically posts a top-level comment on the companion YouTube video linking to the Flickr Russian edition."""
+    cat_dir = entry.get("cat_dir")
+    if not cat_dir:
+        return
+    yt_meta_path = Path(cat_dir) / "youtube_metadata.json"
+    if not yt_meta_path.exists():
+        return
+    try:
+        yt_meta = json.loads(yt_meta_path.read_text(encoding="utf-8"))
+        vid_id = yt_meta.get("published_video_id")
+        if not vid_id:
+            return
+        yt_meta["published_flickr_url"] = flickr_url
+        yt_meta_path.write_text(json.dumps(yt_meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+        yt_scripts_dir = STUDIO_ROOT / ".agents" / "skills" / "publish-youtube" / "scripts"
+        if str(yt_scripts_dir) not in sys.path:
+            sys.path.insert(0, str(yt_scripts_dir))
+        from upload_youtube_api import get_youtube_service
+
+        yt = get_youtube_service()
+        existing = yt.commentThreads().list(part="snippet", videoId=vid_id).execute().get("items", [])
+        for item in existing:
+            txt = item["snippet"]["topLevelComment"]["snippet"].get("textOriginal", "")
+            if flickr_url in txt or "flickr.com" in txt:
+                return
+        comment_text = (
+            f"🔊 Русская версия (с русской озвучкой и без блокировок) на Flickr:\n"
+            f"👉 {flickr_url}\n\n"
+            f"💬 Subtitles [CC] available on this video in English, Українська & Русский."
+        )
+        body = {
+            "snippet": {
+                "videoId": vid_id,
+                "topLevelComment": {
+                    "snippet": {
+                        "textOriginal": comment_text
+                    }
+                }
+            }
+        }
+        res = yt.commentThreads().insert(part="snippet", body=body).execute()
+        print(f"✓ Posted Flickr RU cross-link comment on YouTube video {vid_id} (thread: {res.get('id')})")
+    except Exception as e:
+        print(f"Note cross-linking Flickr URL on YouTube: {e}")
+
+
 def main():
     p = argparse.ArgumentParser(description="Upload video editions to Flickr via Flickr API (1Password/direnv supported)")
     p.add_argument("--project-dir", required=True, help="Path to project folder in 04_Project_Catalog/ or ~/Movies/")
@@ -532,6 +580,7 @@ def main():
     flickr_url = f"https://www.flickr.com/photos/{username}/{photo_id}/"
 
     register_in_flickr_index(meta, flickr_url)
+    cross_link_flickr_on_youtube(meta, flickr_url)
 
     print("\n========================================================")
     print("📸 FLICKR PUBLISHING COMPLETE!")

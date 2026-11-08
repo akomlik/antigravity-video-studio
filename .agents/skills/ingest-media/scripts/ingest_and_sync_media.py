@@ -47,18 +47,47 @@ def run_filmcraft_version_check(studio_root: Path):
     return {}
 
 
-def run_bleequp_ranger_sync_if_needed(project_dir: Path, skip_sync: bool):
-    """Step 0a: Runs akomlik/bleequp-ranger-sync (ranger-sync) if installed and not already synced."""
+def convert_heic_to_jpg(project_dir: Path):
+    """Step 0a: Converts iPhone .HEIC stills to high-quality .jpg via macOS sips and preserves EXIF + Finder capture dates."""
+    exiftool_bin = shutil.which("exiftool") or "/opt/homebrew/bin/exiftool"
+    for heic in list(project_dir.glob("*.HEIC")) + list(project_dir.glob("*.heic")):
+        jpg_out = heic.with_suffix(".jpg")
+        needs_exif_sync = False
+        if not jpg_out.exists():
+            subprocess.run(
+                ["sips", "-s", "format", "jpeg", "-s", "formatOptions", "95", str(heic), "--out", str(jpg_out)],
+                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+            needs_exif_sync = True
+        elif abs(jpg_out.stat().st_mtime - heic.stat().st_mtime) > 2.0:
+            needs_exif_sync = True
+
+        if needs_exif_sync and jpg_out.exists() and Path(exiftool_bin).is_file():
+            subprocess.run(
+                [
+                    exiftool_bin,
+                    "-overwrite_original",
+                    "-tagsFromFile", str(heic),
+                    "-all:all",
+                    "-FileCreateDate<DateTimeOriginal",
+                    "-FileModifyDate<DateTimeOriginal",
+                    str(jpg_out),
+                ],
+                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+
+
+def run_bleequp_ranger_sync_if_needed(project_dir: Path, skip_sync: bool, force_resync: bool = False):
+    """Step 0b: Runs akomlik/bleequp-ranger-sync (`ranger-sync apply --auto-shift --rename-shifted --write-filesystem`)."""
     if skip_sync:
         print("Skipping ranger-sync (--skip-bleequp-sync flag set; files already fixed).")
         return
     marker = project_dir / ".bleequp_synced"
-    if marker.exists():
+    if marker.exists() and not force_resync:
         print("Detected .bleequp_synced marker; BleeqUP media already processed.")
         return
-    # Also check if files already have epoch timestamps from ranger-sync or if no BleeqUP files exist
     has_bleequp = any(
-        f.name.startswith(("VIDEO_", "IMG_17"))
+        f.name.startswith(("VIDEO_", "IMG_17", "BleeqUp_"))
         for f in project_dir.iterdir()
         if f.is_file()
     )
@@ -66,22 +95,25 @@ def run_bleequp_ranger_sync_if_needed(project_dir: Path, skip_sync: bool):
         return
     sync_bin = shutil.which("ranger-sync") or shutil.which("bleequp-ranger-sync")
     if sync_bin:
-        print(f"Step 0: Running {sync_bin} on {project_dir}...")
-        subprocess.run([sync_bin, str(project_dir)], check=False)
-        marker.touch()
+        print(f"Step 0b: Running {sync_bin} apply --auto-shift --rename-shifted --write-filesystem on {project_dir}...")
+        res = subprocess.run(
+            [
+                sync_bin,
+                "apply",
+                str(project_dir),
+                "--auto-shift",
+                "--rename-shifted",
+                "--write-filesystem",
+                "--overwrite-original",
+            ],
+            check=False,
+        )
+        if res.returncode == 0:
+            marker.touch()
+        else:
+            print(f"Warning: ranger-sync exited with code {res.returncode}")
     else:
-        print("Note: ranger-sync not on PATH or already run; proceeding with existing files.")
-
-
-def convert_heic_to_jpg(project_dir: Path):
-    """Step 0c: Converts iPhone .HEIC stills to high-quality .jpg via macOS sips."""
-    for heic in list(project_dir.glob("*.HEIC")) + list(project_dir.glob("*.heic")):
-        jpg_out = heic.with_suffix(".jpg")
-        if not jpg_out.exists():
-            subprocess.run(
-                ["sips", "-s", "format", "jpeg", "-s", "formatOptions", "95", str(heic), "--out", str(jpg_out)],
-                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-            )
+        print("Note: ranger-sync not on PATH; proceeding with existing files.")
 
 
 def generate_video_proxy_thumb(video_path: Path, proxy_dir: Path, duration_s: float):
@@ -661,11 +693,102 @@ def compute_editorial_guidance(item_info, genre: str, gpx_points: list):
     }
 
 
+def verify_and_refine_bleequp_stop_sync(project_dir: Path, gpx_points: list, media_items: list, proxy_dir: Path) -> bool:
+    """Uses Gemini 3.8 Flash on contact strips around GPX stationary stops to catch subtle 10-300s RTC drift and rename shifted files."""
+    if not gpx_points or len(gpx_points) < 20 or not os.environ.get("GEMINI_API_KEY"):
+        return False
+    sync_bin = shutil.which("ranger-sync") or shutil.which("bleequp-ranger-sync")
+    if not sync_bin:
+        return False
+
+    # Find stationary stops >= 180s in GPX
+    stops = []
+    for i in range(len(gpx_points) - 1):
+        pa, pb = gpx_points[i], gpx_points[i + 1]
+        gap_s = (pb["time"] - pa["time"]).total_seconds()
+        if gap_s >= 180.0 and haversine_m(pa["lat"], pa["lon"], pb["lat"], pb["lon"]) <= 150.0:
+            stops.append((pa["time"].timestamp(), pb["time"].timestamp()))
+    if not stops:
+        return False
+
+    stop_start, stop_end = stops[0]
+    # Look for BleeqUP video clips whose timestamp is within [-180s, +60s] of stop_start
+    candidates = []
+    for m in media_items:
+        if m.get("source_device") != "BleeqUP_Ranger_AI" or m.get("media_type") != "video":
+            continue
+        ts_dt = parse_timestamp_utc(m.get("creation_time_utc"))
+        if not ts_dt:
+            continue
+        ts = ts_dt.timestamp()
+        if stop_start - 180.0 <= ts <= stop_start + 60.0 and m.get("duration_s", 0) >= 15.0:
+            candidates.append((ts, m))
+
+    if not candidates:
+        return False
+
+    # Check the closest candidate to stop_start
+    candidates.sort(key=lambda x: abs((x[0] + x[1]["duration_s"] * 0.4) - stop_start))
+    cand_ts, cand_m = candidates[0]
+    strip_file = proxy_dir / f"{Path(cand_m['filename']).stem}_strip.jpg"
+    if not strip_file.exists():
+        return False
+
+    try:
+        from google import genai
+        from PIL import Image
+        client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+        dur = cand_m["duration_s"]
+        prompt = (
+            f"This 3x2 contact sheet shows 6 evenly spaced frames across a {dur:.1f}-second cycling POV video "
+            f"(Frame 1 at ~0s, Frame 2 at ~{dur*0.2:.0f}s, Frame 3 at ~{dur*0.4:.0f}s, Frame 4 at ~{dur*0.6:.0f}s, "
+            f"Frame 5 at ~{dur*0.8:.0f}s, Frame 6 at ~{dur:.0f}s). "
+            f"Does this clip show the cyclist riding and then arriving/stopping at a cafe or building entrance? "
+            f"Return ONLY valid JSON: {{\"arrives_at_stop\": true/false, \"stop_second\": number}}"
+        )
+        resp = client.models.generate_content(
+            model="gemini-3.8-flash",
+            contents=[Image.open(strip_file), prompt],
+        )
+        txt = (resp.text or "").strip().strip("`")
+        if txt.startswith("json"):
+            txt = txt[4:].strip()
+        data = json.loads(txt)
+        if data.get("arrives_at_stop") and isinstance(data.get("stop_second"), (int, float)):
+            t_stop = float(data["stop_second"])
+            residual_s = round(stop_start - (cand_ts + t_stop))
+            if 10 <= abs(residual_s) <= 300:
+                # Find all BleeqUP files before stop_end that preceded the first iPhone reference at the stop
+                pre_files = []
+                for m in media_items:
+                    if not m["filename"].startswith(("VIDEO_", "IMG_17")):
+                        continue
+                    t_dt = parse_timestamp_utc(m.get("creation_time_utc"))
+                    if t_dt and t_dt.timestamp() <= stop_end - 300.0:
+                        pre_files.append(m["filename"])
+                if pre_files:
+                    spec = f"{','.join(pre_files)}:{residual_s:+d}s"
+                    print(f"[✓] AI Vision + GPX Stop-Arrival Refinement ({residual_s:+d}s): {spec}")
+                    subprocess.run(
+                        [
+                            sync_bin, "apply", str(project_dir),
+                            "--shift-files", spec,
+                            "--rename-shifted", "--write-filesystem", "--overwrite-original",
+                        ],
+                        check=False,
+                    )
+                    return True
+    except Exception as e:
+        print(f"Note: AI stop-sync check skipped ({e})")
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="Universal media, Storyboard.md & telemetry ingestion for Antigravity.")
     parser.add_argument("--project-dir", required=True, help="Path to raw media folder (e.g. ~/Movies/2026/2026-11-01_SaPobla_Market_Trip)")
     parser.add_argument("--genre", default="auto", choices=["auto", "cycling_ride", "hike_outdoor", "social_event", "archival_slideshow"])
     parser.add_argument("--skip-bleequp-sync", action="store_true", help="Skip running ranger-sync if already fixed")
+    parser.add_argument("--force-resync", action="store_true", help="Force re-running ranger-sync even if .bleequp_synced exists")
     parser.add_argument("--studio-root", default=str(STUDIO_ROOT), help="Path to Google Drive Antigravity_Video_Studio root")
     args = parser.parse_args()
 
@@ -674,8 +797,8 @@ def main():
     proxy_dir = project_dir / ".proxies"
 
     run_filmcraft_version_check(studio_root)
-    run_bleequp_ranger_sync_if_needed(project_dir, args.skip_bleequp_sync)
     convert_heic_to_jpg(project_dir)
+    run_bleequp_ranger_sync_if_needed(project_dir, args.skip_bleequp_sync, args.force_resync)
 
     gpx_files = list(project_dir.glob("*.gpx")) + list(project_dir.glob("*.GPX"))
     gpx_points, total_km, total_elev_m = ([], 0.0, 0.0)
@@ -687,6 +810,12 @@ def main():
     for f in sorted(project_dir.iterdir()):
         if f.is_file() and f.suffix.lower() in (".mp4", ".mov", ".jpg", ".jpeg", ".tif", ".tiff", ".png") and not f.name.startswith("."):
             media_items.append(probe_media_file(f, proxy_dir))
+
+    if not args.skip_bleequp_sync and verify_and_refine_bleequp_stop_sync(project_dir, gpx_points, media_items, proxy_dir):
+        media_items = []
+        for f in sorted(project_dir.iterdir()):
+            if f.is_file() and f.suffix.lower() in (".mp4", ".mov", ".jpg", ".jpeg", ".tif", ".tiff", ".png") and not f.name.startswith("."):
+                media_items.append(probe_media_file(f, proxy_dir))
 
     genre = detect_genre(args.genre, gpx_points, media_items)
     for item in media_items:

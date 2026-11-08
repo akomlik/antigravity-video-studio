@@ -434,7 +434,12 @@ def upload_option_b_multilingual(
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     primary_mp4 = Path(meta["video_file"])
     if not primary_mp4.is_absolute():
-        primary_mp4 = meta_path.parent / primary_mp4
+        candidate = meta_path.parent / primary_mp4
+        if not candidate.exists():
+            exports_cand = Path("~/Movies/Exports").expanduser() / meta_path.parent.parent.name / primary_mp4.name
+            if exports_cand.exists():
+                candidate = exports_cand
+        primary_mp4 = candidate
     thumb_path = Path(meta["thumbnail_file"]) if meta.get("thumbnail_file") else None
     if thumb_path and not thumb_path.is_absolute():
         thumb_path = meta_path.parent / thumb_path

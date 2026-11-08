@@ -49,19 +49,26 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
      - `🔍 Search for a different mood or genre...`
    *(If the user selects a preview, run `afplay -t 10 "03_Audio_Library/01_Curated_BGM/<path_to_track>"` and immediately re-prompt for their choice).*
 
-3. **Question 3: Telemetry HUD Overlays (`gpx_telemetry_hud`)** *(When GPX track is present)*
+3. **Question 3: Native AI Creative Artifacts (`ai_creative_artifacts`)** *(Multi-select or preset choice)*
+   - Present the candidate AI creative shots from `Storyboard.md` (synthesized 100% natively via `.agents/skills/storyboard/scripts/generate_ai_creative_assets.py` using `gemini-3-pro-image-preview` + `gemini-omni-1.1-flash`, with zero dependency on BleeqUP's AI tracking feature):
+     - `(Recommended) Weave All Selected Studio AI Artifacts (Painting->Reality Cold Open + Native FPV Drone Swoop + Living Archival Memory)`
+     - `Living Archival Memory Only (Animate 2017/archival Lightroom photos on V1)`
+     - `Painting->Reality Cold Open + Living Archival Memory`
+     - `Pure Documentary Cut (100% real camera footage & static archival photos only)`
+
+4. **Question 4: Telemetry HUD Overlays (`gpx_telemetry_hud`)** *(When GPX track is present)*
    - Options:
      - `(Recommended) Auto — On for moving scenes (> 2.0 mph for ride / > 0.8 mph for hike), Off at stops & stills`
      - `Always ON — Show Telemetry HUD on all video clips`
      - `OFF — Hide Telemetry HUD completely (clean screen)`
 
-4. **Question 4: YouTube Publishing Mode**
+5. **Question 5: YouTube Publishing Mode**
    - Options:
      - `(Recommended) Option A — 1 Clean 4K Master (Unlisted) + EN/UA/RU Subtitles`
      - `English Only (1 4K Master, Unlisted)`
      - `Option B — 3 Separate Voiced Videos (EN + UA + RU)`
 
-5. **Question 5: Flickr Publishing Choice**
+6. **Question 6: Flickr Publishing Choice**
    - Options:
      - `(Recommended) Russian Edition (_RU.mp4) — For family & classmates (bypasses YouTube censorship)`
      - `Both EN Master + RU Edition`
