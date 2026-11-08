@@ -84,6 +84,9 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
 2. **GPX Widgets:** If a `.gpx` track is present, run `gpx_widgets.py` to generate:
    - **Corner Route Map (`V2`, top-right, 3.5s):** 26% width, 82% opacity, cyan route + orange progress + glowing marker dot.
    - **Telemetry HUD (`V2`, bottom-right, auto):** Displayed only on riding scenes where speed $\ge 5\text{ mph}$, grade $\ge 4\%$, or 3s power $\ge 150\text{ W}$.
+3. **Signature AGVS Bookends (`agvs_bookends.py`):** If `agvs_bookends.enabled: true` in Section 5 (default), run `agvs_bookends.py` to generate:
+   - **Opening Pre-Flight Postcard (`bookend_intro_4K.mp4`, 3.5s):** Composites the first 3.5s of opening footage inside a -2.0° tilted white postcard frame over a 4K topographic GPX route canvas with the AGVS aerospace stamp, dynamic motto, and ticket-stub manifest bar.
+   - **Closing Post-Ride Bar Tab & Credits (`bookend_outro_4K.mp4`, 4.5s):** Composites the final 4.5s of timeline footage inside a +1.5° tilted postcard with "Wish you were here! — AGVS" on the left, alongside the "AGVS Production Receipt / Credits Card" on the right. Both live A1 ambient audio and A2 music tail shine during the credits.
 
 ---
 

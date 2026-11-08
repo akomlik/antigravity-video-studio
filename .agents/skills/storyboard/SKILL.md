@@ -61,6 +61,7 @@ To maximize creative depth while protecting your 5-hour Argon window:
        - `gpx_corner_map` (`top_right`, `26%` width) & `gpx_telemetry_hud` (`auto` — shown on moving scenes when 3s speed > 2 mph; suppressed on stills & stationary scenes <= 2 mph)
        - `low_res_broll_mode`: `pip_card` (`65%` centered card over blurred `16:9` backdrop for `< 720p` clips)
        - `audio_mix`: `voiceover_persona: voice_jntybwupjc1s`, `live_dialog_boost: auto`, `bgm_under_vo_db: -7.5`, `bgm_riding_swell_db: +3.5`, `pip_broll_music_db: -6.5`
+       - `agvs_bookends`: Signature AGVS starting postcard and finishing credits bookends (`enabled: true`, `intro_duration_s: 3.5`, `outro_duration_s: 4.5`, `studio_motto`, `location_badge`, `cast_credits`, `steed_credit`, `fuel_sponsors`).
        - `default_privacy`: `"unlisted"` (default for all uploads to allow immediate comments, previews, and language switchers without public feed spam)
        - `youtube_publishing.publishing_mode`:
          - `option_a` (Recommended Default): 1 clean 4K master (`unlisted`) with matching voiceover + localized `EN`/`UA`/`RU` titles, descriptions & `.srt` subtitles (`captions.en.srt`, `captions.ua.srt`, `captions.ru.srt`). Concentrates views on 1 video while serving multi-lingual audiences via YouTube CC.

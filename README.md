@@ -1,6 +1,6 @@
-# Antigravity Video Studio v2 — User Tutorial & Daily Playbook (`@akomlik`)
+# AGVS — Antigravity Video Studio v2 (`@akomlik`)
 
-Welcome to **Antigravity Video Studio v2**! This guide walks you through your complete end-to-end workflow—from writing a 5-line rough draft and dropping raw camera files into `~/Movies/2026/`, to co-developing `Storyboard.md` (with Section 5 YouTube Publishing & Composite Thumbnail specs), rendering GPX route maps & telemetry HUDs, synthesizing warm replicated voice-over (`EN` / `UA` / `RU`), building a broadcast-balanced 4-track timeline in **FilmCraft** (or **DaVinci Resolve**), and publishing 1 or 3 localized 4K editions to YouTube via the YouTube Data API v3.
+Welcome to **AGVS (Antigravity Video Studio v2)**! Open-source repository: [**`akomlik/antigravity-video-studio`**](https://github.com/akomlik/antigravity-video-studio). This guide walks you through your complete end-to-end autonomous video production workflow—from writing a 5-line rough draft and dropping raw camera files into `~/Movies/2026/`, to co-developing `Storyboard.md` (with signature AGVS bookends, YouTube Publishing & Composite Thumbnail specs), rendering GPX route maps & telemetry HUDs, synthesizing warm replicated voice-over (`EN` / `UA` / `RU`), building a broadcast-balanced 4-track timeline in **FilmCraft** (or **DaVinci Resolve**), and publishing 1 or 3 localized 4K editions to YouTube and Flickr via their native APIs.
 
 > **Environment Setup (Bring Your Own Env Manager):**
 > Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `FLICKR_*` credentials using whichever method you prefer (see [Section 9](#9-optional-zero-plaintext-secret-management-with-1password--direnv-alexanders-protocol) for Alexander's 1Password `envvar:*` protocol, or use `.zshrc` / local `.env`), then launch **Gemini** or **Antigravity** from that shell session so all skills and scripts inherit your environment variables automatically with zero wrapper dependencies:
@@ -136,7 +136,47 @@ thumbnail:
   hero_image: "IMG_8744.jpg"                  # Left: Smiling rider portrait over blurred scenic backdrop
   prop_cutout: "IMG_8775.jpg"                 # Right: White-outlined sticker cutout of the story's key prop
   fallback_timestamp_sec: 56.5
+
+# Signature AGVS Bookends Spec (agvs_bookends.py)
+agvs_bookends:
+  enabled: true                               # true (3.5s Pre-Flight Postcard + 4.5s Post-Ride Bar Tab) | false
+  intro_duration_s: 3.5                       # Opening tilted (-2.0°) postcard over GPX route map canvas
+  outro_duration_s: 4.5                       # Closing tilted (+1.5°) postcard over right-hand credits card
+  studio_motto: "Gravity Reduction Module: FAILED (Climbing Anyway)"
+  location_badge: "MALLORCA // BONAIRE ➔ COLL DE FEMENIA & MORTITX"
+  cast_credits:
+    - "Mark — Mecánico Campeón & 60th Birthday Honoree"
+    - "Bruce & Lisa — Thursday Ride Ghosts (Plan B Instigators)"
+    - "Uphill Trail Runners — The 146 bpm Sprint Catalysts"
+    - "Nina — Bodega del Sol First-Night Dinner Partner"
+  steed_credit: 'Mint Trek Madone 7 (Personal build on 2016 Craigslist frame · Stationed on island as "Mallorca Bike" since June 2022)'
+  main_hero: "Antigravity Video Studio (AGVS v2.0)"
+  github_repo: "github.com/akomlik/antigravity-video-studio"
+  fuel_sponsors: "Pro Cycle Cafe VIP Card • Antonio's Bodega del Sol • 0x Alcohol"
 ```
+
+### Signature AGVS Bookends: Pre-Flight Postcard & Post-Ride Bar Tab
+
+AGVS v2 introduces a signature, data-driven bookend identity generated deterministically by [`agvs_bookends.py`](./.agents/skills/build-timeline/scripts/agvs_bookends.py):
+
+1. **Opening Pre-Flight Postcard (00:00 – 00:03.5):**
+   - Live video plays inside a **$-2.0^\circ$ tilted white postcard frame** (70% scale with embossed border and soft drop shadow).
+   - Rendered over a 4K dark-slate GPX topographic route map canvas with cyan start and red summit pins.
+   - Features the aerospace rubber stamp **🚀 AGVS // ANTIGRAVITY VIDEO STUDIO**, dynamic ride motto, and bottom ticket-stub flight manifest bar (`📅 Date | 🎬 Title | 🚴 mi • ⛰️ ft`).
+   - Smoothly transitions to 100% full-screen video at $t = 3.5\text{s}$ right as primary voice-over begins.
+2. **Closing Post-Ride Bar Tab & Production Credits (Final 4.5s):**
+   - Keeps final live video playing inside a **$+1.5^\circ$ tilted postcard** with handwritten `"Wish you were here! — AGVS"` script on the bottom chin.
+   - Right-side itemized **AGVS Production Receipt / Bar Tab** auto-populated from `Storyboard.md` and `my_digital_brain.md`:
+     - **THE CREW / PELOTON:** Cast with humorous roles.
+     - **LEAD STEED:** Bike with authentic personal history (e.g. personal build on 2016 Craigslist frame, stationed in Mallorca since June 2022).
+     - **CAMERA & GIMBAL:** BleeqUP Ranger AI Glasses & iPhone 15 Pro.
+     - **TELEMETRY & MEMORY BANK:** Garmin Edge 840 & `my_digital_brain.md`.
+     - **STUDIO ENGINE & MAIN HERO:** Antigravity Video Studio (AGVS v2.0) with open-source GitHub link ([`akomlik/antigravity-video-studio`](https://github.com/akomlik/antigravity-video-studio)).
+     - **FUEL & SPONSORS:** Local cafes, bodegas, and nutrition.
+     - **FOOTER STAMP:** Witty disclaimers (*"⚠️ 0% Gravity Guaranteed on Descents Only • No Argon Quotas Were Harmed in This Render"*).
+3. **Continuous Timeline Continuity & 0.2s Lossless Remuxing:**
+   - 100% contiguous V1 video track (0 black frames).
+   - Universal bookend text allows `_RU.mp4` and `_UA.mp4` to continue using **0.2-second lossless `ffmpeg -c:v copy` remuxing** for Flickr and WhatsApp sharing.
 
 ### Key Linguistic & Technical Standards Built Into Studio v2
 1. **Strict ISO Code `ua` for Ukraine Locally:** All local files (`captions.ua.srt`, `voiceover_ua_part1.wav`, `_UA.mp4`) and JSON keys use `ua` (`UA`), mapping `"ua" -> "uk"` strictly inside `upload_youtube_api.py` when calling the YouTube Data API v3 wire format.

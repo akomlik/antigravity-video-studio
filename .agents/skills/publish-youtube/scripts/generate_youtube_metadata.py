@@ -131,7 +131,7 @@ def generate_composite_thumbnail(
     - Left foreground: smiling rider / subject portrait
     - Right foreground: white-bordered sticker cutout of the story's key prop
     - Top banner: bold ALL-CAPS yellow/white 3-4 word headline with drop shadow
-    Uses Gemini 3 Pro Image (`gemini-3-pro-image-preview`) when GEMINI_API_KEY is available.
+    Uses Gemini 3 Pro Image (`gemini-3-pro-image`) when GEMINI_API_KEY is available.
     """
     import os
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -158,7 +158,7 @@ def generate_composite_thumbnail(
         )
         contents.append(prompt)
         resp = client.models.generate_content(
-            model="gemini-3-pro-image-preview",
+            model="gemini-3-pro-image",
             contents=contents,
             config=types.GenerateContentConfig(
                 response_modalities=["IMAGE"],
@@ -203,7 +203,7 @@ def localize_existing_thumbnail(
             f"drop shadow, and yellow-white-yellow word color pattern."
         )
         resp = client.models.generate_content(
-            model="gemini-3-pro-image-preview",
+            model="gemini-3-pro-image",
             contents=[Image.open(base_jpg), prompt],
             config=types.GenerateContentConfig(
                 response_modalities=["IMAGE"],
