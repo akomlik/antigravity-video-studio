@@ -55,11 +55,30 @@ COLOR_MAP_WATER        = (202, 216, 216, 255)  # #CAD8D8
 # ---------------------------------------------------------------------------
 # Strict macOS Apple Font Loader (With TTC Face Indices & Zero Emojis)
 # ---------------------------------------------------------------------------
-def load_apple_font(role: str, size: int) -> ImageFont.FreeTypeFont:
+def load_apple_font(role: str, size: int, text: str = "") -> ImageFont.FreeTypeFont:
     """
     Loads native macOS .ttc/.ttf fonts with explicit face indices.
     Bans all unicode emojis in Pillow rendering.
+    Ensures Cyrillic font weight parity (Helvetica Neue Bold / Arial Bold)
+    when Cyrillic characters are detected.
     """
+    # Cyrillic Font Weight Parity
+    if text and re.search(r"[\u0400-\u04FF]", text):
+        cyrillic_candidates = [
+            ("/System/Library/Fonts/HelveticaNeue.ttc", 1),            # Bold
+            ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", None),
+            ("/System/Library/Fonts/Helvetica.ttc", 1),
+        ]
+        for path, idx in cyrillic_candidates:
+            p = Path(path)
+            if p.exists():
+                try:
+                    if idx is not None and path.endswith(".ttc"):
+                        return ImageFont.truetype(str(p), size=size, index=idx)
+                    return ImageFont.truetype(str(p), size=size)
+                except Exception:
+                    continue
+
     candidates = {
         "card_title": [
             ("/System/Library/Fonts/Avenir Next.ttc", 8),             # Heavy
@@ -642,34 +661,34 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
         # 6px postmark crimson inner line
         b_draw.line(projected_pts, fill=COLOR_POSTMARK_CRIMSON, width=6, joint="curve")
 
-    # Start Pin (Forest Green with 18px radius)
+    # Start Pin (Forest Green with 20px radius)
     spx, spy = int(start_px[0]), int(start_px[1])
-    b_draw.ellipse([spx - 18, spy - 18, spx + 18, spy + 18], fill=COLOR_FOREST_GREEN, outline=(252, 249, 242, 255), width=4)
-    b_draw.ellipse([spx - 6, spy - 6, spx + 6, spy + 6], fill=(252, 249, 242, 255))
-    # Start pill label (38pt Avenir Next Bold)
-    f_pill = load_apple_font("section_header", 38)
-    st_label = "START · BONAIRE"
+    b_draw.ellipse([spx - 20, spy - 20, spx + 20, spy + 20], fill=COLOR_FOREST_GREEN, outline=(252, 249, 242, 255), width=4)
+    b_draw.ellipse([spx - 7, spy - 7, spx + 7, spy + 7], fill=(252, 249, 242, 255))
+    # Start pill label (48pt Avenir Next Bold)
+    f_pill = load_apple_font("section_header", 48)
+    st_label = "START: BONAIRE"
     s_bbox = b_draw.textbbox((0, 0), st_label, font=f_pill)
-    sw = s_bbox[2] - s_bbox[0] + 32
-    sh = s_bbox[3] - s_bbox[1] + 20
+    sw = s_bbox[2] - s_bbox[0] + 36
+    sh = s_bbox[3] - s_bbox[1] + 24
     slx = min(map_w - sw - 20, max(20, spx - sw // 2))
     sly = min(map_h - sh - 20, max(20, spy - 48 - sh))
-    b_draw.rounded_rectangle([slx, sly, slx + sw, sly + sh], radius=10, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
-    b_draw.text((slx + 16, sly + 10), st_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
+    b_draw.rounded_rectangle([slx, sly, slx + sw, sly + sh], radius=12, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
+    b_draw.text((slx + 18, sly + 12), st_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
 
-    # Summit Pin (Postmark Crimson with 18px radius)
+    # Summit Pin (Postmark Crimson with 20px radius)
     sum_px = int(summit_px[0]), int(summit_px[1])
-    b_draw.ellipse([sum_px[0] - 18, sum_px[1] - 18, sum_px[0] + 18, sum_px[1] + 18], fill=COLOR_POSTMARK_CRIMSON, outline=(252, 249, 242, 255), width=4)
-    b_draw.ellipse([sum_px[0] - 6, sum_px[1] - 6, sum_px[0] + 6, sum_px[1] + 6], fill=(252, 249, 242, 255))
-    # Summit pill label (38pt Avenir Next Bold)
-    sum_label = "TURNAROUND · MORTITX"
+    b_draw.ellipse([sum_px[0] - 20, sum_px[1] - 20, sum_px[0] + 20, sum_px[1] + 20], fill=COLOR_POSTMARK_CRIMSON, outline=(252, 249, 242, 255), width=4)
+    b_draw.ellipse([sum_px[0] - 7, sum_px[1] - 7, sum_px[0] + 7, sum_px[1] + 7], fill=(252, 249, 242, 255))
+    # Summit pill label (48pt Avenir Next Bold)
+    sum_label = "TURNAROUND: MORTITX"
     sm_bbox = b_draw.textbbox((0, 0), sum_label, font=f_pill)
-    smw = sm_bbox[2] - sm_bbox[0] + 32
-    smh = sm_bbox[3] - sm_bbox[1] + 20
+    smw = sm_bbox[2] - sm_bbox[0] + 36
+    smh = sm_bbox[3] - sm_bbox[1] + 24
     smlx = min(map_w - smw - 20, max(20, sum_px[0] - smw // 2))
     smly = min(map_h - smh - 20, max(20, sum_px[1] + 32))
-    b_draw.rounded_rectangle([smlx, smly, smlx + smw, smly + smh], radius=10, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
-    b_draw.text((smlx + 16, smly + 10), sum_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
+    b_draw.rounded_rectangle([smlx, smly, smlx + smw, smly + smh], radius=12, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
+    b_draw.text((smlx + 18, smly + 12), sum_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
 
     # Compass rose in top-right of map box
     draw_compass_rose(b_draw, cx=map_w - 75, cy=85, r=42)
@@ -768,10 +787,10 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
     dcx = (rx0 + rx1) // 2
     draw.polygon([(dcx, div_y - 8), (dcx + 8, div_y), (dcx, div_y + 8), (dcx - 8, div_y)], fill=COLOR_POSTMARK_CRIMSON)
 
-    f_cat = load_apple_font("section_header", 42)
-    f_item = load_apple_font("body_bold", 42)
+    f_cat = load_apple_font("section_header", 52)
+    f_item = load_apple_font("body_bold", 50)
 
-    def draw_wrapped_line(x: int, y: int, text: str, font, fill, max_w: int = rw - 130, line_h: int = 52) -> int:
+    def draw_wrapped_line(x: int, y: int, text: str, font, fill, max_w: int = rw - 130, line_h: int = 58) -> int:
         words = text.split()
         lines = []
         cur = ""
@@ -795,24 +814,24 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
 
     # 1. THE PELOTON & CAST
     draw.text((rx0 + 56, cur_y), "THE PELOTON & CAST", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
-    cur_y += 50
+    cur_y += 62
     for c in spec.get("cast_credits", [])[:4]:
-        cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {c}", f_item, COLOR_ESPRESSO_INK, line_h=50)
+        cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {c}", f_item, COLOR_ESPRESSO_INK, line_h=58)
     cur_y += 32
 
     # 2. MACHINERY & TELEMETRY
     draw.text((rx0 + 56, cur_y), "MACHINERY & TELEMETRY", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
-    cur_y += 50
+    cur_y += 62
     steed_str = f"• {spec.get('steed_credit')}"
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, steed_str, f_item, COLOR_ESPRESSO_INK, line_h=50)
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• BleeqUP Ranger AI Glasses (100% Organic Head-Turns) • iPhone 15 Pro", f_item, COLOR_ESPRESSO_INK, line_h=50)
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• Garmin Edge 840 • my_digital_brain.md • AGVS Engine v2.0", f_item, COLOR_ESPRESSO_INK, line_h=50)
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, steed_str, f_item, COLOR_ESPRESSO_INK, line_h=58)
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• BleeqUP Ranger AI Glasses (100% Organic Head-Turns) • iPhone 15 Pro", f_item, COLOR_ESPRESSO_INK, line_h=58)
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• Garmin Edge 840 • my_digital_brain.md • AGVS Engine v2.0", f_item, COLOR_ESPRESSO_INK, line_h=58)
     cur_y += 32
 
     # 3. FUEL & CATERING
     draw.text((rx0 + 56, cur_y), "FUEL & CATERING", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
-    cur_y += 50
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {spec.get('fuel_sponsors')}", f_item, COLOR_ESPRESSO_INK, line_h=50)
+    cur_y += 62
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {spec.get('fuel_sponsors')}", f_item, COLOR_ESPRESSO_INK, line_h=58)
 
     # 3. Bottom Stamp Strip (Y: 1920 to 2060, X: 130 to 3690)
     tx0, ty0 = 130, 1920

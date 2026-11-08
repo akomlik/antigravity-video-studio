@@ -98,11 +98,30 @@ def load_gpx_stream(gpx_path: Path) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Strict macOS Apple Font Loader (Zero Monospace, Zero Emojis)
 # ---------------------------------------------------------------------------
-def load_apple_font(role: str, size: int) -> ImageFont.FreeTypeFont:
+def load_apple_font(role: str, size: int, text: str = "") -> ImageFont.FreeTypeFont:
     """
     Loads native macOS .ttc/.ttf fonts with explicit face indices for Pillow rendering.
     Enforces bold Apple editorial typography and bans all unicode emojis.
+    Automatically ensures Cyrillic font weight parity (Helvetica Neue Bold / Arial Bold)
+    when Cyrillic characters are detected.
     """
+    # Cyrillic Font Weight Parity
+    if text and re.search(r"[\u0400-\u04FF]", text):
+        cyrillic_candidates = [
+            ("/System/Library/Fonts/HelveticaNeue.ttc", 1),            # Bold
+            ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", None),
+            ("/System/Library/Fonts/Helvetica.ttc", 1),
+        ]
+        for path, idx in cyrillic_candidates:
+            p = Path(path)
+            if p.exists():
+                try:
+                    if idx is not None and path.endswith(".ttc"):
+                        return ImageFont.truetype(str(p), size=size, index=idx)
+                    return ImageFont.truetype(str(p), size=size)
+                except Exception:
+                    continue
+
     candidates = {
         "card_title": [
             ("/System/Library/Fonts/Avenir Next.ttc", 8),             # Heavy
@@ -146,10 +165,10 @@ def load_apple_font(role: str, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-def _load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
+def _load_font(size: int, bold: bool = False, text: str = "") -> ImageFont.FreeTypeFont:
     """Backwards-compatible wrapper routing to strict Apple font faces."""
     role = "card_title" if bold else "card_subtitle"
-    return load_apple_font(role, size)
+    return load_apple_font(role, size, text=text)
 
 
 # ---------------------------------------------------------------------------
@@ -161,6 +180,7 @@ def draw_vintage_card(
     accent_side: str = "left",
     radius: int = 18,
     accent_color: tuple[int, int, int, int] = COLOR_CRIMSON,
+    accent_width: int | None = None,
 ) -> None:
     """
     Renders the unified Warm Vintage Parchment card on `canvas` with:
@@ -168,7 +188,7 @@ def draw_vintage_card(
     - Card fill: Warm aged parchment rgba(244, 239, 230, 0.95) (#F4EFE6).
     - Outer border: 3px solid Umber Ink #5C5043 (radius=18).
     - Inner neatline: 1px inset border #D8CFC0 (8px inside outer border).
-    - Accent stripe: 14px solid Crimson #B83A2A on left edge (or 10px on top edge).
+    - Accent stripe: 20px solid Crimson #B83A2A on left edge (or 16px on top edge).
     """
     x0, y0, x1, y1 = box
     cw = max(10, x1 - x0)
@@ -187,11 +207,13 @@ def draw_vintage_card(
     draw.rounded_rectangle([x0, y0, x1, y1], radius=radius, fill=COLOR_PARCHMENT_FILL, outline=COLOR_BORDER_UMBER, width=3)
     draw.rounded_rectangle([x0 + 8, y0 + 8, x1 - 8, y1 - 8], radius=max(4, radius - 6), outline=COLOR_NEATLINE, width=1)
 
-    # 3. Accent stripe
+    # 3. Accent stripe (20px left, 16px top default)
     if accent_side == "left":
-        draw.rounded_rectangle([x0 + 18, y0 + 16, x0 + 32, y1 - 16], radius=4, fill=accent_color)
+        aw = accent_width if accent_width is not None else 20
+        draw.rounded_rectangle([x0 + 18, y0 + 16, x0 + 18 + aw, y1 - 16], radius=5, fill=accent_color)
     elif accent_side == "top":
-        draw.rounded_rectangle([x0 + 24, y0 + 12, x1 - 24, y0 + 22], radius=4, fill=accent_color)
+        aw = accent_width if accent_width is not None else 16
+        draw.rounded_rectangle([x0 + 24, y0 + 12, x1 - 24, y0 + 12 + aw], radius=5, fill=accent_color)
 
 
 # ---------------------------------------------------------------------------
@@ -370,28 +392,29 @@ def render_character_callout_badge(
     canvas_size: tuple[int, int] = (3840, 2160),
 ) -> Path:
     """
-    Renders a 4K transparent overlay PNG with a Warm Vintage Parchment Character Card.
-    - Line 1: 64pt card_title (Avenir Next Bold/Heavy) in Deep Espresso #231F1D (with @akomlik in Crimson).
-    - Line 2: 44pt card_subtitle (Avenir Next Demi Bold) in Warm Umber #4A3F35.
-    - Dimensions: Width 1850..2450px, Height 215px (270px if Line 2 wraps).
+    Renders a 4K transparent overlay PNG with a Warm Vintage Parchment Character Card (+40% Mobile Weight):
+    - Line 1: 84pt card_title (Avenir Next Bold/Heavy or Helvetica Neue Bold for Cyrillic) in Deep Espresso #231F1D (with @akomlik in Crimson).
+    - Line 2: 60pt card_subtitle (Avenir Next Demi Bold) in Warm Umber #4A3F35.
+    - Dimensions: Width 2200..2900px, Height 250px (320px if Line 2 wraps).
+    - Accent: 20px solid crimson stripe on left edge.
     - Positions:
-        'bottom_left': X: 96, Y: 1730 (or Y: 1675 if wrapped)
+        'bottom_left': X: 96, Y: 1710 (or Y: 1640 if wrapped)
         'top_left':    X: 96, Y: 96
-        'bottom_right': X: w - card_w - 96, Y: 1730
+        'bottom_right': X: w - card_w - 96, Y: 1710
     """
     w, h = canvas_size
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
 
-    font_name = load_apple_font("card_title", 64)
-    font_role = load_apple_font("card_subtitle", 44)
+    # Clean emojis if any crept in
+    clean_name = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", name_line).strip()
+    clean_role = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", role_line).strip()
+
+    font_name = load_apple_font("card_title", 84, text=clean_name)
+    font_role = load_apple_font("card_subtitle", 60, text=clean_role)
 
     # Measure text dimensions
     dummy = Image.new("RGBA", (100, 100))
     d_measure = ImageDraw.Draw(dummy)
-
-    # Clean emojis if any crept in
-    clean_name = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", name_line).strip()
-    clean_role = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", role_line).strip()
 
     nb = d_measure.textbbox((0, 0), clean_name, font=font_name)
     rb = d_measure.textbbox((0, 0), clean_role, font=font_role)
@@ -400,8 +423,8 @@ def render_character_callout_badge(
 
     # Evaluate wrapping for Line 2 if it exceeds comfortable single-line width
     role_lines = [clean_role]
-    card_w = max(1850, min(2450, max(name_w, role_w) + 140))
-    max_text_w = card_w - 140
+    card_w = max(2200, min(2900, max(name_w, role_w) + 160))
+    max_text_w = card_w - 160
 
     if role_w > max_text_w:
         words = clean_role.split()
@@ -421,28 +444,28 @@ def render_character_callout_badge(
         role_lines = wrapped
 
     is_wrapped = len(role_lines) > 1
-    card_h = 270 if is_wrapped else 215
+    card_h = 320 if is_wrapped else 250
 
     # Placement coordinates
     if position == "bottom_right":
         x0 = w - card_w - 96
-        y0 = h - card_h - 215
+        y0 = 1640 if is_wrapped else 1710
     elif position == "top_left":
         x0 = 96
         y0 = 96
     else:  # bottom_left
         x0 = 96
-        y0 = 1675 if is_wrapped else 1730
+        y0 = 1640 if is_wrapped else 1710
 
     x1, y1 = x0 + card_w, y0 + card_h
 
-    # Render card
-    draw_vintage_card(img, (x0, y0, x1, y1), accent_side="left", radius=18, accent_color=accent_color)
+    # Render card with 20px accent stripe
+    draw_vintage_card(img, (x0, y0, x1, y1), accent_side="left", radius=20, accent_color=accent_color, accent_width=20)
     draw = ImageDraw.Draw(img)
 
     # Draw Line 1 with @akomlik highlighted in crimson if present
-    text_x = x0 + 54
-    line1_y = y0 + 32
+    text_x = x0 + 64
+    line1_y = y0 + 36
     if "@akomlik" in clean_name:
         parts = clean_name.split("@akomlik")
         cur_x = text_x
@@ -457,10 +480,10 @@ def render_character_callout_badge(
         draw.text((text_x, line1_y), clean_name, font=font_name, fill=COLOR_ESPRESSO_INK)
 
     # Draw Line 2 (one or two wrapped lines)
-    line2_y = line1_y + 72
+    line2_y = line1_y + 94
     for rl in role_lines:
         draw.text((text_x, line2_y), rl, font=font_role, fill=COLOR_UMBER_INK)
-        line2_y += 50
+        line2_y += 66
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_png, "PNG", compress_level=1)
