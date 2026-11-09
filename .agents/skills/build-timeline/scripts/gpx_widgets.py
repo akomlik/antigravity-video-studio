@@ -336,14 +336,29 @@ def render_telemetry_hud_widget(
     if units == "metric":
         spd_kmh = pt.get("spd_kmh", pt.get("spd_mph", 0.0) * 1.609344)
         ele_m = pt.get("ele_m", int(round(pt.get("ele_ft", 0) * 0.3048)))
-        font_unit = load_apple_font("section_header", 32, text="КМ/Ч ВАТТ УД/МИН М")
-        font_lbl = load_apple_font("card_subtitle", 26, text="СКОРОСТЬ МОЩНОСТЬ ПУЛЬС УКЛОН")
-        metrics = [
-            ("СКОРОСТЬ" if lang == "ru" else "SPEED", f"{spd_kmh:.1f}", "КМ/Ч" if lang == "ru" else "KM/H", COLOR_CRIMSON),
-            ("МОЩНОСТЬ" if lang == "ru" else "POWER", str(pt.get("pwr", 0)), "ВАТТ" if lang == "ru" else "WATTS", COLOR_CRIMSON),
-            ("ПУЛЬС" if lang == "ru" else "HEART RATE", str(pt.get("hr", 0)), "УД/МИН" if lang == "ru" else "BPM", COLOR_CRIMSON),
-            ("УКЛОН" if lang == "ru" else "GRADE", f"{pt.get('grad_pct', 0.0):+.1f}%", f"{ele_m} М" if lang == "ru" else f"{ele_m} M", COLOR_FOREST_GREEN),
-        ]
+        font_unit = load_apple_font("section_header", 32, text="КМ/Ч ВАТТ УД/МИН М КМ/ГОД УД/ХВ")
+        font_lbl = load_apple_font("card_subtitle", 26, text="СКОРОСТЬ МОЩНОСТЬ ПУЛЬС УКЛОН ШВИДКІСТЬ ПОТУЖНІСТЬ УХИЛ")
+        if lang == "ua":
+            metrics = [
+                ("ШВИДКІСТЬ", f"{spd_kmh:.1f}", "КМ/ГОД", COLOR_CRIMSON),
+                ("ПОТУЖНІСТЬ", str(pt.get("pwr", 0)), "ВАТТ", COLOR_CRIMSON),
+                ("ПУЛЬС", str(pt.get("hr", 0)), "УД/ХВ", COLOR_CRIMSON),
+                ("УХИЛ", f"{pt.get('grad_pct', 0.0):+.1f}%", f"{ele_m} М", COLOR_FOREST_GREEN),
+            ]
+        elif lang == "ru":
+            metrics = [
+                ("СКОРОСТЬ", f"{spd_kmh:.1f}", "КМ/Ч", COLOR_CRIMSON),
+                ("МОЩНОСТЬ", str(pt.get("pwr", 0)), "ВАТТ", COLOR_CRIMSON),
+                ("ПУЛЬС", str(pt.get("hr", 0)), "УД/МИН", COLOR_CRIMSON),
+                ("УКЛОН", f"{pt.get('grad_pct', 0.0):+.1f}%", f"{ele_m} М", COLOR_FOREST_GREEN),
+            ]
+        else:
+            metrics = [
+                ("SPEED", f"{spd_kmh:.1f}", "KM/H", COLOR_CRIMSON),
+                ("POWER", str(pt.get("pwr", 0)), "WATTS", COLOR_CRIMSON),
+                ("HEART RATE", str(pt.get("hr", 0)), "BPM", COLOR_CRIMSON),
+                ("GRADE", f"{pt.get('grad_pct', 0.0):+.1f}%", f"{ele_m} M", COLOR_FOREST_GREEN),
+            ]
     else:
         font_unit = load_apple_font("section_header", 32)
         font_lbl = load_apple_font("card_subtitle", 26)

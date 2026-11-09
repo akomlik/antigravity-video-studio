@@ -136,8 +136,10 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
 
 ### ARTICLE VIII: IMPERIAL UNITS DEFAULT, GPX WIDGETS, LOW-RES B-ROLL FRAMING & BROADCAST AUDIO MIX
 
-- **Imperial Units by Default (US Primary Audience):**
-    - All titles, voice-overs, GPX widgets, `.srt` subtitles, and YouTube descriptions MUST use **Imperial units (`mi`, `ft`, `mph`, `°F`) by default** (followed by metric in parentheses in the YouTube description, e.g., `21.5 mi (34.5 km)` and `531 ft (162 m)`).
+- **Universal Edition Unit Law (Imperial for EN, Metric for All Others):**
+    - **English Master Edition (`master_mp4`, `<project>.fcproj`):** Strictly uses **Imperial units (`mi`, `ft`, `mph`, `°F`)** for all on-screen telemetry HUDs, voice-over narrations, and primary video titles (primarily US audience, and UK/commonwealth viewers familiar with miles/mph). Zero on-screen metric clutter.
+    - **All Other Editions (`RU`, `UA`, etc. / `_RU.mp4`, `_UA.mp4`, `<project>_RU.fcproj`):** Strictly use **Metric units (`km`, `m`, `km/h`, `°C`)** for all on-screen telemetry HUDs (`КМ/Ч` / `КМ/ГОД`, `ВАТТ`, `УД/МИН` / `УД/ХВ`, `М`), voice-overs, localized titles, and descriptions. Zero on-screen Imperial clutter.
+    - In multi-language YouTube descriptions, the English primary story summary provides metric conversions in parentheses for international searchability (e.g., `21.5 mi (34.5 km)` and `531 ft (162 m)`).
 - **Zero Burned-In Bottom Titles (`burned_in_titles: false` Default):**
     - Export master 4K MP4s with `--settings '{"burnCaptions": false}'` (keeping `C1` inside `.fcproj` disabled visually, used solely as timing metadata for `.srt` export). This guarantees 100% clean 4K video frames that never collide with YouTube's native CC subtitles on iPhone or desktop.
 - **Direct-from-GPX Corner Route Map & Smoothed Telemetry HUD (`gpx_widgets.py`):**
