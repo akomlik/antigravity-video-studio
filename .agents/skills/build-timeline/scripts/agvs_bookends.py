@@ -598,16 +598,31 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     draw = ImageDraw.Draw(canvas)
 
     # 2. Left Zone: Top Vintage Distressed Rubber Stamp (X: 130, Y: 110)
+    motto_text = spec.get("studio_motto", "").upper()
     f_stamp = load_apple_font("stamp_typewriter", 38)
-    f_motto = load_apple_font("card_subtitle", 36, text=spec.get("studio_motto", ""))
 
-    stamp_w, stamp_h = 1120, 144
+    # Dynamic measurement and auto-fit so motto NEVER overflows stamp border
+    f_motto_size = 36
+    f_motto = load_apple_font("card_subtitle", f_motto_size, text=motto_text)
+    dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    bbox = dummy_draw.textbbox((0, 0), motto_text, font=f_motto)
+    text_w = bbox[2] - bbox[0]
+
+    max_stamp_w = 1420
+    stamp_w = min(max_stamp_w, max(1120, text_w + 80))
+    while text_w > (stamp_w - 68) and f_motto_size > 22:
+        f_motto_size -= 2
+        f_motto = load_apple_font("card_subtitle", f_motto_size, text=motto_text)
+        bbox = dummy_draw.textbbox((0, 0), motto_text, font=f_motto)
+        text_w = bbox[2] - bbox[0]
+
+    stamp_h = 144
     stamp_img = Image.new("RGBA", (stamp_w, stamp_h), (0, 0, 0, 0))
     sd = ImageDraw.Draw(stamp_img)
     sd.rounded_rectangle([2, 2, stamp_w - 3, stamp_h - 3], radius=6, outline=COLOR_POSTMARK_CRIMSON, width=4)
     sd.rounded_rectangle([8, 8, stamp_w - 9, stamp_h - 9], radius=4, outline=COLOR_POSTMARK_CRIMSON, width=2)
     sd.text((28, 18), "AGVS // ANTIGRAVITY VIDEO STUDIO", font=f_stamp, fill=COLOR_POSTMARK_CRIMSON)
-    sd.text((30, 78), spec.get("studio_motto", "").upper(), font=f_motto, fill=COLOR_ESPRESSO_INK)
+    sd.text((30, 78), motto_text, font=f_motto, fill=COLOR_ESPRESSO_INK)
 
     stamp_rot = stamp_img.rotate(-1.5, resample=Image.Resampling.BICUBIC, expand=True)
     canvas.paste(stamp_rot, (130, 95), stamp_rot)
@@ -1136,12 +1151,12 @@ def generate_project_bookends(
     # 1b. Render Canvases (RU)
     spec_ru = dict(spec)
     spec_ru["lang"] = "ru"
-    spec_ru["place_name"] = spec.get("place_name_ru", "МАЛЬОРКА")
-    spec_ru["route_subtitle"] = spec.get("route_subtitle_ru", "БОНАЙРЕ ➔ КОЛЬ ДЕ ФЕМЕНИЯ И МОРТИЧ")
+    spec_ru["place_name"] = spec.get("place_name_ru", "МАЙОРКА")
+    spec_ru["route_subtitle"] = spec.get("route_subtitle_ru", "БОНАЙРЕ ➔ КОЛЬ-ДЕ-ФЕМЕНИА И МОРТИТШ")
     spec_ru["studio_motto"] = spec.get("studio_motto_ru", "МОДУЛЬ СНИЖЕНИЯ ГРАВИТАЦИИ: ОТКАЗ (ВСЁ РАВНО ЕДЕМ)")
     spec_ru["short_title"] = spec.get("short_title_ru", "ОДИНОЧНЫЙ КОЛЬ ДЕ ФЕМЕНИЯ НА ZERO-T")
     spec_ru["cast_credits"] = spec.get("cast_credits_ru", [
-        "Марк — Mecánico Campeón и юбиляр 60-летия PCH",
+        "Марк — Mecánico Campeón и легенда мастерской PCH",
         "Брюс и Лиза — Призраки четверга (вдохновители плана Б)",
         "Бегуны в гору — Катализаторы пульса 146 уд/мин",
         "Нина — Партнер по ужину в Bodega del Sol",
