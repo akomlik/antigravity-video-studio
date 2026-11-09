@@ -777,7 +777,22 @@ def render_strava_comparison_vintage_card(
     f_sub = load_apple_font("card_subtitle", 46, text=subheader_text)
     f_badge = load_apple_font("section_header", 54, text=badge1_text + badge2_text)
 
-    cw, ch = 2800, 370
+    dummy = Image.new("RGBA", (100, 100))
+    d_m = ImageDraw.Draw(dummy)
+
+    hb = d_m.textbbox((0, 0), header_text, font=f_hdr)
+    hw = hb[2] - hb[0]
+    sb = d_m.textbbox((0, 0), subheader_text, font=f_sub)
+    sw = sb[2] - sb[0]
+
+    b_1 = d_m.textbbox((0, 0), badge1_text, font=f_badge)
+    bw1 = b_1[2] - b_1[0] + 54
+    b_2 = d_m.textbbox((0, 0), badge2_text, font=f_badge)
+    bw2 = b_2[2] - b_2[0] + 54
+
+    content_w = max(hw, sw, 64 + bw1 + 36 + bw2) + 140
+    cw = max(2800, min(3400, content_w))
+    ch = 370
     x0, y0 = 96, 96
     x1, y1 = x0 + cw, y0 + ch
 
@@ -787,18 +802,11 @@ def render_strava_comparison_vintage_card(
     draw.text((x0 + 64, y0 + 32), header_text, font=f_hdr, fill=COLOR_ESPRESSO_INK)
     draw.text((x0 + 66, y0 + 112), subheader_text, font=f_sub, fill=COLOR_UMBER_INK)
 
-    dummy = Image.new("RGBA", (100, 100))
-    d_m = ImageDraw.Draw(dummy)
-
     by = y0 + 196
-    b_1 = d_m.textbbox((0, 0), badge1_text, font=f_badge)
-    bw1 = b_1[2] - b_1[0] + 54
     draw.rounded_rectangle([x0 + 64, by, x0 + 64 + bw1, by + 88], radius=14, fill=COLOR_FOREST_GREEN)
     draw.text((x0 + 91, by + 16), badge1_text, font=f_badge, fill=(252, 249, 242, 255))
 
     bx2 = x0 + 64 + bw1 + 36
-    b_2 = d_m.textbbox((0, 0), badge2_text, font=f_badge)
-    bw2 = b_2[2] - b_2[0] + 54
     draw.rounded_rectangle([bx2, by, bx2 + bw2, by + 88], radius=14, fill=COLOR_CRIMSON)
     draw.text((bx2 + 27, by + 16), badge2_text, font=f_badge, fill=(252, 249, 242, 255))
 
@@ -983,13 +991,30 @@ def render_declarative_overlays(
                     })
             continue
 
-        out_png = overlays_dir / ov["file"]
+        file_en = ov["file"]
+        stem = Path(file_en).stem
+        ext = Path(file_en).suffix
+        file_ru = f"{stem}_ru{ext}"
+        out_png_en = overlays_dir / file_en
+        out_png_ru = overlays_dir / file_ru
+
+        has_ru_text = any(k.endswith("_ru") for k in ov.keys())
+
         if not skip_render:
-            if kind == "character_badge":
+            if kind in ("character_badge", "context_card", "stat_callout"):
                 render_character_callout_badge(
                     ov["title"],
                     ov["subtitle"],
-                    out_png,
+                    out_png_en,
+                    position=pos,
+                    accent_color=accent_col,
+                )
+                title_ru = ov.get("title_ru") or ov["title"]
+                sub_ru = ov.get("subtitle_ru") or ov["subtitle"]
+                render_character_callout_badge(
+                    title_ru,
+                    sub_ru,
+                    out_png_ru,
                     position=pos,
                     accent_color=accent_col,
                 )
@@ -998,35 +1023,71 @@ def render_declarative_overlays(
                     ov["date_event"],
                     ov["title"],
                     ov["detail"],
-                    out_png,
+                    out_png_en,
+                    position=pos,
+                    accent_color=accent_col,
+                )
+                date_ru = ov.get("date_event_ru") or ov["date_event"]
+                title_ru = ov.get("title_ru") or ov["title"]
+                detail_ru = ov.get("detail_ru") or ov["detail"]
+                render_flashback_memory_badge(
+                    date_ru,
+                    title_ru,
+                    detail_ru,
+                    out_png_ru,
                     position=pos,
                     accent_color=accent_col,
                 )
             elif kind == "strava_comparison":
+                hdr_en = ov.get("header", "STRAVA LONGITUDINAL COMPARISON · COLL DE FEMENIA")
+                sub_en = ov.get("subheader", "Same 195W Climbing Effort · Accelerated Aging Tax on Zero Testosterone (ADT)")
+                b1_en = ov.get("badge1", "2024 NORMAL-T:  195 W  @  118 BPM")
+                b2_en = ov.get("badge2", "2026 ZERO-T:  191 W  @  141 BPM (+23 BPM TAX)")
                 render_strava_comparison_vintage_card(
-                    out_png,
-                    header_text=ov.get("header", "STRAVA LONGITUDINAL COMPARISON · COLL DE FEMENIA"),
-                    subheader_text=ov.get("subheader", "Same 195W Climbing Effort · Accelerated Aging Tax on Zero Testosterone (ADT)"),
-                    badge1_text=ov.get("badge1", "2024 NORMAL-T:  195 W  @  118 BPM"),
-                    badge2_text=ov.get("badge2", "2026 ZERO-T:  191 W  @  141 BPM (+23 BPM TAX)"),
+                    out_png_en,
+                    header_text=hdr_en,
+                    subheader_text=sub_en,
+                    badge1_text=b1_en,
+                    badge2_text=b2_en,
+                )
+                hdr_ru = ov.get("header_ru") or hdr_en
+                sub_ru = ov.get("subheader_ru") or sub_en
+                b1_ru = ov.get("badge1_ru") or b1_en
+                b2_ru = ov.get("badge2_ru") or b2_en
+                render_strava_comparison_vintage_card(
+                    out_png_ru,
+                    header_text=hdr_ru,
+                    subheader_text=sub_ru,
+                    badge1_text=b1_ru,
+                    badge2_text=b2_ru,
                 )
             elif kind == "corner_map":
                 pts = get_gpx(ov.get("gpx_file", ""))
                 if pts:
                     t_idx = int(ov.get("target_idx", len(pts) // 3))
-                    render_corner_map_widget(pts, t_idx, ov.get("scene_label", "Route Progress"), out_png)
+                    render_corner_map_widget(pts, t_idx, ov.get("scene_label", "Route Progress"), out_png_en)
+                    render_corner_map_widget(pts, t_idx, ov.get("scene_label_ru", "Маршрут"), out_png_ru)
 
-        common_item = {
-            "file": ov["file"],
+        item_en = {
+            "file": file_en,
             "start_s": float(ov["start_s"]),
             "dur_s": float(ov["dur_s"]),
             "track": ov.get("track", "V2"),
             "fade_in_s": float(ov.get("fade_in_s", 0.25)),
             "fade_out_s": float(ov.get("fade_out_s", 0.30)),
-            "desc": ov.get("desc", ov["file"]),
+            "desc": ov.get("desc", file_en),
         }
-        expanded_items_en.append(dict(common_item))
-        expanded_items_ru.append(dict(common_item))
+        item_ru = {
+            "file": file_ru if (has_ru_text or (overlays_dir / file_ru).exists()) else file_en,
+            "start_s": float(ov["start_s"]),
+            "dur_s": float(ov["dur_s"]),
+            "track": ov.get("track", "V2"),
+            "fade_in_s": float(ov.get("fade_in_s", 0.25)),
+            "fade_out_s": float(ov.get("fade_out_s", 0.30)),
+            "desc": ov.get("desc_ru") or ov.get("desc", file_ru),
+        }
+        expanded_items_en.append(item_en)
+        expanded_items_ru.append(item_ru)
 
     # Contiguous Subtitle Pass on track V3 for both editions:
     for item_list in (expanded_items_en, expanded_items_ru):

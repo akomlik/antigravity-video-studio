@@ -575,6 +575,11 @@ def build_fcproj_from_spec(
     for cut in cuts_spec:
         cnum = int(cut["cut_num"])
         src = cut["source"]
+        if edition == "ru":
+            if src == "bookend_intro_4K.mp4" and (overlays_dir / "bookend_intro_4K_RU.mp4").exists():
+                src = "bookend_intro_4K_RU.mp4"
+            elif src == "bookend_outro_4K.mp4" and (overlays_dir / "bookend_outro_4K_RU.mp4").exists():
+                src = "bookend_outro_4K_RU.mp4"
         is_still = bool(cut.get("is_still", False))
         dur = float(cut["dur"])
         src_in = float(cut.get("src_in", 0.0))
@@ -593,6 +598,11 @@ def build_fcproj_from_spec(
     for cut in cuts_spec:
         cnum = int(cut["cut_num"])
         src = cut["source"]
+        if edition == "ru":
+            if src == "bookend_intro_4K.mp4" and (overlays_dir / "bookend_intro_4K_RU.mp4").exists():
+                src = "bookend_intro_4K_RU.mp4"
+            elif src == "bookend_outro_4K.mp4" and (overlays_dir / "bookend_outro_4K_RU.mp4").exists():
+                src = "bookend_outro_4K_RU.mp4"
         is_still = bool(cut.get("is_still", False))
         src_in = float(cut.get("src_in", 0.0))
         dur = float(cut["dur"])

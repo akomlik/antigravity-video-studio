@@ -149,7 +149,9 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
             - **Cycling Rides (`cycling_ride`):** Turn HUD **ON** when 3-second rolling speed $> 2.0\text{ mph}$ ($3.2\text{ km/h}$).
             - **Running (`run`):** Turn HUD **ON** when 3-second rolling speed $> 1.5\text{ mph}$ ($2.4\text{ km/h}$).
             - **Hiking & Walking (`hike_outdoor`):** Turn HUD **ON** when 3-second rolling speed $> 0.8\text{ mph}$ ($1.3\text{ km/h}$) so steep uphill mountain climbs are never mistakenly classified as stopped!
-        - **Static Scene Suppression (`auto` Mode):** Automatically turn the Telemetry HUD **OFF** for still photos (`.jpg`, `.png`, `.heic`) and stationary video scenes (café stops, bakery counters, terrace chats, gate stops, mechanical adjustments, where speed falls below the activity threshold), keeping the frame clean during conversational and still moments.
+        - **Static Scene Suppression & Cut-Boundary Termination (`auto` Mode):**
+            - Automatically turn the Telemetry HUD **OFF** for still photos (`.jpg`, `.png`, `.heic`) and stationary video scenes (café stops, bakery counters, terrace chats, gate stops, mechanical adjustments, where speed falls below the activity threshold), keeping the frame clean during conversational and still moments.
+            - **Strict Cut-Boundary Termination Law:** Whenever a riding cut transitions to a stationary bike/cockpit shot (e.g., stopping at Mortitx or looking down at the physical Garmin head unit), the simulated Live Telemetry HUD (`live_telemetry_hud`) **MUST terminate precisely at the cut boundary** (`start_s + dur_s == cut_transition_s`). Simulated speed/power overlays must NEVER overflow into a stationary cut where the rider's real Garmin computer is visible displaying 0.0 mph / 0 watts!
         - **Manual Override & Conversational Trial/Error:** `gpx_telemetry_hud` can be explicitly set to `always` (display on all video clips) or `off` (hide completely) in the `/build-timeline` alignment card. Because telemetry pacing is inherently aesthetic, visual review happens by scrubbing FilmCraft or watching the rendered MP4; if a specific scene feels unnatural, Alexander can refine it conversationally in chat (*"turn HUD off on Camí Vell"* or *"toggle HUD to always"*).
 - **Partial-Screen Picture-in-Picture Card for Low-Resolution B-Roll (`low_res_broll_mode: "pip_card"`):**
     - Never stretch sub-1080p clips (such as `1024x576` WhatsApp/smartphone videos like `2026-11-02_Zumba.mp4`) to full `3840x2160`. Instead, pre-composite them via `ffmpeg` at **62% scale (`2368x1332`) with an `8px` warm white border** centered over a blurred, softly darkened (`boxblur=16:2, brightness=-0.12`) 4K contextual photo on `V1`.
@@ -214,16 +216,20 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
 
 - **Bypassing Regional YouTube Blocks for Family & Classmates:**
     - YouTube is heavily throttled or blocked in Russia and occupied Crimea. Family members (such as Nina's brother and Alexander's sister in Sevastopol) and former Institute classmates on WhatsApp cannot easily watch YouTube releases, but have unrestricted access to Alexander's **Flickr feed (`apkom`)** and direct WhatsApp video sharing.
-- **Metric Telemetry HUD Law for Russian Editions (`units="metric"`, `lang="ru"`):**
+- **Metric Telemetry HUD & 100% Localized Visual Card Law for Russian Editions:**
     - All Russian editions (`_RU.mp4`) and Russian project files (`<project>_RU.fcproj`) **MUST strictly use the Metric system** on track `V4` (Live Telemetry HUD):
         - **Speed:** `КМ/Ч` (km/h) with label `СКОРОСТЬ` (`spd_mph * 1.609344`)
         - **Power:** `ВАТТ` (watts) with label `МОЩНОСТЬ`
         - **Heart Rate:** `УД/МИН` (bpm) with label `ПУЛЬС`
         - **Grade & Elevation:** `+X.X% XXX М` (meters) with label `УКЛОН` (`ele_ft * 0.3048`)
         - Zero English abbreviations (`MPH`, `WATTS`, `BPM`, `FT`) on the Russian edition HUD.
-    - The studio automatically maintains parallel timeline definitions:
-        - **Master EN (`<project>.fcproj`):** `live_hud/` (Imperial) + English VO on `A4`.
-        - **Russian Edition (`<project>_RU.fcproj`):** `live_hud_ru/` (Metric) + Russian VO on `A5`.
+    - **100% Localized Visual Cards & Signature Bookends Law:**
+        - **Track `V2` (Character, Flashback & Stat Cards):** All on-screen graphical cards (`badge_*.png`) must be rendered in Russian (`badge_*_ru.png`) using Cyrillic font parity (`HelveticaNeue Bold` / `Arial Bold`). Any contextual altitudes or distances mentioned on cards must be converted to metric (e.g., `ВИНОДЕЛЬНЯ MORTITX (400 М)` instead of `1,300 FT`).
+        - **Track `V3` (Translation Dialogue Cards):** Follows the single-language uncluttered subtitle standard: only render a card when on-camera speech is in a foreign language (showing only the Russian translation), and render ZERO cards when speech is already in Russian.
+        - **Track `V1` Bookends:** Opening postcard and closing credits bookends (`bookend_intro_4K_RU.mp4`, `bookend_outro_4K_RU.mp4`) must be compiled with Russian route descriptions, cast credits, Cyrillic handwriting Chin text (`«Жаль, что вас здесь нет! — AGVS»`), and metric ticket strips (`56.6 КМ | 503 М ПОДЪЕМ`).
+    - The studio automatically compiles and links parallel assets:
+        - **Master EN (`<project>.fcproj`):** `live_hud/` (Imperial) + English badges + English bookends + English VO on `A4`.
+        - **Russian Edition (`<project>_RU.fcproj`):** `live_hud_ru/` (Metric) + Russian badges (`_ru.png`) + Russian bookends (`_RU.mp4`) + Russian VO on `A5`.
 - **Russian Edition Export & Audio Calibration:**
     - `/build-timeline` renders `_RU.mp4` directly from `<project>_RU.fcproj` via `filmcraft-cli export`, then losslessly multiplexes the calibrated `full_audio_ru.m4a` mix and all three `.srt` subtitle tracks (`en`, `ua`, `ru`).
     - This guarantees Alexander always has the Russian-voiced, metric-HUD 4K video ready for instant upload to Flickr or WhatsApp without needing manual conversion.

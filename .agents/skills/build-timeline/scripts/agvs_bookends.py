@@ -599,7 +599,7 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
 
     # 2. Left Zone: Top Vintage Distressed Rubber Stamp (X: 130, Y: 110)
     f_stamp = load_apple_font("stamp_typewriter", 38)
-    f_motto = load_apple_font("card_subtitle", 36)
+    f_motto = load_apple_font("card_subtitle", 36, text=spec.get("studio_motto", ""))
 
     stamp_w, stamp_h = 1120, 144
     stamp_img = Image.new("RGBA", (stamp_w, stamp_h), (0, 0, 0, 0))
@@ -613,11 +613,10 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     canvas.paste(stamp_rot, (130, 95), stamp_rot)
 
     # 3. Left Zone: iMovie-Style Location Headline (X: 130, Y: 250)
-    f_hero = load_apple_font("hero_title", 96)
-    f_sub = load_apple_font("section_header", 34)
-
     place_name = spec.get("place_name", "MALLORCA").upper()
     route_sub = spec.get("route_subtitle", "BONAIRE -> COLL DE FEMENIA & MORTITX").upper()
+    f_hero = load_apple_font("hero_title", 96, text=place_name)
+    f_sub = load_apple_font("section_header", 34, text=route_sub)
 
     draw.text((130, 240), place_name, font=f_hero, fill=COLOR_ESPRESSO_INK)
 
@@ -666,8 +665,8 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     b_draw.ellipse([spx - 20, spy - 20, spx + 20, spy + 20], fill=COLOR_FOREST_GREEN, outline=(252, 249, 242, 255), width=4)
     b_draw.ellipse([spx - 7, spy - 7, spx + 7, spy + 7], fill=(252, 249, 242, 255))
     # Start pill label (48pt Avenir Next Bold)
-    f_pill = load_apple_font("section_header", 48)
-    st_label = "START: BONAIRE"
+    st_label = "СТАРТ: БОНАЙРЕ" if spec.get("lang") == "ru" else "START: BONAIRE"
+    f_pill = load_apple_font("section_header", 48, text=st_label)
     s_bbox = b_draw.textbbox((0, 0), st_label, font=f_pill)
     sw = s_bbox[2] - s_bbox[0] + 36
     sh = s_bbox[3] - s_bbox[1] + 24
@@ -681,14 +680,15 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     b_draw.ellipse([sum_px[0] - 20, sum_px[1] - 20, sum_px[0] + 20, sum_px[1] + 20], fill=COLOR_POSTMARK_CRIMSON, outline=(252, 249, 242, 255), width=4)
     b_draw.ellipse([sum_px[0] - 7, sum_px[1] - 7, sum_px[0] + 7, sum_px[1] + 7], fill=(252, 249, 242, 255))
     # Summit pill label (48pt Avenir Next Bold)
-    sum_label = "TURNAROUND: MORTITX"
-    sm_bbox = b_draw.textbbox((0, 0), sum_label, font=f_pill)
+    sum_label = "РАЗВОРОТ: МОРТИЧ" if spec.get("lang") == "ru" else "TURNAROUND: MORTITX"
+    f_pill_sum = load_apple_font("section_header", 48, text=sum_label)
+    sm_bbox = b_draw.textbbox((0, 0), sum_label, font=f_pill_sum)
     smw = sm_bbox[2] - sm_bbox[0] + 36
     smh = sm_bbox[3] - sm_bbox[1] + 24
     smlx = min(map_w - smw - 20, max(20, sum_px[0] - smw // 2))
     smly = min(map_h - smh - 20, max(20, sum_px[1] + 32))
     b_draw.rounded_rectangle([smlx, smly, smlx + smw, smly + smh], radius=12, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
-    b_draw.text((smlx + 18, smly + 12), sum_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
+    b_draw.text((smlx + 18, smly + 12), sum_label, font=f_pill_sum, fill=COLOR_ESPRESSO_INK)
 
     # Compass rose in top-right of map box
     draw_compass_rose(b_draw, cx=map_w - 75, cy=85, r=42)
@@ -711,10 +711,16 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     draw.line([(tx0, ty0), (tx1, ty0)], fill=COLOR_UMBER_INK, width=3)
     draw.line([(tx0, ty1), (tx1, ty1)], fill=COLOR_UMBER_INK, width=3)
 
-    f_ticket = load_apple_font("stamp_typewriter", 46)
-    dist_val = f"{spec.get('distance_mi', 35.2):.1f}"
-    ele_val = f"{spec.get('elevation_ft', 1650):,}"
-    ticket_str = f"DATE: {spec.get('date_str', '2026-11-05')}     •     {spec.get('short_title', 'SOLO COLL DE FEMENIA ON ZERO-T')}     •     {dist_val} MI  |  {ele_val} FT CLIMBING"
+    if spec.get("lang") == "ru":
+        dist_km = round(spec.get('distance_mi', 35.2) * 1.60934, 1)
+        ele_m = int(round(spec.get('elevation_ft', 1650) * 0.3048))
+        ticket_str = f"ДАТА: {spec.get('date_str', '2026-11-05')}     •     {spec.get('short_title', 'ОДИНОЧНЫЙ КОЛЬ ДЕ ФЕМЕНИЯ НА ZERO-T')}     •     {dist_km} КМ  |  {ele_m} М ПОДЪЕМ"
+    else:
+        dist_val = f"{spec.get('distance_mi', 35.2):.1f}"
+        ele_val = f"{spec.get('elevation_ft', 1650):,}"
+        ticket_str = f"DATE: {spec.get('date_str', '2026-11-05')}     •     {spec.get('short_title', 'SOLO COLL DE FEMENIA ON ZERO-T')}     •     {dist_val} MI  |  {ele_val} FT CLIMBING"
+
+    f_ticket = load_apple_font("stamp_typewriter", 46, text=ticket_str)
     t_bbox = draw.textbbox((0, 0), ticket_str, font=f_ticket)
     tw = t_bbox[2] - t_bbox[0]
     tx_pos = tx0 + (tx1 - tx0 - tw) // 2
@@ -787,8 +793,13 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
     dcx = (rx0 + rx1) // 2
     draw.polygon([(dcx, div_y - 8), (dcx + 8, div_y), (dcx, div_y + 8), (dcx - 8, div_y)], fill=COLOR_POSTMARK_CRIMSON)
 
-    f_cat = load_apple_font("section_header", 52)
-    f_item = load_apple_font("body_bold", 50)
+    is_ru = spec.get("lang") == "ru"
+    cast_title = "АКТЕРЫ И ВДОХНОВЕНИЕ" if is_ru else "THE PELOTON & CAST"
+    steed_title = "ТЕХНИКА И ТЕЛЕМЕТРИЯ" if is_ru else "MACHINERY & TELEMETRY"
+    fuel_title = "ПИТАНИЕ И ЭНЕРГИЯ" if is_ru else "FUEL & CATERING"
+
+    f_cat = load_apple_font("section_header", 52, text=cast_title + steed_title + fuel_title)
+    f_item = load_apple_font("body_bold", 50, text=spec.get("steed_credit", "") + (spec.get("cast_credits", [""])[0]))
 
     def draw_wrapped_line(x: int, y: int, text: str, font, fill, max_w: int = rw - 130, line_h: int = 58) -> int:
         words = text.split()
@@ -813,23 +824,25 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
     cur_y = div_y + 36
 
     # 1. THE PELOTON & CAST
-    draw.text((rx0 + 56, cur_y), "THE PELOTON & CAST", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
+    draw.text((rx0 + 56, cur_y), cast_title, font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
     cur_y += 62
     for c in spec.get("cast_credits", [])[:4]:
         cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {c}", f_item, COLOR_ESPRESSO_INK, line_h=58)
     cur_y += 32
 
     # 2. MACHINERY & TELEMETRY
-    draw.text((rx0 + 56, cur_y), "MACHINERY & TELEMETRY", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
+    draw.text((rx0 + 56, cur_y), steed_title, font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
     cur_y += 62
     steed_str = f"• {spec.get('steed_credit')}"
     cur_y = draw_wrapped_line(rx0 + 76, cur_y, steed_str, f_item, COLOR_ESPRESSO_INK, line_h=58)
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• BleeqUP Ranger AI Glasses (100% Organic Head-Turns) • iPhone 15 Pro", f_item, COLOR_ESPRESSO_INK, line_h=58)
-    cur_y = draw_wrapped_line(rx0 + 76, cur_y, "• Garmin Edge 840 • my_digital_brain.md • AGVS Engine v2.0", f_item, COLOR_ESPRESSO_INK, line_h=58)
+    tech_line1 = "• Очки BleeqUP Ranger AI (100% живые повороты головы) • iPhone 15 Pro" if is_ru else "• BleeqUP Ranger AI Glasses (100% Organic Head-Turns) • iPhone 15 Pro"
+    tech_line2 = "• Garmin Edge 840 • my_digital_brain.md • AGVS Engine v2.0" if is_ru else "• Garmin Edge 840 • my_digital_brain.md • AGVS Engine v2.0"
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, tech_line1, f_item, COLOR_ESPRESSO_INK, line_h=58)
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, tech_line2, f_item, COLOR_ESPRESSO_INK, line_h=58)
     cur_y += 32
 
     # 3. FUEL & CATERING
-    draw.text((rx0 + 56, cur_y), "FUEL & CATERING", font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
+    draw.text((rx0 + 56, cur_y), fuel_title, font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
     cur_y += 62
     cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {spec.get('fuel_sponsors')}", f_item, COLOR_ESPRESSO_INK, line_h=58)
 
@@ -840,14 +853,15 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
     draw.line([(tx0, ty0), (tx1, ty0)], fill=COLOR_UMBER_INK, width=3)
     draw.line([(tx0, ty1), (tx1, ty1)], fill=COLOR_UMBER_INK, width=3)
 
-    f_strip = load_apple_font("stamp_mono", 40)
-    foot_line1 = "0% GRAVITY GUARANTEED ON DESCENTS ONLY   •   NO ARGON QUOTAS WERE HARMED"
+    foot_line1 = "0% ГРАВИТАЦИИ ТОЛЬКО НА СПУСКАХ   •   НИ ОДНА КВОТА ARGON НЕ ПОСТРАДАЛА" if is_ru else "0% GRAVITY GUARANTEED ON DESCENTS ONLY   •   NO ARGON QUOTAS WERE HARMED"
+    repo_url = spec.get("github_repo", "github.com/akomlik/antigravity-video-studio")
+    foot_line2 = f"СТУДИЙНЫЙ ДВИЖОК AGVS   •   {repo_url.upper()}" if is_ru else f"AGVS STUDIO ENGINE   •   {repo_url.upper()}"
+
+    f_strip = load_apple_font("stamp_mono", 40, text=foot_line1 + foot_line2)
     fb1 = draw.textbbox((0, 0), foot_line1, font=f_strip)
     tw1 = fb1[2] - fb1[0]
     draw.text((tx0 + (tx1 - tx0 - tw1) // 2, ty0 + 26), foot_line1, font=f_strip, fill=COLOR_ESPRESSO_INK)
 
-    repo_url = spec.get("github_repo", "github.com/akomlik/antigravity-video-studio")
-    foot_line2 = f"AGVS STUDIO ENGINE   •   {repo_url.upper()}"
     fb2 = draw.textbbox((0, 0), foot_line2, font=f_strip)
     tw2 = fb2[2] - fb2[0]
     draw.text((tx0 + (tx1 - tx0 - tw2) // 2, ty0 + 78), foot_line2, font=f_strip, fill=COLOR_POSTMARK_CRIMSON)
@@ -929,7 +943,9 @@ def composite_intro_bookend_mp4(
     pw = vw + margin_side * 2   # 1864
     ph = vh + margin_top + margin_bottom  # 1184
 
-    border_png = out_mp4.parent / "polaroid_intro_border.png"
+    is_ru = "_RU" in out_mp4.name or "_ru" in out_mp4.name
+    border_png = out_mp4.parent / ("polaroid_intro_border_ru.png" if is_ru else "polaroid_intro_border.png")
+    script_txt = '«Жаль, что вас здесь нет! — AGVS»' if is_ru else '"Wish you were here! — AGVS"'
     render_polaroid_border_png(
         width=pw,
         height=ph,
@@ -938,7 +954,7 @@ def composite_intro_bookend_mp4(
         margin_top=margin_top,
         margin_side=margin_side,
         margin_bottom=margin_bottom,
-        script_text='"Wish you were here! — AGVS"',
+        script_text=script_txt,
         out_png=border_png,
     )
 
@@ -1020,7 +1036,9 @@ def composite_outro_bookend_mp4(
     pw = vw + margin_side * 2   # 1664
     ph = vh + margin_top + margin_bottom  # 1072
 
-    border_png = out_mp4.parent / "polaroid_outro_border.png"
+    is_ru = "_RU" in out_mp4.name or "_ru" in out_mp4.name
+    border_png = out_mp4.parent / ("polaroid_outro_border_ru.png" if is_ru else "polaroid_outro_border.png")
+    script_txt = '«Еще один день в раю — AGVS»' if is_ru else '"Another day in paradise — AGVS"'
     render_polaroid_border_png(
         width=pw,
         height=ph,
@@ -1029,7 +1047,7 @@ def composite_outro_bookend_mp4(
         margin_top=margin_top,
         margin_side=margin_side,
         margin_bottom=margin_bottom,
-        script_text='"Another day in paradise — AGVS"',
+        script_text=script_txt,
         out_png=border_png,
     )
 
@@ -1108,12 +1126,32 @@ def generate_project_bookends(
 
     spec = extract_project_bookends_spec(project_dir)
 
-    # 1. Render Canvases
+    # 1. Render Canvases (EN)
     intro_canvas = out_dir / "bookend_intro_canvas_4K.png"
     outro_canvas = out_dir / "bookend_outro_canvas_4K.png"
 
     render_intro_canvas_4k(spec, intro_canvas)
     render_outro_canvas_4k(spec, outro_canvas)
+
+    # 1b. Render Canvases (RU)
+    spec_ru = dict(spec)
+    spec_ru["lang"] = "ru"
+    spec_ru["place_name"] = spec.get("place_name_ru", "МАЛЬОРКА")
+    spec_ru["route_subtitle"] = spec.get("route_subtitle_ru", "БОНАЙРЕ ➔ КОЛЬ ДЕ ФЕМЕНИЯ И МОРТИЧ")
+    spec_ru["studio_motto"] = spec.get("studio_motto_ru", "МОДУЛЬ СНИЖЕНИЯ ГРАВИТАЦИИ: ОТКАЗ (ВСЁ РАВНО ЕДЕМ)")
+    spec_ru["short_title"] = spec.get("short_title_ru", "ОДИНОЧНЫЙ КОЛЬ ДЕ ФЕМЕНИЯ НА ZERO-T")
+    spec_ru["cast_credits"] = spec.get("cast_credits_ru", [
+        "Марк — Mecánico Campeón и юбиляр 60-летия PCH",
+        "Брюс и Лиза — Призраки четверга (вдохновители плана Б)",
+        "Бегуны в гору — Катализаторы пульса 146 уд/мин",
+        "Нина — Партнер по ужину в Bodega del Sol",
+    ])
+    spec_ru["steed_credit"] = spec.get("steed_credit_ru", "Trek Madone 7 (Сборка на раме с Craigslist 2016 · На острове с июня 2022)")
+    spec_ru["fuel_sponsors"] = spec.get("fuel_sponsors_ru", "Вода с солями из Pollença • Bodega del Sol • 0x Алкоголь")
+    intro_canvas_ru = out_dir / "bookend_intro_canvas_4K_RU.png"
+    outro_canvas_ru = out_dir / "bookend_outro_canvas_4K_RU.png"
+    render_intro_canvas_4k(spec_ru, intro_canvas_ru)
+    render_outro_canvas_4k(spec_ru, outro_canvas_ru)
 
     # 2. Locate Source Clips
     intro_clip = None
@@ -1166,7 +1204,7 @@ def generate_project_bookends(
     if not outro_clip:
         outro_clip = intro_clip
 
-    # 3. Composite Video Bookends
+    # 3. Composite Video Bookends (EN)
     intro_mp4 = out_dir / "bookend_intro_4K.mp4"
     outro_mp4 = out_dir / "bookend_outro_4K.mp4"
 
@@ -1182,6 +1220,26 @@ def generate_project_bookends(
         canvas_png=outro_canvas,
         last_clip_path=outro_clip,
         out_mp4=outro_mp4,
+        duration_s=spec.get("outro_duration_s", 4.5),
+        clip_start_s=2.0,
+    )
+
+    # 3b. Composite Video Bookends (RU)
+    intro_mp4_ru = out_dir / "bookend_intro_4K_RU.mp4"
+    outro_mp4_ru = out_dir / "bookend_outro_4K_RU.mp4"
+
+    composite_intro_bookend_mp4(
+        canvas_png=intro_canvas_ru,
+        first_clip_path=intro_clip,
+        out_mp4=intro_mp4_ru,
+        duration_s=spec.get("intro_duration_s", 3.5),
+        clip_start_s=0.0,
+    )
+
+    composite_outro_bookend_mp4(
+        canvas_png=outro_canvas_ru,
+        last_clip_path=outro_clip,
+        out_mp4=outro_mp4_ru,
         duration_s=spec.get("outro_duration_s", 4.5),
         clip_start_s=2.0,
     )
