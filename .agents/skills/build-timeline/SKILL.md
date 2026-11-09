@@ -114,9 +114,9 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
      ```
    - `build_timeline.py` automatically:
      - Enforces `check_zero_project_scripts_preflight()` and `check_bgm_non_reuse_preflight()`.
-     - Renders all Warm Vintage Parchment character/flashback/subtitle cards (`V2`) and **1Hz Live Dynamic Telemetry HUD series (`live_hud/hud_XXXX.png` on `V3`)** via `render_declarative_overlays()`.
-     - Measures the raw RMS mean volume of the selected BGM track (`measure_mean_volume_db`) and dynamically calibrates its gain to **`-20.5 dB` RMS mean** during riding/visual swells and **`-27.0 dB` RMS mean** under speech/VO.
-     - Builds and polishes `<project_name>.fcproj` (`schema_version: 17`) with all 3 soft subtitle tracks (`C1` EN, `C2` UA, `C3` RU) enabled in the timeline UI.
+     - Renders all Warm Vintage Parchment character/flashback badges (`V2`), **edition-targeted single-language translation cards on `V3`** (clean, zero redundant cards when speaking native edition language), and **1Hz Live Dynamic Telemetry HUD series on `V4` (`live_hud/` Imperial for Master EN, and `live_hud_ru/` Metric for Russian Edition)** via `render_declarative_overlays()`.
+     - Measures the 180Hz-highpassed RMS mean volume of the selected BGM track (`measure_mean_volume_db`) and dynamically calibrates its gain to **`-14.0 dB` RMS mean** (`-15.5 dB` standard) during riding/visual swells and **`-20.0 dB` RMS mean** (`-21.5 dB` standard) under speech/VO, applying a subtle 1.8kHz presence EQ on chillhop tracks.
+     - Builds and polishes both Master EN (`<project_name>.fcproj`) and Russian Edition (`<project_name>_RU.fcproj`) projects (`schema_version: 17`).
 2. **Open Live in FilmCraft GUI:** `build_timeline.py` automatically launches `FilmCraft.app` (`v0.18.0+`) with the `.fcproj` file so Alexander can press Spacebar and play the timeline immediately.
 3. **🛑 MANDATORY PRE-RENDER GATE (NEVER RENDER MP4 WITHOUT USER OK):**
    - **STOP HERE** before running `--render-export`.

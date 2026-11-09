@@ -308,13 +308,17 @@ def render_telemetry_hud_widget(
     out_png: Path,
     highlight_reason: str = "",
     canvas_size: tuple[int, int] = (3840, 2160),
+    units: str = "imperial",
+    lang: str = "en",
 ) -> Path:
     """
     Renders a 4K transparent overlay PNG with a Warm Vintage Parchment Telemetry HUD
-    at top-left (X: 96, Y: 96) showing Speed MPH, Power W, Heart Rate BPM, and Grade % in Imperial units.
+    at top-left (X: 96, Y: 96) showing Speed, Power, Heart Rate, and Grade/Elevation.
+    - Imperial: Speed (MPH), Power (WATTS), Heart Rate (BPM), Grade (% / FT).
+    - Metric (RU): Скорость (КМ/Ч), Мощность (ВАТТ), Пульс (УД/МИН), Уклон (% / М).
     - Values in 72pt Avenir Next Heavy.
-    - Units in 32pt Avenir Next Bold.
-    - Labels in 26pt Avenir Next Demi Bold.
+    - Units in 32pt Avenir Next Bold / Helvetica Neue Bold (Cyrillic parity).
+    - Labels in 26pt Avenir Next Demi Bold / Helvetica Neue Bold.
     - Zero emojis.
     """
     w, h = canvas_size
@@ -328,15 +332,27 @@ def render_telemetry_hud_widget(
     draw = ImageDraw.Draw(img)
 
     font_val = load_apple_font("hero_title", 72)
-    font_unit = load_apple_font("section_header", 32)
-    font_lbl = load_apple_font("card_subtitle", 26)
 
-    metrics = [
-        ("SPEED", f"{pt['spd_mph']:.1f}", "MPH", COLOR_CRIMSON),
-        ("POWER", f"{pt['pwr']}", "WATTS", COLOR_CRIMSON),
-        ("HEART RATE", f"{pt['hr']}", "BPM", COLOR_CRIMSON),
-        ("GRADE", f"{pt['grad_pct']:+.1f}%", f"{pt['ele_ft']} FT", COLOR_FOREST_GREEN),
-    ]
+    if units == "metric":
+        spd_kmh = pt.get("spd_kmh", pt.get("spd_mph", 0.0) * 1.609344)
+        ele_m = pt.get("ele_m", int(round(pt.get("ele_ft", 0) * 0.3048)))
+        font_unit = load_apple_font("section_header", 32, text="КМ/Ч ВАТТ УД/МИН М")
+        font_lbl = load_apple_font("card_subtitle", 26, text="СКОРОСТЬ МОЩНОСТЬ ПУЛЬС УКЛОН")
+        metrics = [
+            ("СКОРОСТЬ" if lang == "ru" else "SPEED", f"{spd_kmh:.1f}", "КМ/Ч" if lang == "ru" else "KM/H", COLOR_CRIMSON),
+            ("МОЩНОСТЬ" if lang == "ru" else "POWER", str(pt.get("pwr", 0)), "ВАТТ" if lang == "ru" else "WATTS", COLOR_CRIMSON),
+            ("ПУЛЬС" if lang == "ru" else "HEART RATE", str(pt.get("hr", 0)), "УД/МИН" if lang == "ru" else "BPM", COLOR_CRIMSON),
+            ("УКЛОН" if lang == "ru" else "GRADE", f"{pt.get('grad_pct', 0.0):+.1f}%", f"{ele_m} М" if lang == "ru" else f"{ele_m} M", COLOR_FOREST_GREEN),
+        ]
+    else:
+        font_unit = load_apple_font("section_header", 32)
+        font_lbl = load_apple_font("card_subtitle", 26)
+        metrics = [
+            ("SPEED", f"{pt.get('spd_mph', 0.0):.1f}", "MPH", COLOR_CRIMSON),
+            ("POWER", str(pt.get("pwr", 0)), "WATTS", COLOR_CRIMSON),
+            ("HEART RATE", str(pt.get("hr", 0)), "BPM", COLOR_CRIMSON),
+            ("GRADE", f"{pt.get('grad_pct', 0.0):+.1f}%", f"{pt.get('ele_ft', 0)} FT", COLOR_FOREST_GREEN),
+        ]
 
     col_w = (hud_w - 44) // 4
     for idx, (label, val, unit, accent_col) in enumerate(metrics):
@@ -560,109 +576,168 @@ def render_flashback_memory_badge(
 
 
 def render_translation_subtitle_card(
-    spoken_text: str,
+    spoken_text: str = "",
     english_translation: str = None,
     out_png: Path = None,
     canvas_size: tuple[int, int] = (3840, 2160),
     translation_text: str = None,
     card_width: int | None = None,
     card_height: int | None = None,
+    single_language: bool = True,
+    target_lang: str = "ru",
 ) -> Path:
     """
-    Renders bilingual on-camera speech translations as a centered Vintage Telegram / Field Note Card:
-    - Dynamic Language Hierarchy ("Translation Is Always Primary"):
-      - Spoken line: 60pt Demi Bold in Postmark Crimson #B83A2A with quotes.
-      - Translation line: 76pt Heavy/Bold in Deep Espresso #231F1D (wrapped if needed) with Cyrillic font parity.
-      - If spoken is EN: Top line is Spoken EN ("..."), Bottom line is Russian Translation (76pt Bold Espresso).
-      - If spoken is RU: Top line is Spoken RU («...»), Bottom line is English Translation (76pt Bold Espresso).
-    - Dimensions: Width clamped to 2600..3000px, 16px solid Crimson top accent bar, 42px vertical padding.
-    - Centered horizontally at Y: 1710 (or Y: 1640 when wrapped).
+    Renders on-camera speech translation as a centered Warm Vintage Parchment Card:
+    - By default (single_language=True), displays ONLY the translation in the edition's primary language:
+      - 76pt Heavy/Bold in Deep Espresso #231F1D (with Cyrillic font parity).
+      - 16px solid Crimson top accent bar, 20px radius rounded corners.
+      - 1 line: card_h = 200px, Y0 = 1750.
+      - 2 lines: card_h = 280px, Y0 = 1680.
+      - Width clamped to 2400..3000px, centered horizontally.
+    - If single_language=False, displays bilingual stacked format (Spoken in 60pt Crimson, Translation in 76pt Espresso).
     """
     w, h = canvas_size
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
 
-    clean_spoken = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", spoken_text).strip()
-    raw_trans = translation_text if translation_text is not None else (english_translation or "")
+    raw_trans = translation_text if translation_text is not None else (english_translation or spoken_text or "")
     clean_trans = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", raw_trans).strip()
 
     # Strip existing quotes from translation so it renders as clean bold editorial text
     if clean_trans.startswith(("«", '"', "“", "'")) and clean_trans.endswith(("»", '"', "”", "'")):
         clean_trans = clean_trans[1:-1].strip()
 
-    # Detect spoken language and apply standard quotation marks
-    spoken_is_cyrillic = bool(re.search(r"[\u0400-\u04FF]", clean_spoken))
-    if spoken_is_cyrillic:
-        if not (clean_spoken.startswith("«") and clean_spoken.endswith("»")):
-            clean_spoken = clean_spoken.strip('\'"')
-            clean_spoken = f"«{clean_spoken}»"
+    # Apply appropriate quotation marks based on target language or script
+    is_cyrillic = bool(re.search(r"[\u0400-\u04FF]", clean_trans))
+    if target_lang == "ru" or is_cyrillic:
+        clean_trans = f"«{clean_trans}»"
     else:
-        if not (clean_spoken.startswith('"') and clean_spoken.endswith('"')):
-            clean_spoken = clean_spoken.strip('\'"«»')
-            clean_spoken = f'"{clean_spoken}"'
-
-    # Font styles
-    # Top Line: Spoken at 60pt Demi Bold in Crimson
-    # Bottom Line: Translation at 76pt Heavy/Bold in Deep Espresso (with Cyrillic font parity)
-    f_spoken = load_apple_font("card_subtitle", 60, text=clean_spoken)
-    f_trans = load_apple_font("card_title", 76, text=clean_trans)
+        clean_trans = f'"{clean_trans}"'
 
     dummy = Image.new("RGBA", (100, 100))
     d_measure = ImageDraw.Draw(dummy)
 
-    b1 = d_measure.textbbox((0, 0), clean_spoken, font=f_spoken)
-    w1 = b1[2] - b1[0]
-
     max_card_w = 3000
-    min_card_w = 2600
-    max_text_w = max_card_w - 180
+    min_card_w = 2400
+    max_text_w = max_card_w - 200
 
-    words = clean_trans.split()
-    trans_lines = []
-    cur = ""
-    for word in words:
-        cand = f"{cur} {word}".strip() if cur else word
-        cb = d_measure.textbbox((0, 0), cand, font=f_trans)
-        if cb[2] - cb[0] <= max_text_w:
-            cur = cand
+    if single_language:
+        f_trans = load_apple_font("card_title", 76, text=clean_trans)
+        words = clean_trans.split()
+        trans_lines = []
+        cur = ""
+        for word in words:
+            cand = f"{cur} {word}".strip() if cur else word
+            cb = d_measure.textbbox((0, 0), cand, font=f_trans)
+            if cb[2] - cb[0] <= max_text_w:
+                cur = cand
+            else:
+                if cur:
+                    trans_lines.append(cur)
+                cur = word
+        if cur:
+            trans_lines.append(cur)
+
+        longest_trans_w = max(
+            (d_measure.textbbox((0, 0), line, font=f_trans)[2] - d_measure.textbbox((0, 0), line, font=f_trans)[0])
+            for line in trans_lines
+        ) if trans_lines else 0
+
+        calc_w = max(min_card_w, min(max_card_w, longest_trans_w + 220))
+        card_w = max(calc_w, card_width) if card_width else calc_w
+
+        is_wrapped = len(trans_lines) > 1
+        calc_h = 280 if is_wrapped else 200
+        card_h = max(calc_h, card_height) if card_height else calc_h
+
+        x0 = (w - card_w) // 2
+        y0 = 1680 if is_wrapped else 1750
+        x1, y1 = x0 + card_w, y0 + card_h
+
+        draw_vintage_card(img, (x0, y0, x1, y1), accent_side="top", radius=20, accent_color=COLOR_CRIMSON, accent_width=16)
+        draw = ImageDraw.Draw(img)
+
+        line_h = 88
+        if is_wrapped:
+            start_y = y0 + 44
         else:
-            if cur:
-                trans_lines.append(cur)
-            cur = word
-    if cur:
-        trans_lines.append(cur)
+            first_bbox = d_measure.textbbox((0, 0), trans_lines[0], font=f_trans) if trans_lines else (0, 0, 0, 50)
+            text_h = first_bbox[3] - first_bbox[1]
+            start_y = y0 + (card_h - text_h) // 2 - 4
 
-    longest_trans_w = max(
-        (d_measure.textbbox((0, 0), line, font=f_trans)[2] - d_measure.textbbox((0, 0), line, font=f_trans)[0])
-        for line in trans_lines
-    ) if trans_lines else 0
-    content_w = max(w1, longest_trans_w)
-    calc_w = max(min_card_w, min(max_card_w, content_w + 180))
-    card_w = max(calc_w, card_width) if card_width else calc_w
+        for idx, line in enumerate(trans_lines):
+            lb = d_measure.textbbox((0, 0), line, font=f_trans)
+            lw = lb[2] - lb[0]
+            lx = x0 + (card_w - lw) // 2
+            ly = start_y + idx * line_h
+            draw.text((lx, ly), line, font=f_trans, fill=COLOR_ESPRESSO_INK)
 
-    is_wrapped = len(trans_lines) > 1
-    calc_h = 350 if is_wrapped else 260
-    card_h = max(calc_h, card_height) if card_height else calc_h
+    else:
+        # Bilingual stacked format
+        clean_spoken = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", spoken_text).strip()
+        spoken_is_cyrillic = bool(re.search(r"[\u0400-\u04FF]", clean_spoken))
+        if spoken_is_cyrillic:
+            if not (clean_spoken.startswith("«") and clean_spoken.endswith("»")):
+                clean_spoken = clean_spoken.strip('\'"')
+                clean_spoken = f"«{clean_spoken}»"
+        else:
+            if not (clean_spoken.startswith('"') and clean_spoken.endswith('"')):
+                clean_spoken = clean_spoken.strip('\'"«»')
+                clean_spoken = f'"{clean_spoken}"'
 
-    x0 = (w - card_w) // 2
-    y0 = 1640 if is_wrapped else 1710
-    x1, y1 = x0 + card_w, y0 + card_h
+        f_spoken = load_apple_font("card_subtitle", 60, text=clean_spoken)
+        f_trans = load_apple_font("card_title", 76, text=clean_trans)
 
-    draw_vintage_card(img, (x0, y0, x1, y1), accent_side="top", radius=20, accent_color=COLOR_CRIMSON, accent_width=16)
-    draw = ImageDraw.Draw(img)
+        b1 = d_measure.textbbox((0, 0), clean_spoken, font=f_spoken)
+        w1 = b1[2] - b1[0]
 
-    t1_x = x0 + (card_w - w1) // 2
-    draw.text((t1_x, y0 + 42), clean_spoken, font=f_spoken, fill=COLOR_CRIMSON)
+        words = clean_trans.split()
+        trans_lines = []
+        cur = ""
+        for word in words:
+            cand = f"{cur} {word}".strip() if cur else word
+            cb = d_measure.textbbox((0, 0), cand, font=f_trans)
+            if cb[2] - cb[0] <= max_text_w:
+                cur = cand
+            else:
+                if cur:
+                    trans_lines.append(cur)
+                cur = word
+        if cur:
+            trans_lines.append(cur)
 
-    cur_trans_y = y0 + 124
-    for line in trans_lines:
-        lb = d_measure.textbbox((0, 0), line, font=f_trans)
-        lw = lb[2] - lb[0]
-        lx = x0 + (card_w - lw) // 2
-        draw.text((lx, cur_trans_y), line, font=f_trans, fill=COLOR_ESPRESSO_INK)
-        cur_trans_y += 88
+        longest_trans_w = max(
+            (d_measure.textbbox((0, 0), line, font=f_trans)[2] - d_measure.textbbox((0, 0), line, font=f_trans)[0])
+            for line in trans_lines
+        ) if trans_lines else 0
+        content_w = max(w1, longest_trans_w)
+        calc_w = max(min_card_w, min(max_card_w, content_w + 180))
+        card_w = max(calc_w, card_width) if card_width else calc_w
 
-    out_png.parent.mkdir(parents=True, exist_ok=True)
-    img.save(out_png, "PNG", compress_level=1)
+        is_wrapped = len(trans_lines) > 1
+        calc_h = 350 if is_wrapped else 260
+        card_h = max(calc_h, card_height) if card_height else calc_h
+
+        x0 = (w - card_w) // 2
+        y0 = 1640 if is_wrapped else 1710
+        x1, y1 = x0 + card_w, y0 + card_h
+
+        draw_vintage_card(img, (x0, y0, x1, y1), accent_side="top", radius=20, accent_color=COLOR_CRIMSON, accent_width=16)
+        draw = ImageDraw.Draw(img)
+
+        t1_x = x0 + (card_w - w1) // 2
+        draw.text((t1_x, y0 + 42), clean_spoken, font=f_spoken, fill=COLOR_CRIMSON)
+
+        cur_trans_y = y0 + 124
+        for line in trans_lines:
+            lb = d_measure.textbbox((0, 0), line, font=f_trans)
+            lw = lb[2] - lb[0]
+            lx = x0 + (card_w - lw) // 2
+            draw.text((lx, cur_trans_y), line, font=f_trans, fill=COLOR_ESPRESSO_INK)
+            cur_trans_y += 88
+
+    if out_png:
+        out_png.parent.mkdir(parents=True, exist_ok=True)
+        img.save(out_png, "PNG", compress_level=1)
     return out_png
 
 
@@ -722,17 +797,24 @@ def render_declarative_overlays(
     overlays_dir: Path,
     raw_dir: Path | None = None,
     skip_render: bool = False,
-) -> list[dict]:
+    edition: str | None = None,
+) -> dict[str, list[dict]] | list[dict]:
     """
     Universal declarative overlay renderer and timeline expander.
     Reads `overlays` array from `timeline_spec.json`, renders all 4K RGBA PNGs,
-    and expands any `live_telemetry_hud` / `telemetry_hud` entries into 1Hz live-updating
-    HUD items on track `V3` (with smooth fade-in on the first second, 100% solid hold
-    across internal 1s boundaries so the card never blinks, and fade-out on the last second).
+    and returns edition-specific timeline item lists:
+    - Master EN:
+      - Live Telemetry HUD uses Imperial units (live_hud/hud_XXXX.png, MPH, WATTS, BPM, FT).
+      - Translation subtitle cards ONLY appear when spoken on-camera audio is NOT English (e.g. Russian joke at 91.5s), showing ONLY English translation. When speaking English, zero cards appear (no clutter!).
+    - Russian Edition (RU):
+      - Live Telemetry HUD uses Metric units (live_hud_ru/hud_XXXX.png, КМ/Ч, ВАТТ, УД/МИН, М).
+      - Translation subtitle cards ONLY appear when spoken on-camera audio is NOT Russian (e.g. English rollout/terrace at 20s/28s), showing ONLY Russian translation. When speaking Russian, zero cards appear!
     """
     overlays_dir.mkdir(parents=True, exist_ok=True)
     live_hud_dir = overlays_dir / "live_hud"
     live_hud_dir.mkdir(parents=True, exist_ok=True)
+    live_hud_ru_dir = overlays_dir / "live_hud_ru"
+    live_hud_ru_dir.mkdir(parents=True, exist_ok=True)
 
     gpx_cache: dict[str, list[dict]] = {}
 
@@ -744,7 +826,9 @@ def render_declarative_overlays(
             gpx_cache[gpx_name] = load_gpx_stream(gp) if gp.exists() else []
         return gpx_cache[gpx_name]
 
-    expanded_items: list[dict] = []
+    expanded_items_en: list[dict] = []
+    expanded_items_ru: list[dict] = []
+
     for ov in overlays_spec:
         kind = ov.get("kind", "character_badge")
         accent_name = (ov.get("accent") or "crimson").lower()
@@ -794,13 +878,14 @@ def render_declarative_overlays(
                         val = prof[key][min(s_idx, len(prof[key]) - 1)]
                         pt[key] = int(val) if key in ("pwr", "hr", "ele_ft") else float(val)
 
-                rel_fname = f"live_hud/hud_{int(round(tl_s * 10)):04d}.png"
-                out_png = overlays_dir / rel_fname
+                # Imperial HUD for EN
+                rel_fname_en = f"live_hud/hud_{int(round(tl_s * 10)):04d}.png"
+                out_png_en = overlays_dir / rel_fname_en
                 if not skip_render:
-                    render_telemetry_hud_widget(pt, out_png)
+                    render_telemetry_hud_widget(pt, out_png_en, units="imperial", lang="en")
 
-                expanded_items.append({
-                    "file": rel_fname,
+                expanded_items_en.append({
+                    "file": rel_fname_en,
                     "start_s": tl_s,
                     "dur_s": cur_dur,
                     "track": ov.get("track", "V4"),
@@ -808,34 +893,79 @@ def render_declarative_overlays(
                     "fade_out_s": 0.30 if s_idx == n_steps - 1 else 0.0,
                     "desc": ov.get("desc", f"Live Telemetry HUD @ {tl_s:.1f}s"),
                 })
+
+                # Metric HUD for RU
+                rel_fname_ru = f"live_hud_ru/hud_{int(round(tl_s * 10)):04d}.png"
+                out_png_ru = overlays_dir / rel_fname_ru
+                if not skip_render:
+                    render_telemetry_hud_widget(pt, out_png_ru, units="metric", lang="ru")
+
+                expanded_items_ru.append({
+                    "file": rel_fname_ru,
+                    "start_s": tl_s,
+                    "dur_s": cur_dur,
+                    "track": ov.get("track", "V4"),
+                    "fade_in_s": 0.25 if s_idx == 0 else 0.0,
+                    "fade_out_s": 0.30 if s_idx == n_steps - 1 else 0.0,
+                    "desc": ov.get("desc", f"Live Telemetry HUD @ {tl_s:.1f}s (Metric)"),
+                })
             continue
 
-        if kind == "translation_subtitle" and "pages" in ov:
-            pages = ov["pages"]
-            n_pages = len(pages)
-            for p_idx, page in enumerate(pages):
-                page_file = page.get("file", f"{ov.get('file_prefix', 'sub')}_{p_idx+1:02d}.png")
-                page_start = float(page["start_s"])
-                page_dur = float(page["dur_s"])
-                page_spoken = page.get("spoken", "")
-                page_trans = page.get("translation") or page.get("russian") or page.get("english", "")
-                page_png = overlays_dir / page_file
-                if not skip_render:
-                    render_translation_subtitle_card(
-                        spoken_text=page_spoken,
-                        translation_text=page_trans,
-                        english_translation=page.get("english"),
-                        out_png=page_png,
-                    )
-                expanded_items.append({
-                    "file": page_file,
-                    "start_s": page_start,
-                    "dur_s": page_dur,
-                    "track": page.get("track", ov.get("track", "V3")),
-                    "fade_in_s": float(page.get("fade_in_s", 0.25 if p_idx == 0 else 0.0)),
-                    "fade_out_s": float(page.get("fade_out_s", 0.30 if p_idx == n_pages - 1 else 0.0)),
-                    "desc": page.get("desc", f"Bilingual Subtitle Page {p_idx+1}"),
-                })
+        if kind == "translation_subtitle":
+            # Multi-page or single item
+            sub_items = ov.get("pages") if "pages" in ov else [ov]
+            n_sub = len(sub_items)
+            for p_idx, s_item in enumerate(sub_items):
+                base_name = Path(s_item.get("file", ov.get("file", f"sub_{p_idx+1:02d}.png"))).stem
+                start_s = float(s_item["start_s"])
+                dur_s = float(s_item["dur_s"])
+                spoken = s_item.get("spoken", "")
+                spoken_is_cyr = bool(re.search(r"[\u0400-\u04FF]", spoken))
+                spoken_lang = s_item.get("spoken_lang", "ru" if spoken_is_cyr else "en")
+                fade_in = float(s_item.get("fade_in_s", 0.25 if p_idx == 0 else 0.0))
+                fade_out = float(s_item.get("fade_out_s", 0.30 if p_idx == n_sub - 1 else 0.0))
+
+                # If spoken is English: RU needs Russian card; EN has NO card!
+                if spoken_lang == "en":
+                    trans_ru = s_item.get("russian") or s_item.get("translation", "")
+                    fname_ru = f"{base_name}_ru.png" if not base_name.endswith("_ru") else f"{base_name}.png"
+                    if not skip_render:
+                        render_translation_subtitle_card(
+                            translation_text=trans_ru,
+                            out_png=overlays_dir / fname_ru,
+                            single_language=True,
+                            target_lang="ru",
+                        )
+                    expanded_items_ru.append({
+                        "file": fname_ru,
+                        "start_s": start_s,
+                        "dur_s": dur_s,
+                        "track": s_item.get("track", ov.get("track", "V3")),
+                        "fade_in_s": fade_in,
+                        "fade_out_s": fade_out,
+                        "desc": s_item.get("desc", f"RU Translation Subtitle: {trans_ru[:30]}"),
+                    })
+
+                # If spoken is Russian: EN needs English card; RU has NO card!
+                elif spoken_lang == "ru":
+                    trans_en = s_item.get("english") or s_item.get("translation", "")
+                    fname_en = f"{base_name}_en.png" if not base_name.endswith("_en") else f"{base_name}.png"
+                    if not skip_render:
+                        render_translation_subtitle_card(
+                            translation_text=trans_en,
+                            out_png=overlays_dir / fname_en,
+                            single_language=True,
+                            target_lang="en",
+                        )
+                    expanded_items_en.append({
+                        "file": fname_en,
+                        "start_s": start_s,
+                        "dur_s": dur_s,
+                        "track": s_item.get("track", ov.get("track", "V3")),
+                        "fade_in_s": fade_in,
+                        "fade_out_s": fade_out,
+                        "desc": s_item.get("desc", f"EN Translation Subtitle: {trans_en[:30]}"),
+                    })
             continue
 
         out_png = overlays_dir / ov["file"]
@@ -857,14 +987,6 @@ def render_declarative_overlays(
                     position=pos,
                     accent_color=accent_col,
                 )
-            elif kind == "translation_subtitle":
-                trans = ov.get("translation") or ov.get("russian") or ov.get("english", "")
-                render_translation_subtitle_card(
-                    spoken_text=ov.get("spoken", ""),
-                    translation_text=trans,
-                    english_translation=ov.get("english"),
-                    out_png=out_png,
-                )
             elif kind == "strava_comparison":
                 render_strava_comparison_vintage_card(
                     out_png,
@@ -879,34 +1001,37 @@ def render_declarative_overlays(
                     t_idx = int(ov.get("target_idx", len(pts) // 3))
                     render_corner_map_widget(pts, t_idx, ov.get("scene_label", "Route Progress"), out_png)
 
-        expanded_items.append({
+        common_item = {
             "file": ov["file"],
             "start_s": float(ov["start_s"]),
             "dur_s": float(ov["dur_s"]),
-            "track": ov.get("track", "V3" if kind == "translation_subtitle" else "V2"),
+            "track": ov.get("track", "V2"),
             "fade_in_s": float(ov.get("fade_in_s", 0.25)),
             "fade_out_s": float(ov.get("fade_out_s", 0.30)),
             "desc": ov.get("desc", ov["file"]),
-        })
+        }
+        expanded_items_en.append(dict(common_item))
+        expanded_items_ru.append(dict(common_item))
 
-    # Contiguous Subtitle Pass on track V3:
-    # If two consecutive subtitle cards on track V3 are contiguous (gap <= 0.08s)
-    # or slightly overlapping, clamp the earlier duration so they touch perfectly,
-    # and zero out the fade-out on the earlier card and the fade-in on the second card.
-    # This guarantees the parchment box holds stationary with no awkward dip to black!
-    v3_subs = [it for it in expanded_items if it.get("track") == "V3"]
-    v3_subs.sort(key=lambda x: x["start_s"])
-    for idx in range(len(v3_subs) - 1):
-        c1, c2 = v3_subs[idx], v3_subs[idx + 1]
-        c1_end = c1["start_s"] + c1["dur_s"]
-        if c1_end > c2["start_s"]:
-            c1["dur_s"] = round(c2["start_s"] - c1["start_s"], 2)
+    # Contiguous Subtitle Pass on track V3 for both editions:
+    for item_list in (expanded_items_en, expanded_items_ru):
+        v3_subs = [it for it in item_list if it.get("track") == "V3"]
+        v3_subs.sort(key=lambda x: x["start_s"])
+        for idx in range(len(v3_subs) - 1):
+            c1, c2 = v3_subs[idx], v3_subs[idx + 1]
             c1_end = c1["start_s"] + c1["dur_s"]
-        if abs(c1_end - c2["start_s"]) <= 0.08:
-            c1["fade_out_s"] = 0.0
-            c2["fade_in_s"] = 0.0
+            if c1_end > c2["start_s"]:
+                c1["dur_s"] = round(c2["start_s"] - c1["start_s"], 2)
+                c1_end = c1["start_s"] + c1["dur_s"]
+            if abs(c1_end - c2["start_s"]) <= 0.08:
+                c1["fade_out_s"] = 0.0
+                c2["fade_in_s"] = 0.0
 
-    return expanded_items
+    if edition == "en":
+        return expanded_items_en
+    elif edition == "ru":
+        return expanded_items_ru
+    return {"en": expanded_items_en, "ru": expanded_items_ru}
 
 
 ACTIVITY_SPEED_THRESHOLDS = {

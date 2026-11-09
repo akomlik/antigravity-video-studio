@@ -118,17 +118,13 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
 - **Storyboard Punchline Captions & First-Appearance Character Callout Badges (`V2`):**
     - **Character Identification Law ("Who's Who in the Frame"):** Viewers outside Alexander's immediate circle do not automatically know who is who when multiple riders or companions appear on screen. The first time a key person (e.g., **Nina**, **Bruce**, **Lisa**, **Ian**, **Pete**, **Brian**, **Chas**, **Paula**, **Jeff**, or university classmates) appears clearly in a video clip or still photo, place a sleek `3.0s–3.5s` frosted-glass **Character Callout Badge** on `V2` via `render_character_callout_badge()` in `gpx_widgets.py` (e.g., `NINA KOMLIK · Wife & Riding Partner` / `НИНА · Моя жена и спутница`, or `Left to Right: Paula · Alexander · Jeff (SJBC, April 2016)`).
     - **Narrative Punchline Captions (`V2`):** When `Storyboard.md` highlights a specific narrative joke, archival flashback year, or callback (e.g., *"APRIL 2016 · FIRST DI2 RENTAL AT PRO CYCLE HIRE"*, *"€20 -> €30 inflation (+ he's in Alcúdia every Tuesday!)"*, or *"Saved by Nina's sharp eyes: Front disc brake pad on the ground!"*), generate clean glassmorphic pill overlays on `V2`.
-- **Bilingual On-Camera Speech Cards & Dynamic Language Hierarchy Law (`V3`):**
-    - **Sequential Speech Pagination:** Continuous on-camera dialogue segments support sequential multi-sentence pagination. Dialogue scenes containing multiple sentences render consecutive cards (e.g., Card 1 from `00:20.0` to `00:24.5`, Card 2 from `00:24.5` to `00:29.0`) rather than stopping after the first sentence.
+- **Edition-Targeted Translation Cards & Clutter-Free Dialogue Law (`V3`):**
+    - **Zero Redundant Cards When Speaking Edition Language:** When on-camera dialogue is spoken in the video edition's primary language (e.g., Alexander speaking English in the Master EN video, or Russian in the Russian edition), **NO on-screen subtitle card is displayed**. The viewer natively understands the speech, eliminating visual occlusion and keeping the visual scene 100% clean and cinematic.
+    - **Single-Language Translation Cards for Foreign Dialogue:** When on-camera dialogue is spoken in a foreign language (e.g., English spoken on camera in the Russian edition, or Russian spoken on camera in the English edition), an on-screen card displays **ONLY the single-language translation** into the target edition language (Russian translation in RU edition; English translation in EN edition). Zero stacked bilingual text or redundant quotes.
+    - **Single-Language Typography & Mobile Weight:** Rendered in **76pt Heavy/Bold** in Deep Espresso (`#231F1D`) with Cyrillic font parity (`HelveticaNeue Bold` / `Arial Bold`), 16px solid top Crimson accent bar (`#B83A2A`), 20px radius rounded corners on Warm Vintage Parchment, width clamped to **2400px–3000px**, centered horizontally at screen bottom (`Y: 1750` for 1 line, `Y: 1680` for 2 lines).
+    - **Sequential Speech Pagination:** Continuous on-camera dialogue segments support sequential multi-sentence pagination. Dialogue scenes containing multiple sentences render consecutive cards (e.g., Card 1 from `00:20.0` to `00:26.2`, Card 2 from `00:28.0` to `00:38.5`) rather than stopping after the first sentence.
     - **Contiguous Zero-Dip Transition:** For contiguous speech cards on track `V3` (gap $\le 0.08\text{s}$), the engine automatically clamps durations, zeros out fade-out on the earlier card, and zeros out fade-in on the second card (`fade_out_s=0.0`, `fade_in_s=0.0`). The Warm Vintage Parchment box holds completely rock-solid on screen while the text cuts instantaneously.
-    - **Dynamic Language Hierarchy ("Translation Is Always Primary"):**
-        - If spoken audio on camera is **English**:
-            - **Top Line (Spoken EN):** Spoken English in quotes at **60pt Demi Bold** in Postmark Crimson (`#B83A2A`).
-            - **Bottom Line (RU Translation):** Russian translation at **76pt Heavy/Bold** in Deep Espresso (`#231F1D`) with Cyrillic font parity (`HelveticaNeue Bold` / `Arial Bold`).
-        - If spoken audio on camera is **Russian**:
-            - **Top Line (Spoken RU):** Spoken Russian in quotes at **60pt Demi Bold** in Postmark Crimson (`#B83A2A`).
-            - **Bottom Line (EN Translation):** English translation at **76pt Heavy/Bold** in Deep Espresso (`#231F1D`).
-    - **Mobile Card Weight & Clamping:** Card width is clamped to **2600px–3000px** with generous vertical padding, 16px solid top crimson accent stripe, centered horizontally at `Y: 1710` (or `Y: 1640` when translation wraps).
+    - **Hearing Accessibility Preservation:** Full word-for-word multilingual closed captions across all languages (`captions.en.srt`, `captions.ua.srt`, `captions.ru.srt`) remain multiplexed as soft subtitle streams into the MP4 container for viewers who enable CC.
 - **Color & Monochrome Integrity:** Conform iPhone 15 Pro `BT.2020` HDR clips to `Rec.709` linear light. Never apply color LUTs or saturation adjustments to 1977+ black-and-white film scans.
 
 ### ARTICLE VII: DIRECT TIMELINE ASSEMBLY & FILMCRAFT PLAYBACK REVIEW
@@ -216,9 +212,19 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
 
 - **Bypassing Regional YouTube Blocks for Family & Classmates:**
     - YouTube is heavily throttled or blocked in Russia and occupied Crimea. Family members (such as Nina's brother and Alexander's sister in Sevastopol) and former Institute classmates on WhatsApp cannot easily watch YouTube releases, but have unrestricted access to Alexander's **Flickr feed (`apkom`)** and direct WhatsApp video sharing.
-- **Default Lossless Remux Law (`_RU.mp4` Always Ready):**
-    - Regardless of whether YouTube uses `option_a` (single video + CC) or `option_b`, `/build-timeline` MUST ALWAYS losslessly remux `<project>_RU.mp4` in **`0.2 seconds`** (`ffmpeg -c:v copy -c:a aac`) and save it to `~/Movies/Exports/YEAR/<project>_RU.mp4`.
-    - This guarantees Alexander always has the Russian-voiced 4K video ready for instant upload to Flickr or WhatsApp without needing to re-render.
+- **Metric Telemetry HUD Law for Russian Editions (`units="metric"`, `lang="ru"`):**
+    - All Russian editions (`_RU.mp4`) and Russian project files (`<project>_RU.fcproj`) **MUST strictly use the Metric system** on track `V4` (Live Telemetry HUD):
+        - **Speed:** `КМ/Ч` (km/h) with label `СКОРОСТЬ` (`spd_mph * 1.609344`)
+        - **Power:** `ВАТТ` (watts) with label `МОЩНОСТЬ`
+        - **Heart Rate:** `УД/МИН` (bpm) with label `ПУЛЬС`
+        - **Grade & Elevation:** `+X.X% XXX М` (meters) with label `УКЛОН` (`ele_ft * 0.3048`)
+        - Zero English abbreviations (`MPH`, `WATTS`, `BPM`, `FT`) on the Russian edition HUD.
+    - The studio automatically maintains parallel timeline definitions:
+        - **Master EN (`<project>.fcproj`):** `live_hud/` (Imperial) + English VO on `A4`.
+        - **Russian Edition (`<project>_RU.fcproj`):** `live_hud_ru/` (Metric) + Russian VO on `A5`.
+- **Russian Edition Export & Audio Calibration:**
+    - `/build-timeline` renders `_RU.mp4` directly from `<project>_RU.fcproj` via `filmcraft-cli export`, then losslessly multiplexes the calibrated `full_audio_ru.m4a` mix and all three `.srt` subtitle tracks (`en`, `ua`, `ru`).
+    - This guarantees Alexander always has the Russian-voiced, metric-HUD 4K video ready for instant upload to Flickr or WhatsApp without needing manual conversion.
 - **Flickr Metadata Package (One-Click Upload via Web or Lightroom Publishing Service):**
     - On every release, `/publish-youtube` and `/build-timeline` output a dedicated **Flickr Publishing Box** (in chat and appended to `facebook_promo.md`) containing:
         - **Title:** `YYYY-MM-DD · <Russian Title> (<mi> / <km>)` (matching Alexander's Flickr convention, e.g. `2026-10-27 · Вместо группы: выпечка в Буже и «VIP»-кофе (40.1 мили / 64.5 км)`).

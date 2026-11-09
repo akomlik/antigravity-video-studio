@@ -438,8 +438,9 @@ def build_fcproj_from_spec(
     sfx_cues: list[dict],
     vo_cues: list[dict],
     riding_gain_db: float = -8.0,
+    edition: str = "en",
 ):
-    print(f"Building complete 4K .fcproj project -> {fcproj_path}")
+    print(f"Building complete 4K .fcproj project ({edition.upper()}) -> {fcproj_path}")
     next_id = 1
     items = {}
     root_children = []
@@ -908,15 +909,15 @@ def build_fcproj_from_spec(
                 "video_tracks": [
                     make_track(1, "Video", "Video 1", v1_items),
                     make_track(2, "Video", "V2 (Overlays / Badges)", v2_items),
-                    make_track(3, "Video", "V3 (Bilingual Speech Cards)", v3_items),
-                    make_track(4, "Video", "V4 (Live Telemetry HUD & Maps)", v4_items),
+                    make_track(3, "Video", "V3 (Russian Speech Cards)" if edition == "ru" else "V3 (English Speech Cards)", v3_items),
+                    make_track(4, "Video", "V4 (Live Metric Telemetry HUD)" if edition == "ru" else "V4 (Live Imperial Telemetry HUD)", v4_items),
                 ],
                 "audio_tracks": [
                     make_track(1, "Audio", "A1 - Camera Audio", a1_items),
                     make_track(2, "Audio", f"A2 - Music ({bgm_track.stem})", a2_items, transitions=a2_transitions),
                     make_track(3, "Audio", "A3 - Cinematic SFX", a3_items),
-                    make_track(4, "Audio", "Voice-Over (EN)", a4_items),
-                    make_track(5, "Audio", "Russian Voice-Over (Alt)", a5_items, muted=True),
+                    make_track(4, "Audio", "Voice-Over (EN)", a4_items, muted=(edition == "ru")),
+                    make_track(5, "Audio", "Russian Voice-Over" if edition == "ru" else "Russian Voice-Over (Alt)", a5_items, muted=(edition != "ru")),
                 ],
                 "caption_tracks": [
                     {"id": 1, "name": "English", "format": "Subtitle", "language": "en", "style": cap_style, "enabled": True, "locked": False, "sync_lock": True, "captions": c1_en, "vtt_blocks": []},
@@ -937,12 +938,13 @@ def build_fcproj_from_spec(
         "created": seq_id,
     }
 
+    proj_name = f"{proj_dir.name}_RU" if edition == "ru" else proj_dir.name
     fcproj_data = {
         "format": "filmcraft.project",
         "schema_version": 17,
         "generator": "FilmCraft 0.18.0",
         "project": {
-            "name": proj_dir.name,
+            "name": proj_name,
             "settings": {
                 "renderer": "FilmCraft GPU Acceleration (wgpu)",
                 "video_display": "Timecode",
@@ -956,7 +958,7 @@ def build_fcproj_from_spec(
                 "capture_format": "DV",
                 "scratch": {"captured": None, "videoPreviews": None, "audioPreviews": None, "autoSave": None},
             },
-            "root": {"id": 0, "name": proj_dir.name, "children": root_children},
+            "root": {"id": 0, "name": proj_name, "children": root_children},
             "items": items,
             "next_id": next_id + 50,
         },
@@ -977,39 +979,44 @@ def remux_editions(proj_dir: Path, master_mp4: Path, ru_edition_mp4: Path):
     srt_ua = proj_dir / "captions.ua.srt"
     srt_ru = proj_dir / "captions.ru.srt"
 
-    print("Losslessly remuxing Master EN 4K MP4 with custom VO & 3 soft subtitle streams...")
-    temp_en = master_mp4.with_suffix(".tmp_en.mp4")
-    subprocess.run(
-        [
-            "ffmpeg", "-y", "-i", str(master_mp4), "-i", str(proj_dir / "full_audio_en.m4a"),
-            "-i", str(srt_en), "-i", str(srt_ua), "-i", str(srt_ru),
-            "-map", "0:v:0", "-map", "1:a:0", "-map", "2:s:0", "-map", "3:s:0", "-map", "4:s:0",
-            "-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text",
-            "-metadata:s:a:0", "language=eng", "-metadata:s:a:0", "title=English",
-            "-metadata:s:s:0", "language=eng", "-metadata:s:s:0", "title=English",
-            "-metadata:s:s:1", "language=ukr", "-metadata:s:s:1", "title=Українська",
-            "-metadata:s:s:2", "language=rus", "-metadata:s:s:2", "title=Русский",
-            str(temp_en),
-        ],
-        check=True, capture_output=True,
-    )
-    temp_en.replace(master_mp4)
+    if master_mp4.exists():
+        print("Losslessly remuxing Master EN 4K MP4 with custom VO & 3 soft subtitle streams...")
+        temp_en = master_mp4.with_suffix(".tmp_en.mp4")
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", str(master_mp4), "-i", str(proj_dir / "full_audio_en.m4a"),
+                "-i", str(srt_en), "-i", str(srt_ua), "-i", str(srt_ru),
+                "-map", "0:v:0", "-map", "1:a:0", "-map", "2:s:0", "-map", "3:s:0", "-map", "4:s:0",
+                "-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text",
+                "-metadata:s:a:0", "language=eng", "-metadata:s:a:0", "title=English",
+                "-metadata:s:s:0", "language=eng", "-metadata:s:s:0", "title=English",
+                "-metadata:s:s:1", "language=ukr", "-metadata:s:s:1", "title=Українська",
+                "-metadata:s:s:2", "language=rus", "-metadata:s:s:2", "title=Русский",
+                str(temp_en),
+            ],
+            check=True, capture_output=True,
+        )
+        temp_en.replace(master_mp4)
 
-    print("Losslessly remuxing Russian-voiced 4K Edition (_RU.mp4)...")
-    subprocess.run(
-        [
-            "ffmpeg", "-y", "-i", str(master_mp4), "-i", str(proj_dir / "full_audio_ru.m4a"),
-            "-i", str(srt_en), "-i", str(srt_ua), "-i", str(srt_ru),
-            "-map", "0:v:0", "-map", "1:a:0", "-map", "2:s:0", "-map", "3:s:0", "-map", "4:s:0",
-            "-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text",
-            "-metadata:s:a:0", "language=rus", "-metadata:s:a:0", "title=Русский",
-            "-metadata:s:s:0", "language=eng", "-metadata:s:s:0", "title=English",
-            "-metadata:s:s:1", "language=ukr", "-metadata:s:s:1", "title=Українська",
-            "-metadata:s:s:2", "language=rus", "-metadata:s:s:2", "title=Русский",
-            str(ru_edition_mp4),
-        ],
-        check=True, capture_output=True,
-    )
+    if ru_edition_mp4.exists():
+        print("Losslessly remuxing Russian-voiced 4K Edition (_RU.mp4)...")
+        temp_ru = ru_edition_mp4.with_suffix(".tmp_ru.mp4")
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", str(ru_edition_mp4), "-i", str(proj_dir / "full_audio_ru.m4a"),
+                "-i", str(srt_en), "-i", str(srt_ua), "-i", str(srt_ru),
+                "-map", "0:v:0", "-map", "1:a:0", "-map", "2:s:0", "-map", "3:s:0", "-map", "4:s:0",
+                "-c:v", "copy", "-c:a", "copy", "-c:s", "mov_text",
+                "-metadata:s:a:0", "language=rus", "-metadata:s:a:0", "title=Русский",
+                "-metadata:s:s:0", "language=eng", "-metadata:s:s:0", "title=English",
+                "-metadata:s:s:1", "language=ukr", "-metadata:s:s:1", "title=Українська",
+                "-metadata:s:s:2", "language=rus", "-metadata:s:s:2", "title=Русский",
+                str(temp_ru),
+            ],
+            check=True, capture_output=True,
+        )
+        temp_ru.replace(ru_edition_mp4)
+
     print(f"Exported Master EN: {master_mp4}")
     print(f"Exported Russian Edition (_RU.mp4): {ru_edition_mp4}")
 
@@ -1018,6 +1025,8 @@ def main():
     p = argparse.ArgumentParser(description="Universal Declarative 4K Timeline Builder (AGVS Studio v2)")
     p.add_argument("--project-dir", required=True, help="Path to project directory in 04_Project_Catalog/YEAR/<project>")
     p.add_argument("--render-export", action="store_true", help="Render 4K MP4 via filmcraft-cli and remux EN/RU editions")
+    p.add_argument("--render-ru-only", action="store_true", help="Render only 4K Russian Edition (_RU.mp4) via filmcraft-cli")
+    p.add_argument("--render-en-only", action="store_true", help="Render only 4K Master EN Video via filmcraft-cli")
     p.add_argument("--mux-audio-only", action="store_true", help="Losslessly remux updated audio/subtitles into existing 4K MP4 in 0.4s without re-rendering video frames")
     p.add_argument("--allow-used-music", action="store_true", help="Override Music Non-Reuse Law check")
     args = p.parse_args()
@@ -1033,6 +1042,7 @@ def main():
     overlays_dir = proj_dir / "overlays"
     exports_dir = studio_config.get_exports_dir() / year_str
     fcproj_path = proj_dir / f"{proj_dir.name}.fcproj"
+    fcproj_ru_path = proj_dir / f"{proj_dir.name}_RU.fcproj"
     master_mp4 = exports_dir / f"{proj_dir.name}.mp4"
     ru_edition_mp4 = exports_dir / f"{proj_dir.name}_RU.mp4"
 
@@ -1062,9 +1072,11 @@ def main():
                 "--last-clip", str(raw_dir / bookends_cfg["last_clip"]),
             ], check=True)
         print("Rendering declarative Warm Vintage Parchment overlays & 1Hz Live Telemetry HUDs...")
-    expanded_overlays = render_declarative_overlays(
+    expanded_overlays_map = render_declarative_overlays(
         overlays_spec, overlays_dir, raw_dir=raw_dir, skip_render=args.mux_audio_only
     )
+    expanded_overlays_en = expanded_overlays_map["en"]
+    expanded_overlays_ru = expanded_overlays_map["ru"]
 
     # 3. Audio & Subtitles Pipeline
     prepare_paced_voiceovers(proj_dir, raw_dir, vo_cues)
@@ -1075,17 +1087,25 @@ def main():
         cuts_spec, boosted_dialogs, sfx_cues, vo_cues,
     )
 
-    # 4. Build .fcproj & Polish via assemble_engine.py
+    # 4. Build .fcproj for EN & RU, then Polish via assemble_engine.py
     build_fcproj_from_spec(
         proj_dir, raw_dir, overlays_dir, fcproj_path, bgm_track, total_dur,
-        cuts_spec, expanded_overlays, boosted_dialogs, sfx_cues, vo_cues,
-        riding_gain_db=riding_gain_db,
+        cuts_spec, expanded_overlays_en, boosted_dialogs, sfx_cues, vo_cues,
+        riding_gain_db=riding_gain_db, edition="en",
+    )
+    build_fcproj_from_spec(
+        proj_dir, raw_dir, overlays_dir, fcproj_ru_path, bgm_track, total_dur,
+        cuts_spec, expanded_overlays_ru, boosted_dialogs, sfx_cues, vo_cues,
+        riding_gain_db=riding_gain_db, edition="ru",
     )
     engine_script = SCRIPTS_DIR / "assemble_engine.py"
-    engine_cmd = [sys.executable, str(engine_script), "--project", str(fcproj_path)]
+    engine_cmd_en = [sys.executable, str(engine_script), "--project", str(fcproj_path)]
+    engine_cmd_ru = [sys.executable, str(engine_script), "--project", str(fcproj_ru_path)]
     if args.allow_used_music:
-        engine_cmd.append("--allow-used-music")
-    subprocess.run(engine_cmd, check=True)
+        engine_cmd_en.append("--allow-used-music")
+        engine_cmd_ru.append("--allow-used-music")
+    subprocess.run(engine_cmd_en, check=True)
+    subprocess.run(engine_cmd_ru, check=True)
 
     # 5. Open live in FilmCraft GUI
     cache_dir = Path("~/Movies/Cache_And_Previews").expanduser()
@@ -1093,19 +1113,31 @@ def main():
     subprocess.run(["open", "-a", "FilmCraft", "--args", "--control", "9876", str(fcproj_path)], cwd=str(cache_dir))
 
     # 6. Export or Fast Audio Remux
-    if args.mux_audio_only and master_mp4.exists():
+    if args.mux_audio_only:
         remux_editions(proj_dir, master_mp4, ru_edition_mp4)
         print("Fast 0.4s audio/subtitle remux completed successfully!")
-    elif args.render_export:
-        exports_dir.mkdir(parents=True, exist_ok=True)
-        print(f"Rendering 4K UHD Master Video via filmcraft-cli -> {master_mp4}")
-        subprocess.run([
-            "filmcraft-cli", "--project", str(fcproj_path), "export", str(master_mp4),
-            "--preset", "Match Source – Adaptive High Bitrate",
-            "--settings", '{"burnCaptions": false}',
-        ], check=True)
-        remux_editions(proj_dir, master_mp4, ru_edition_mp4)
-        print("Declarative Studio v2 assembly and 4K MP4 export completed successfully!")
+    else:
+        render_en = args.render_export or args.render_en_only
+        render_ru = args.render_export or args.render_ru_only
+        if render_en:
+            exports_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Rendering 4K UHD Master Video (EN, Imperial HUD) via filmcraft-cli -> {master_mp4}")
+            subprocess.run([
+                "filmcraft-cli", "--project", str(fcproj_path), "export", str(master_mp4),
+                "--preset", "Match Source – Adaptive High Bitrate",
+                "--settings", '{"burnCaptions": false}',
+            ], check=True)
+        if render_ru:
+            exports_dir.mkdir(parents=True, exist_ok=True)
+            print(f"Rendering 4K UHD Russian Edition (RU, Metric HUD) via filmcraft-cli -> {ru_edition_mp4}")
+            subprocess.run([
+                "filmcraft-cli", "--project", str(fcproj_ru_path), "export", str(ru_edition_mp4),
+                "--preset", "Match Source – Adaptive High Bitrate",
+                "--settings", '{"burnCaptions": false}',
+            ], check=True)
+        if render_en or render_ru:
+            remux_editions(proj_dir, master_mp4, ru_edition_mp4)
+            print("Declarative Studio v2 assembly and 4K MP4 export completed successfully!")
 
 
 if __name__ == "__main__":

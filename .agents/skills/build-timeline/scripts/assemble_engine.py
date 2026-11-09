@@ -607,13 +607,14 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
             next_id += 1
             print(f"Applied synchronized 2.2s Audio Outro Fade to closing music clip {last_music_clip.get('name')}")
 
-    # 3. Sanitize Subtitles in Caption Tracks & Preserve Visibility in Timeline UI
-    # Always keep caption tracks enabled=True in .fcproj so all 3 language subtitle tracks
-    # (English, Українська, Русский) remain visible on the FilmCraft timeline UI!
-    # Clean MP4 export (without burnt-in captions) is controlled separately via --settings '{"burnCaptions": false}'.
+    # 3. Sanitize Subtitles in Caption Tracks
+    # Keep caption tracks enabled=False by default in .fcproj so the Program Monitor UI
+    # remains clean without triple-stacking black caption bars across languages.
+    # Clean MP4 export (without burnt-in captions) is controlled separately via --settings '{"burnCaptions": false}',
+    # and soft subtitles (EN, UA, RU) are muxed via ffmpeg mov_text.
     if seq.get("caption_tracks"):
         for ct in seq["caption_tracks"]:
-            ct["enabled"] = True
+            ct["enabled"] = False
             for cap in ct.get("captions", []):
                 orig_text = cap.get("text", "")
                 cap["text"] = sanitize_caption_text(orig_text)
