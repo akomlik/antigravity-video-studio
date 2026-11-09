@@ -86,7 +86,7 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
     - `V2`: Warm Vintage Parchment Character Callout Badges, Flashback Memory Cards & Bilingual Speech Cards
     - `V3`: **Live 1Hz Dynamic Telemetry HUD (`live_hud/hud_XXXX.png`) & GPX Corner Route Maps** (never static HUDs; fades in on first second of run, holds at 100% solid opacity across internal 1s boundaries so the card never blinks, and fades out on the last second)
     - `A1`: Native Camera Audio (Tire roll, freewheel clicks, speech, market punchlines, toasts, café banter)
-    - `A2`: Dedicated Background Music Track (`03_Audio_Library/01_Curated_BGM/`) — **dynamically RMS-calibrated via `measure_mean_volume_db` to `-20.5 dB` RMS mean during riding/visuals and `-27.0 dB` RMS mean under speech/VO (never hardcode a fixed dB gain!)**
+    - `A2`: Dedicated Background Music Track (`03_Audio_Library/01_Curated_BGM/`) — **dynamically RMS-calibrated via `calculate_bgm_gains()` to `-15.5 dB` midrange-weighted RMS during riding/visuals and `-21.5 dB` under speech/VO (a smooth 6.0 dB duck; with automatic +1.5 dB & 1.8 kHz presence EQ for chillhop/ambient/warm tracks; never hardcode a fixed gain!)**
     - `A3`: Subtle Contextual Sound Effects (`03_Audio_Library/02_SFX/catalog.json` — 209 Brehov cinematic WAVs across `01_Whooshes_Soft` through `19_Ambient_Pads`, aligned by `peak_ms` so the sound peak lands on the exact frame of motion/caption reveal)
 - **Anti-Monotony & Mandatory Music Non-Reuse Law:**
     - **Never reuse the same background music track across video projects.** Every ride, hike, party, and event deserves its own distinct musical identity.
@@ -154,10 +154,16 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
         - **Sample-Accurate `atrim` & Post-Mix `dynaudnorm` Rule:** When trimming live dialogue from HEVC `.MOV` files in `ffmpeg`, always use sample-accurate `atrim=start=...:end=...,asetpts=PTS-STARTPTS` (rather than input `-ss` before `-i`, which snaps to video keyframes and shifts audio by up to `1.5s`), and apply `dynaudnorm=f=150:g=7:p=0.90` **once on the combined full-length dialogue stem** after `amix` (never inside short per-clip `atrim` chains where `dynaudnorm`'s multi-frame lookahead buffer can swallow phrase tails).
         - **Camera Speech Normalization (`live_dialog_boost: "auto"`):** Normalize featured live spoken dialog segments (`highpass=f=100, lowpass=f=7500, dynaudnorm=f=150:g=7:p=0.90, volume=1.35`) to hit **`-16.0 dB` mean / `-1.0 dB` peak** and strip any overlapping `A3` sound effects so live conversation is crystal clear.
         - **PiP B-Roll Music Taming:** Set smartphone B-roll music (e.g., live Zumba audio) to **`-6.5 dB`** (`-30 dB` mean) with `0.6s` fades so it never overpowers the mix.
-    - **`A2` (Multi-Phase Background Music — Mandatory RMS Loudness Calibration):**
-        - Because upbeat/funk/retro tracks are often mastered hot (`-10.8 dB` to `-12.6 dB` RMS mean vs. `-18.5 dB` on acoustic tracks), **never apply a blind fixed `-7.5 dB` fader gain**.
-        - Always measure each BGM track's `mean_volume` via `ffmpeg volumedetect` (`compute_bgm_ducked_gain_db`) and set its ducked gain (`gain_db = -28.5 - raw_mean_db`) so `A2` hits **`-28.5 dB` mean** underneath any Voice-Over or Featured Live Dialogue — guaranteeing **`>= 12.5 dB` of speech-to-music separation**!
-        - During purely visual/ambient sections with **zero** VO and **zero** live dialogue, swell `A2` by **`+5.0 dB` (`-23.5 dB` mean)**.
+    - **`A2` (Multi-Phase Background Music — Mandatory Midrange-Weighted RMS Loudness Calibration):**
+        - Because upbeat/funk/retro tracks are often mastered hot (`-10.8 dB` to `-12.6 dB` raw RMS) while chillhop/acoustic tracks contain heavy sub-bass (60–120 Hz) that artificially inflates unweighted RMS readings, **never apply a blind fixed fader gain and never use unweighted volumedetect**.
+        - Always measure each BGM track's perceptual loudness via `measure_mean_volume_db` using a 180 Hz high-pass filter (`-af "highpass=f=180,volumedetect"`), filtering out sub-bass inflation so mellow tracks aren't prematurely suppressed.
+        - Set baseline fader gains via `calculate_bgm_gains()`:
+            - **Riding / Open Visual Swells (`target_riding_db`):** **`-15.5 dB`** midrange-weighted RMS.
+            - **Ducked Under VO / Live Speech (`target_ducked_db`):** **`-21.5 dB`** midrange-weighted RMS (a clean, smooth **`6.0 dB` duck** via `sidechaincompress=threshold=0.10:ratio=1.8:attack=100:release=500` instead of crushing music into the `-27..-30 dB` noise floor).
+        - **Automatic Mellow/Chillhop Presence Boost (+1.5 dB & 1.8 kHz Presence EQ):**
+            - If the BGM filename or path contains mellow keywords (`chillhop`, `chill`, `ambient`, `warm`, `scenic`, `lofi`) or BPM `< 95`:
+                - Apply an additional **`+1.5 dB` offset** to both riding and ducked gains (effective targets: **`-14.0 dB`** riding / **`-20.0 dB`** ducked).
+                - Add a subtle presence EQ filter (`equalizer=f=1800:t=q:w=1.0:g=2.0`) on the A2 chain so soft piano/guitar chords cut cleanly through road wind and mobile/iPhone speakers without competing with narrator formants.
     - **`A3` (Contextual Sound Effects):** Keep subtle (`-10 dB`) and never place SFX over spoken dialogue.
     - **`A4` (Replicated Warm Voice-Over, `voice_jntybwupjc1s`):**
         - Synthesize scene-synced narration segments using `gemini-3.8-flash-tts` with Alexander's vocal persona (`03_Audio_Library/03_Voice_Profile/voice_id.json`), normalized via `highpass=f=90, dynaudnorm=f=150:g=11:p=0.90, volume=2.5dB` to **`-16.0 dB` mean / `-1.0 dB` peak** (`12.5 dB` louder than ducked music).

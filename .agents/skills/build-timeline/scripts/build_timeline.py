@@ -35,7 +35,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from assemble_engine import measure_mean_volume_db, verify_music_non_reuse
+from assemble_engine import calculate_bgm_gains, measure_mean_volume_db, verify_music_non_reuse
 from gpx_widgets import render_declarative_overlays
 
 
@@ -322,73 +322,39 @@ def build_broadcast_audio_mixes(
         )
     print(f"  Created SFX master stem -> {sfx_stem.name}")
 
-    # Dynamic RMS Loudness Calibration for BGM track (never hardcode -19.0 dB!)
-    raw_bgm_mean_db = measure_mean_volume_db(bgm_track)
-    target_ducked_db = -27.0
-    target_riding_db = -20.5
-    ducked_gain_db = round(target_ducked_db - raw_bgm_mean_db, 1)
-    riding_gain_db = round(target_riding_db - raw_bgm_mean_db, 1)
-    swell_boost_db = round(target_riding_db - target_ducked_db, 1)
+    # Dynamic Midrange-Weighted RMS Loudness Calibration for BGM track (never hardcode -19.0 dB!)
+    bgm_calib = calculate_bgm_gains(bgm_track, target_riding_db=-15.5, target_ducked_db=-21.5)
+    raw_bgm_mean_db = bgm_calib["raw_mean_db"]
+    ducked_gain_db = bgm_calib["ducked_gain_db"]
+    riding_gain_db = bgm_calib["riding_gain_db"]
+    swell_boost_db = bgm_calib["swell_boost_db"]
+    eq_filter = bgm_calib["eq_filter"]
+    eq_prefix = f"{eq_filter}," if eq_filter else ""
+    mellow_tag = f" [Mellow/Chillhop +{bgm_calib['mellow_boost_db']:.1f} dB & 1.8kHz EQ]" if bgm_calib["is_mellow"] else ""
     print(
-        f"  BGM RMS Loudness Calibration ({bgm_track.name}): raw={raw_bgm_mean_db:.1f} dB -> "
-        f"riding_gain={riding_gain_db:+.1f} dB (target {target_riding_db:.1f} dB RMS) | "
-        f"ducked_gain={ducked_gain_db:+.1f} dB (target {target_ducked_db:.1f} dB RMS)"
+        f"  BGM Loudness Calibration ({bgm_track.name}){mellow_tag}: 180Hz-mean={raw_bgm_mean_db:.1f} dB -> "
+        f"riding_gain={riding_gain_db:+.1f} dB (target {bgm_calib['target_riding_db']:.1f} dB RMS) | "
+        f"ducked_gain={ducked_gain_db:+.1f} dB (target {bgm_calib['target_ducked_db']:.1f} dB RMS, {swell_boost_db:.1f} dB duck)"
     )
-
-    # Identify boosted live dialogue timeline windows
-    dialog_windows = []
-    t_cursor = 0.0
-    for cut in cuts_spec:
-        cnum = int(cut["cut_num"])
-        cdur = float(cut["dur"])
-        if cnum in bd_by_cut:
-            dialog_windows.append((t_cursor, t_cursor + cdur))
-        t_cursor += cdur
 
     for lang in ("en", "ua", "ru"):
         vo_inputs = []
         vo_parts = []
-        speech_windows = list(dialog_windows)
         for vidx, cue in enumerate(vo_cues):
             p = proj_dir / f"voiceover_{lang}_{cue['id']}_paced.wav"
             vo_inputs.extend(["-i", str(p)])
             st_s = float(cue["start_s"])
-            vdur = get_duration(p)
-            speech_windows.append((st_s, st_s + vdur))
             vo_parts.append(
                 f"[{4+vidx}:a]volume=2.0dB,asetpts=PTS-STARTPTS,adelay={int(st_s*1000)}|{int(st_s*1000)},apad=whole_dur={total_dur}s[vo{vidx}]"
             )
         vo_mix = "".join(f"[vo{i}]" for i in range(len(vo_cues)))
         vo_fc = ";".join(vo_parts) + f";{vo_mix}amix=inputs={len(vo_cues)}:duration=first:dropout_transition=0:normalize=0[vo_raw];[vo_raw]asplit=2[vo_duck_key][vo_mix_out]"
 
-        # Merge speech_windows and compute non-speech riding swell_windows (>= 1.2s)
-        speech_windows.sort(key=lambda x: x[0])
-        merged_speech = []
-        for st, ed in speech_windows:
-            if not merged_speech or st > merged_speech[-1][1] + 0.4:
-                merged_speech.append([st, ed])
-            else:
-                merged_speech[-1][1] = max(merged_speech[-1][1], ed)
-
-        swell_windows = []
-        prev_end = 0.0
-        for st, ed in merged_speech:
-            if st - prev_end >= 1.2:
-                swell_windows.append((round(prev_end + 0.15, 2), round(st - 0.15, 2)))
-            prev_end = ed
-        if total_dur - prev_end >= 1.2:
-            swell_windows.append((round(prev_end + 0.15, 2), round(total_dur, 2)))
-
-        swell_filters = "".join(
-            f",volume={swell_boost_db:.1f}dB:enable='between(t,{st:.2f},{ed:.2f})'"
-            for st, ed in swell_windows
-        )
-
         duck_fc = (
             f"{vo_fc};"
             f"[3:a][vo_duck_key]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[all_speech];"
-            f"[0:a]volume={ducked_gain_db:.1f}dB{swell_filters},afade=t=in:st=0.0:d=1.5:curve=hsin,afade=t=out:st={total_dur - 2.5:.1f}:d=2.5:curve=hsin[bgm_base];"
-            f"[bgm_base][all_speech]sidechaincompress=threshold=0.045:ratio=2.2:attack=80:release=450[bgm_ducked];"
+            f"[0:a]{eq_prefix}volume={riding_gain_db:.1f}dB,afade=t=in:st=0.0:d=1.5:curve=hsin,afade=t=out:st={total_dur - 2.5:.1f}:d=2.5:curve=hsin[bgm_base];"
+            f"[bgm_base][all_speech]sidechaincompress=threshold=0.10:ratio=1.8:attack=100:release=500[bgm_ducked];"
             f"[1:a][2:a][bgm_ducked][vo_mix_out]amix=inputs=4:duration=first:dropout_transition=0:normalize=0[out_master];"
             f"[out_master]alimiter=limit=0.95[norm_master]"
         )

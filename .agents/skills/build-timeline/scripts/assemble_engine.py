@@ -20,6 +20,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -223,9 +224,14 @@ def master_outro_fade_filter(total_dur_s: float, fade_dur_s: float = 2.2) -> str
 
 
 def measure_mean_volume_db(audio_path: Path) -> float:
-    """Measures RMS mean_volume in dB via ffmpeg volumedetect so hot-mastered music never overpowers narration."""
+    """
+    Measures midrange-weighted RMS mean_volume in dB via ffmpeg behind a 180 Hz high-pass filter
+    (`-af "highpass=f=180,volumedetect"`), ignoring sub-bass (60-120 Hz) inflation so chillhop/ambient
+    tracks are calibrated to human perceptual loudness rather than sub-bass energy.
+    """
+    ffmpeg_bin = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
     out = subprocess.check_output(
-        ["/opt/homebrew/bin/ffmpeg", "-i", str(audio_path), "-af", "volumedetect", "-f", "null", "-"],
+        [ffmpeg_bin, "-i", str(audio_path), "-af", "highpass=f=180,volumedetect", "-f", "null", "-"],
         stderr=subprocess.STDOUT,
     ).decode("utf-8", errors="replace")
     for line in out.splitlines():
@@ -237,14 +243,76 @@ def measure_mean_volume_db(audio_path: Path) -> float:
     return -16.0
 
 
-def compute_bgm_ducked_gain_db(bgm_path: Path, target_ducked_mean_db: float = -28.5) -> float:
+def is_mellow_bgm_track(bgm_path: Path) -> bool:
     """
-    Computes the exact fader gain (dB) required so a music track sits at `target_ducked_mean_db` (-28.5 dB mean)
-    underneath Voice-Over / Live Dialogue (-16.0 dB mean), guaranteeing >= 12.5 dB of speech-to-music headroom
-    even on loud upbeat tracks (-10 dB to -12 dB raw RMS).
+    Detects if a BGM track is mellow/chillhop/ambient based on keywords in filename/path
+    ('chillhop', 'chill', 'ambient', 'warm', 'scenic', 'lofi') or BPM < 95.
     """
-    raw_mean = measure_mean_volume_db(bgm_path)
-    return round(target_ducked_mean_db - raw_mean, 1)
+    s = str(bgm_path).lower()
+    keywords = ["chillhop", "chill", "ambient", "warm", "scenic", "lofi"]
+    if any(kw in s for kw in keywords):
+        return True
+    m = re.search(r"(\d{2,3})\s*bpm", s)
+    if m:
+        try:
+            bpm = int(m.group(1))
+            if bpm < 95:
+                return True
+        except ValueError:
+            pass
+    return False
+
+
+def calculate_bgm_gains(
+    bgm_path: Path,
+    target_riding_db: float = -15.5,
+    target_ducked_db: float = -21.5,
+) -> dict:
+    """
+    Calculates midrange-weighted BGM gains and presence EQ filter.
+    Baseline targets:
+      - Riding / Open Visual Swells (`target_riding_db`): -15.5 dB (midrange-weighted RMS)
+      - Ducked Under VO / Live Speech (`target_ducked_db`): -21.5 dB (smooth 6.0 dB duck)
+    Mellow / Chillhop Boost:
+      - If filename/path contains mellow keywords or BPM < 95:
+        - Additional +1.5 dB offset applied to both riding_gain and ducked_gain.
+        - Gentle presence EQ filter: equalizer=f=1800:t=q:w=1.0:g=2.0
+    """
+    raw_mean_db = measure_mean_volume_db(bgm_path)
+    is_mellow = is_mellow_bgm_track(bgm_path)
+    mellow_boost_db = 1.5 if is_mellow else 0.0
+
+    effective_target_riding_db = target_riding_db + mellow_boost_db
+    effective_target_ducked_db = target_ducked_db + mellow_boost_db
+
+    ducked_gain_db = round(effective_target_ducked_db - raw_mean_db, 1)
+    riding_gain_db = round(effective_target_riding_db - raw_mean_db, 1)
+    swell_boost_db = round(effective_target_riding_db - effective_target_ducked_db, 1)
+
+    eq_filter = "equalizer=f=1800:t=q:w=1.0:g=2.0" if is_mellow else ""
+
+    return {
+        "raw_mean_db": raw_mean_db,
+        "is_mellow": is_mellow,
+        "mellow_boost_db": mellow_boost_db,
+        "target_riding_db": effective_target_riding_db,
+        "target_ducked_db": effective_target_ducked_db,
+        "base_target_riding_db": target_riding_db,
+        "base_target_ducked_db": target_ducked_db,
+        "riding_gain_db": riding_gain_db,
+        "ducked_gain_db": ducked_gain_db,
+        "swell_boost_db": swell_boost_db,
+        "eq_filter": eq_filter,
+    }
+
+
+def compute_bgm_ducked_gain_db(bgm_path: Path, target_ducked_mean_db: float = -21.5) -> float:
+    """
+    Computes the exact ducked fader gain (dB) required for a music track under VO/speech.
+    Defaults to -21.5 dB (with automatic +1.5 dB boost if mellow).
+    """
+    res = calculate_bgm_gains(bgm_path, target_ducked_db=target_ducked_mean_db)
+    return res["ducked_gain_db"]
 
 
 def filter_vo_cues_for_same_language_dialog(vo_cues: list, dialog_windows_by_lang: dict, lang: str) -> list:
