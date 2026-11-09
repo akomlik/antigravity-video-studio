@@ -26,6 +26,7 @@ Because YouTube is heavily throttled or blocked in Russia and occupied Crimea, A
    - `FLICKR_OAUTH_TOKEN` (optional once authorized)
    - `FLICKR_OAUTH_TOKEN_SECRET` (optional once authorized)
    Fallback cached tokens are safely kept in `~/.config/antigravity_flickr/oauth_token.json` (outside the git repo).
+6. **1 GB Upload Ceiling & Automatic 1080p Transcode Guard:** Flickr strictly enforces a 1,000,000,000-byte (1 GB) upload ceiling and drops the connection (`BrokenPipeError`) if a file exceeds it. If `<project>_RU.mp4` exceeds 980 MB, `upload_flickr_api.py` automatically transcodes a visually lossless high-bitrate 1080p copy (14 Mbps, ~300 MB via `h264_videotoolbox`) with `-c:a copy` before streaming to the Flickr API.
 
 ---
 

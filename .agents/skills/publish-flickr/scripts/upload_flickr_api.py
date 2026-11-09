@@ -22,6 +22,7 @@ import json
 import os
 import re
 import sys
+import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -324,6 +325,21 @@ def upload_video_to_flickr(
     is_family: bool = False,
 ) -> str:
     """Uploads a video to Flickr and returns the photo_id."""
+    # Flickr 1GB Hard Limit Guard: Flickr drops TCP connection with BrokenPipeError on files >= 1000MB.
+    # If the file exceeds 980 MB, auto-transcode to high-bitrate 1080p (14 Mbps, ~300 MB)
+    if video_path.stat().st_size >= 980_000_000:
+        transcoded_path = video_path.with_name(f"{video_path.stem}_1080p.mp4")
+        print(f"\n⚠️  Video exceeds Flickr's 1 GB upload ceiling ({round(video_path.stat().st_size / 1024 / 1024, 1)} MB).")
+        print(f"Auto-transcoding to high-bitrate 1080p master for reliable upload -> {transcoded_path.name}...")
+        subprocess.run([
+            "ffmpeg", "-y", "-i", str(video_path),
+            "-vf", "scale=1920:1080",
+            "-c:v", "h264_videotoolbox", "-b:v", "14M",
+            "-c:a", "copy",
+            str(transcoded_path)
+        ], check=True)
+        video_path = transcoded_path
+
     upload_url = "https://up.flickr.com/services/upload/"
     print(f"\nUploading {video_path.name} to Flickr ({round(video_path.stat().st_size / 1024 / 1024, 1)} MB)...")
 

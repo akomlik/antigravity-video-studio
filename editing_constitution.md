@@ -233,6 +233,10 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
 - **Russian Edition Export & Audio Calibration:**
     - `/build-timeline` renders `_RU.mp4` directly from `<project>_RU.fcproj` via `filmcraft-cli export`, then losslessly multiplexes the calibrated `full_audio_ru.m4a` mix and all three `.srt` subtitle tracks (`en`, `ua`, `ru`).
     - This guarantees Alexander always has the Russian-voiced, metric-HUD 4K video ready for instant upload to Flickr or WhatsApp without needing manual conversion.
+- **Flickr 1 GB Ceiling & Auto-1080p Transcode Standard:**
+    - Flickr enforces a strict 1,000,000,000 byte (1 GB) upload ceiling and abruptly drops the TCP connection (`BrokenPipeError`) if a file exceeds it.
+    - Because 4K UHD masters at 50 Mbps frequently exceed 1 GB, `/publish-flickr` automatically checks `video_path.stat().st_size`. If the file exceeds 980 MB, it automatically produces a high-bitrate 1080p copy (`scale=1920:1080`, 14 Mbps via `h264_videotoolbox`, ~300 MB) with losslessly copied audio (`-c:a copy`).
+    - Since Flickr compresses and streams all video playback in 1080p anyway, this upload is visually indistinguishable, 100% compliant with Flickr ceilings, and uploads 3x faster.
 - **Flickr Metadata Package (One-Click Upload via Web or Lightroom Publishing Service):**
     - On every release, `/publish-youtube` and `/build-timeline` output a dedicated **Flickr Publishing Box** (in chat and appended to `facebook_promo.md`) containing:
         - **Title:** `YYYY-MM-DD · <Russian Title> (<mi> / <km>)` (matching Alexander's Flickr convention, e.g. `2026-10-27 · Вместо группы: выпечка в Буже и «VIP»-кофе (40.1 мили / 64.5 км)`).
