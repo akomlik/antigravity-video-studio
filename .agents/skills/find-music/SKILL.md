@@ -60,3 +60,10 @@ If searching for specific ambient or vintage moods in the YouTube Audio Library:
 
 ### Step 3: Confirm to Creator & Offer Timeline Placement
 Report the new track to Alexander and offer to place it on Track `A2` via `/swap-music` or `/build-timeline`.
+
+---
+
+## 4. Musical Arrangement & Mobile Translation Best Practices
+When selecting or recommending tracks, always consider speaker physics and mobile playback:
+- **Midrange-Rich Arrangements (Preferred for Action & Cycling):** Tracks with acoustic guitars, brass, rhythm piano, crisp snares, or bright synth leads (**500 Hz – 4 kHz**) cut effortlessly through wind noise and phone speakers. They sound louder and punchier without needing fader boosts.
+- **Sub-Bass Heavy Tracks (Chillhop / Lo-Fi):** Tracks centered on heavy 60–100 Hz 808 kicks sound great on subwoofers but quiet on phones. AGVS automatically applies a **1.8 kHz Presence EQ** and enforces the **Mandatory Peak Headroom Guard (ceiling $\le -1.5\text{ dBFS}$)** to prevent bass clipping, but tracks with natural acoustic midrange clarity will always translate better across devices.
