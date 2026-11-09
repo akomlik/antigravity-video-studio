@@ -223,24 +223,39 @@ def master_outro_fade_filter(total_dur_s: float, fade_dur_s: float = 2.2) -> str
     return f"afade=t=out:st={st:.2f}:d={fade_dur_s:.2f}:curve=hsin"
 
 
-def measure_mean_volume_db(audio_path: Path) -> float:
+def measure_volume_stats(audio_path: Path) -> dict:
     """
-    Measures midrange-weighted RMS mean_volume in dB via ffmpeg behind a 180 Hz high-pass filter
-    (`-af "highpass=f=180,volumedetect"`), ignoring sub-bass (60-120 Hz) inflation so chillhop/ambient
-    tracks are calibrated to human perceptual loudness rather than sub-bass energy.
+    Measures raw mean_volume and max_volume in dB via ffmpeg volumedetect.
+    Returns:
+      {
+        "mean_volume": float,
+        "max_volume": float,
+      }
     """
     ffmpeg_bin = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
     out = subprocess.check_output(
-        [ffmpeg_bin, "-i", str(audio_path), "-af", "highpass=f=180,volumedetect", "-f", "null", "-"],
+        [ffmpeg_bin, "-i", str(audio_path), "-af", "volumedetect", "-f", "null", "-"],
         stderr=subprocess.STDOUT,
     ).decode("utf-8", errors="replace")
+    mean_vol = -16.0
+    max_vol = -1.0
     for line in out.splitlines():
         if "mean_volume:" in line:
             try:
-                return float(line.split("mean_volume:")[1].split("dB")[0].strip())
+                mean_vol = float(line.split("mean_volume:")[1].split("dB")[0].strip())
             except ValueError:
                 pass
-    return -16.0
+        elif "max_volume:" in line:
+            try:
+                max_vol = float(line.split("max_volume:")[1].split("dB")[0].strip())
+            except ValueError:
+                pass
+    return {"mean_volume": mean_vol, "max_volume": max_vol}
+
+
+def measure_mean_volume_db(audio_path: Path) -> float:
+    """Measures raw RMS mean_volume in dB via ffmpeg volumedetect."""
+    return measure_volume_stats(audio_path)["mean_volume"]
 
 
 def is_mellow_bgm_track(bgm_path: Path) -> bool:
@@ -265,40 +280,52 @@ def is_mellow_bgm_track(bgm_path: Path) -> bool:
 
 def calculate_bgm_gains(
     bgm_path: Path,
-    target_riding_db: float = -15.5,
-    target_ducked_db: float = -21.5,
+    target_riding_db: float = -17.5,
+    target_ducked_db: float = -23.5,
+    max_peak_headroom_db: float = -1.5,
 ) -> dict:
     """
-    Calculates midrange-weighted BGM gains and presence EQ filter.
+    Calculates BGM fader gains, presence EQ, and enforces the Mandatory Peak Headroom Guard.
     Baseline targets:
-      - Riding / Open Visual Swells (`target_riding_db`): -15.5 dB (midrange-weighted RMS)
-      - Ducked Under VO / Live Speech (`target_ducked_db`): -21.5 dB (smooth 6.0 dB duck)
-    Mellow / Chillhop Boost:
-      - If filename/path contains mellow keywords or BPM < 95:
-        - Additional +1.5 dB offset applied to both riding_gain and ducked_gain.
-        - Gentle presence EQ filter: equalizer=f=1800:t=q:w=1.0:g=2.0
+      - Riding / Open Visual Swells (`target_riding_db`): -17.5 dB RMS
+      - Ducked Under VO / Live Speech (`target_ducked_db`): -23.5 dB RMS (smooth 6.0 dB duck)
+    Mandatory Peak Headroom Guard:
+      - Raw audio peak ceiling is capped at -1.5 dBFS (or -2.0 dBFS when presence EQ is enabled)
+        to prevent digital clipping and master bus distortion.
+      - Never applies excessive positive gain to pre-mastered music.
+    Mellow / Chillhop Presence:
+      - Instead of inflating sub-bass, applies presence EQ filter (1.8 kHz) so melody and rhythm
+        cut cleanly through mobile speakers without distorting the bass.
     """
-    raw_mean_db = measure_mean_volume_db(bgm_path)
+    stats = measure_volume_stats(bgm_path)
+    raw_mean_db = stats["mean_volume"]
+    raw_max_db = stats["max_volume"]
+
     is_mellow = is_mellow_bgm_track(bgm_path)
-    mellow_boost_db = 1.5 if is_mellow else 0.0
+    # For mellow tracks, use presence EQ to cut through mobile phone speakers
+    eq_filter = "equalizer=f=1800:t=q:w=1.2:g=2.0" if is_mellow else ""
+    # Safe peak ceiling reserves 0.5 dB for the presence EQ boost
+    safe_peak_ceiling = -2.0 if is_mellow else max_peak_headroom_db
+    max_allowed_gain_db = round(safe_peak_ceiling - raw_max_db, 1)
 
-    effective_target_riding_db = target_riding_db + mellow_boost_db
-    effective_target_ducked_db = target_ducked_db + mellow_boost_db
+    effective_target_riding_db = target_riding_db
+    effective_target_ducked_db = target_ducked_db
 
-    ducked_gain_db = round(effective_target_ducked_db - raw_mean_db, 1)
-    riding_gain_db = round(effective_target_riding_db - raw_mean_db, 1)
-    swell_boost_db = round(effective_target_riding_db - effective_target_ducked_db, 1)
-
-    eq_filter = "equalizer=f=1800:t=q:w=1.0:g=2.0" if is_mellow else ""
+    desired_riding_gain_db = round(effective_target_riding_db - raw_mean_db, 1)
+    riding_gain_db = min(desired_riding_gain_db, max_allowed_gain_db)
+    ducked_gain_db = round(riding_gain_db - (target_riding_db - target_ducked_db), 1)
+    swell_boost_db = round(riding_gain_db - ducked_gain_db, 1)
 
     return {
         "raw_mean_db": raw_mean_db,
+        "raw_max_db": raw_max_db,
         "is_mellow": is_mellow,
-        "mellow_boost_db": mellow_boost_db,
+        "mellow_boost_db": 0.0,
         "target_riding_db": effective_target_riding_db,
         "target_ducked_db": effective_target_ducked_db,
         "base_target_riding_db": target_riding_db,
         "base_target_ducked_db": target_ducked_db,
+        "max_allowed_gain_db": max_allowed_gain_db,
         "riding_gain_db": riding_gain_db,
         "ducked_gain_db": ducked_gain_db,
         "swell_boost_db": swell_boost_db,
@@ -306,10 +333,10 @@ def calculate_bgm_gains(
     }
 
 
-def compute_bgm_ducked_gain_db(bgm_path: Path, target_ducked_mean_db: float = -21.5) -> float:
+def compute_bgm_ducked_gain_db(bgm_path: Path, target_ducked_mean_db: float = -23.5) -> float:
     """
     Computes the exact ducked fader gain (dB) required for a music track under VO/speech.
-    Defaults to -21.5 dB (with automatic +1.5 dB boost if mellow).
+    Defaults to -23.5 dB.
     """
     res = calculate_bgm_gains(bgm_path, target_ducked_db=target_ducked_mean_db)
     return res["ducked_gain_db"]

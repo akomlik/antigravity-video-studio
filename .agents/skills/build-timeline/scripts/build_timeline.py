@@ -322,19 +322,20 @@ def build_broadcast_audio_mixes(
         )
     print(f"  Created SFX master stem -> {sfx_stem.name}")
 
-    # Dynamic Midrange-Weighted RMS Loudness Calibration for BGM track (never hardcode -19.0 dB!)
-    bgm_calib = calculate_bgm_gains(bgm_track, target_riding_db=-15.5, target_ducked_db=-21.5)
+    # Dynamic Loudness Calibration for BGM track with Mandatory Peak Headroom Guard (never clip 0 dBFS!)
+    bgm_calib = calculate_bgm_gains(bgm_track, target_riding_db=-17.5, target_ducked_db=-23.5)
     raw_bgm_mean_db = bgm_calib["raw_mean_db"]
+    raw_bgm_max_db = bgm_calib["raw_max_db"]
     ducked_gain_db = bgm_calib["ducked_gain_db"]
     riding_gain_db = bgm_calib["riding_gain_db"]
     swell_boost_db = bgm_calib["swell_boost_db"]
     eq_filter = bgm_calib["eq_filter"]
     eq_prefix = f"{eq_filter}," if eq_filter else ""
-    mellow_tag = f" [Mellow/Chillhop +{bgm_calib['mellow_boost_db']:.1f} dB & 1.8kHz EQ]" if bgm_calib["is_mellow"] else ""
+    mellow_tag = " [Mellow/Chillhop 1.8kHz Presence EQ]" if bgm_calib["is_mellow"] else ""
     print(
-        f"  BGM Loudness Calibration ({bgm_track.name}){mellow_tag}: 180Hz-mean={raw_bgm_mean_db:.1f} dB -> "
-        f"riding_gain={riding_gain_db:+.1f} dB (target {bgm_calib['target_riding_db']:.1f} dB RMS) | "
-        f"ducked_gain={ducked_gain_db:+.1f} dB (target {bgm_calib['target_ducked_db']:.1f} dB RMS, {swell_boost_db:.1f} dB duck)"
+        f"  BGM Loudness Calibration ({bgm_track.name}){mellow_tag}: raw_mean={raw_bgm_mean_db:.1f} dB, "
+        f"raw_peak={raw_bgm_max_db:.1f} dBFS -> riding_gain={riding_gain_db:+.1f} dB (peak ceiling guard: {bgm_calib['max_allowed_gain_db']:+.1f} dB) | "
+        f"ducked_gain={ducked_gain_db:+.1f} dB ({swell_boost_db:.1f} dB duck)"
     )
 
     for lang in ("en", "ua", "ru"):
@@ -356,7 +357,7 @@ def build_broadcast_audio_mixes(
             f"[0:a]{eq_prefix}volume={riding_gain_db:.1f}dB,afade=t=in:st=0.0:d=1.5:curve=hsin,afade=t=out:st={total_dur - 2.5:.1f}:d=2.5:curve=hsin[bgm_base];"
             f"[bgm_base][all_speech]sidechaincompress=threshold=0.10:ratio=1.8:attack=100:release=500[bgm_ducked];"
             f"[1:a][2:a][bgm_ducked][vo_mix_out]amix=inputs=4:duration=first:dropout_transition=0:normalize=0[out_master];"
-            f"[out_master]alimiter=limit=0.95[norm_master]"
+            f"[out_master]alimiter=limit=0.82:level=false:attack=2[norm_master]"
         )
 
         out_wav = proj_dir / f"full_audio_{lang}.wav"
