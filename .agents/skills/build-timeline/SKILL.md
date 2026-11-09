@@ -92,7 +92,7 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
 
 ### Step 4: Synthesize Voice-Over & 4-Track Broadcast Mix
 1. **Replicated Voice-Over (`A4`):**
-   - Run `generate_voiceover.py` using Alexander's custom voice persona (`voice_jntybwupjc1s`) to synthesize scene-synced 48 kHz stereo narration (`-16 LUFS`) for the selected primary language (and UA/RU if `option_b` was chosen).
+   - Run `generate_voiceover.py` using Alexander's custom voice persona (resolved dynamically via `$GEMINI_VOICE_ID` from 1Password / `.env`) to synthesize scene-synced 48 kHz stereo narration (`-16 LUFS`) for the selected primary language (and UA/RU if `option_b` was chosen).
    - **Same-Language Dialogue Honor Law:** Never place voice-over in language $L$ over live camera dialogue spoken in that same language $L$ (`filter_vo_cues_for_same_language_dialog`). Duck foreign-language dialogue by `-12 dB` under translation VO.
 2. **Live Dialogue Normalization (`A1`):**
    - Extract and normalize camera conversation with a 120 Hz high-pass filter + `+16..22 dB` boost + `dynaudnorm` (`-22 dB` mean). Remove overlapping SFX.
@@ -114,7 +114,8 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
      ```
    - `build_timeline.py` automatically:
      - Enforces `check_zero_project_scripts_preflight()` and `check_bgm_non_reuse_preflight()`.
-     - Renders all Warm Vintage Parchment character/flashback badges on `V2` (100% localized in Russian for RU edition with Cyrillic font parity and metric units), **edition-targeted single-language translation cards on `V3`** (clean, zero redundant cards when speaking native edition language), and **1Hz Live Dynamic Telemetry HUD series on `V4` (`live_hud/` Imperial for Master EN, and `live_hud_ru/` Metric for Russian Edition, strictly terminating at cut boundaries when stopping)** via `render_declarative_overlays()`. Also generates fully localized opening/closing AGVS signature bookends on `V1` (`bookend_*_4K_RU.mp4`).
+     - **Universal Unit Law (Imperial for EN, Metric for All Other Languages):** Master English edition strictly uses Imperial units (`mi`, `ft`, `mph`), while ANY and ALL non-English editions (Russian, Ukrainian, Spanish, German, French, etc.) strictly use Metric units (`km`, `m`, `km/h`, `°C`) across voiceover narrations, `.srt` subtitles, on-screen badges, telemetry HUDs, and bookends.
+     - Renders all Warm Vintage Parchment character/flashback badges on `V2` (100% localized with font parity and metric units for non-English editions), **edition-targeted single-language translation cards on `V3`** (clean, zero redundant cards when speaking native edition language), and **1Hz Live Dynamic Telemetry HUD series on `V4` (`live_hud/` Imperial for Master EN, and `live_hud_ru/` Metric for Russian Edition, strictly terminating at cut boundaries when stopping)** via `render_declarative_overlays()`. Also generates fully localized opening/closing AGVS signature bookends on `V1` (`bookend_*_4K_RU.mp4`).
      - Enforces the **Mandatory Peak Headroom Guard** (ceiling $\le -1.5\text{ dBFS}$) via `calculate_bgm_gains()` to calibrate BGM gain to **`-17.5 dB` RMS** during riding/visual swells and **`-23.5 dB` RMS** under speech/VO, applying a 1.8kHz presence EQ on chillhop tracks without clipping the master audio bus.
      - Builds and polishes both Master EN (`<project_name>.fcproj`) and Russian Edition (`<project_name>_RU.fcproj`) projects (`schema_version: 17`).
 2. **Open Live in FilmCraft GUI:** `build_timeline.py` automatically launches `FilmCraft.app` (`v0.18.0+`) with the `.fcproj` file so Alexander can press Spacebar and play the timeline immediately.

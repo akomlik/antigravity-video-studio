@@ -14,6 +14,12 @@ import sys
 from pathlib import Path
 
 STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+sys.path.insert(0, str(STUDIO_ROOT))
+try:
+    from studio_config import get_gemini_voice_id
+except ImportError:
+    get_gemini_voice_id = lambda: os.environ.get("GEMINI_VOICE_ID")
+
 VOICE_DIR = STUDIO_ROOT / "03_Audio_Library/03_Voice_Profile"
 REF_WAV = VOICE_DIR / "alexander_komlik_reference_24k.wav"
 CONSENT_WAV = VOICE_DIR / "alexander_komlik_consent_24k.wav"
@@ -23,7 +29,7 @@ VOICE_ID_FILE = VOICE_DIR / "voice_id.json"
 def load_dotenv_if_needed():
     """Loads STUDIO_ROOT/.env if GEMINI_API_KEY is not already inherited from the shell."""
     env_file = STUDIO_ROOT / ".env"
-    if not os.environ.get("GEMINI_API_KEY") and env_file.exists():
+    if env_file.exists():
         for line in env_file.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
@@ -33,6 +39,10 @@ def load_dotenv_if_needed():
 
 def ensure_custom_voice(client) -> str:
     """Returns a cached stateful `voice_...` ID or creates one from Alexander's reference audio."""
+    resolved = get_gemini_voice_id()
+    if resolved:
+        return resolved
+
     if VOICE_ID_FILE.exists():
         data = json.loads(VOICE_ID_FILE.read_text(encoding="utf-8"))
         if data.get("voice_id"):
@@ -159,11 +169,19 @@ def synthesize_narration(text: str, out_wav: Path, voice_id: str, client, lang: 
         raise RuntimeError(f"Gemini 3.8 Flash TTS failed after 3 attempts: {last_err}")
 
     ffmpeg_bin = "/opt/homebrew/bin/ffmpeg" if os.path.exists("/opt/homebrew/bin/ffmpeg") else "ffmpeg"
+    dereverb_fc = (
+        "highpass=f=95,"
+        "equalizer=f=380:width_type=q:w=1.4:g=-4.5,"
+        "equalizer=f=600:width_type=q:w=1.6:g=-2.5,"
+        "afftdn=nr=12:nf=-38:tn=1,"
+        "agate=range=0.06:threshold=0.040:ratio=3.5:attack=10:release=90,"
+        "loudnorm=I=-16:TP=-1.5:LRA=9"
+    )
     subprocess.run(
         [
             ffmpeg_bin, "-y",
             "-i", str(raw_wav),
-            "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
+            "-af", dereverb_fc,
             "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le",
             str(out_wav),
         ],

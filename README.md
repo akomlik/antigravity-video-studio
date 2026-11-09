@@ -78,7 +78,7 @@ Then run the streamlined workflow:
 │ • A1: Speech-boosted live camera dialog (-22 dB mean, 120 Hz HPF + dynaudnorm) / Ambience     │
 │ • A2: Multi-phase BGM (-7.5 dB under VO, native Essential Sound auto-ducking & +3.5 dB swell) │
 │ • A3: Tamed PiP B-roll audio (-6.5 dB) / peak_ms-aligned Brehov SFX (never over speech)       │
-│ • A4: Replicated warm Voice-Over (voice_jntybwupjc1s, -16 LUFS, EN / UA / RU)                 │
+│ • A4: Replicated warm Voice-Over ($GEMINI_VOICE_ID from 1Password, -16 LUFS, EN / UA / RU)    │
 │ • Exports clean 4K MP4 (burnCaptions: false) + 0.2s remuxed _UA.mp4 & _RU.mp4 (ffmpeg copy)   │
 └───────────────────────────────────────────────┬───────────────────────────────────────────────┘
                                                 ▼
@@ -112,7 +112,7 @@ gpx_telemetry_hud: "auto"             # "auto" (activity-aware: > 2.0 mph ride /
 low_res_broll_mode: "pip_card"        # "pip_card" (62% framed inset over blurred 4K backdrop for <1080p clips) | "full"
 
 # Audio & Voice-Over Knobs (4-Track Broadcast Mix)
-voiceover_persona: "voice_jntybwupjc1s" # Replicated from Alexander's Zero-T Performance Self-Talk.m4a
+voiceover_persona: "$GEMINI_VOICE_ID" # Alexander's replicated voice stored securely in 1Password (Private / envvar:GEMINI_VOICE_ID)
 voiceover_gain_db: -0.5               # Matches normalized live speech (-19 dB mean)
 live_dialog_boost: "auto"             # Boosts quiet BleeqUP camera speech (<-35 dB) to -22 dB mean & strips overlapping SFX
 bgm_gain_under_vo_db: -7.5            # Warmly audible underneath voiceover (-26 dB mean)
@@ -204,7 +204,7 @@ AGVS v2 introduces a signature, data-driven bookend identity generated determini
 | :--- | :--- | :--- |
 | **Workspace Root** | `./` | Contains `README.md`, `editing_constitution.md`, `my_digital_brain.md`, and `.venv` (`google-genai`, `google-api-python-client`, `pillow`). |
 | **Agent Skills** | `.agents/skills/` | All 8 slash-command skills (`storyboard`, `build-timeline`, `publish-youtube`, `find-music`, `swap-music`, `ingest-media`, `interview-brain`, `relink-archive`). |
-| **Voice Profile** | `03_Audio_Library/03_Voice_Profile/` | Reference voice audio (`alexander_komlik_reference_24k.wav`) & persistent Gemini TTS persona ID (`voice_id.json` $\rightarrow$ `voice_jntybwupjc1s`). |
+| **Voice Profile** | `03_Audio_Library/03_Voice_Profile/` | Reference voice audio & local voice cache (`voice_id.json` resolving `$GEMINI_VOICE_ID` from 1Password). |
 | **Curated Music Pool** | `03_Audio_Library/01_Curated_BGM/` | Reusable copyright-safe music (`[BPM]_[Mood]_[TrackName]_[Artist].mp3`). |
 | **Hot Raw Media** | `~/Movies/2026/YYYY-MM-DD_<Name>/` | Raw `.MP4`/`.MOV`/`.HEIC`/`.gpx` files, `.proxies/`, and synced `Storyboard.md`. |
 | **Cloud Project Catalog** | `04_Project_Catalog/2026/YYYY-MM-DD_<Name>/` | `Storyboard.md`, `.fcproj`, `youtube_metadata.json`, `captions.{en,ua,ru}.srt`, `thumbnail.jpg`, and voiceover WAVs. |

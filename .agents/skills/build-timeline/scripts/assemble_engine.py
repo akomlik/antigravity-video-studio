@@ -28,9 +28,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from check_filmcraft_env import verify_filmcraft_environment
 
-TICKS_PER_SEC = 254016000000
-
 STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+sys.path.insert(0, str(STUDIO_ROOT))
+try:
+    from studio_config import get_gemini_voice_id
+    DEFAULT_VOICE_ID = get_gemini_voice_id() or "alexander_replicated_voice"
+except ImportError:
+    DEFAULT_VOICE_ID = os.environ.get("GEMINI_VOICE_ID", "alexander_replicated_voice")
+
+TICKS_PER_SEC = 254016000000
 EXPORTS_ROOT = Path(os.environ.get("EXPORTS_ROOT", "~/Movies/Exports")).expanduser()
 
 

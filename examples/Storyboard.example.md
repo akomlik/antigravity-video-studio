@@ -77,7 +77,7 @@ low_res_broll_mode: "pip_card"        # "pip_card" (62% framed inset over blurre
 
 # Audio & Voice-Over Knobs
 primary_audio_language: "auto"        # "auto" (defaults to predominant language spoken in raw clips; set to "en", "ua", or "ru" if target audience differs)
-voiceover_persona: "voice_jntybwupjc1s" # Replicated from Alexander's Zero-T Performance Self-Talk.m4a
+voiceover_persona: "$GEMINI_VOICE_ID" # Alexander's replicated voice stored securely in 1Password (Private / envvar:GEMINI_VOICE_ID)
 voiceover_gain_db: -0.5               # Matches normalized live speech (-19 dB mean)
 live_dialog_boost: "auto"             # Normalizes quiet BleeqUP camera speech (<-35 dB) to -22 dB mean & strips overlapping SFX
 bgm_gain_under_vo_db: -7.5            # Warmly audible underneath voiceover (-26 dB mean)

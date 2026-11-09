@@ -54,13 +54,14 @@ To maximize creative depth while protecting your 5-hour Argon window:
        - **Title Options:** Always put the hook-first title under `* **Primary (Hook-First / YouTube):**` (no date prefix so mobile titles don't truncate), followed by `* **Alt 1 (Route & Highlights):**`, and `* **Archival (Catalog Index):** YYYY-MM-DD · ...`.
      - **Section 2: The Narrative Story** (chronological scene-by-scene breakdown).
      - **Section 3: Archival Memory & Brain Links** (cross-era links to past years or key people from `my_digital_brain.md`).
-     - **Section 4: Multi-Language Voice-Over & Subtitle Scripts (`EN`, `UA`, `RU`)** (always using ISO code `ua` for Ukrainian locally).
+     - **Section 4: Multi-Language Voice-Over & Subtitle Scripts (`EN`, `UA`, `RU`, etc.)** (always using ISO code `ua` for Ukrainian locally).
+       - **Universal Unit Law:** Spoken voiceover and subtitle tracks in **English (`EN`)** strictly use **Imperial units** (`miles`, `feet`, `mph`). **ANY and ALL non-English languages** (`UA`, `RU`, `ES`, `DE`, `FR`, `IT`, etc.) MUST strictly use **Metric units** (`kilometers`, `meters`, `km/h`, `°C`). Virtually every country in Europe and outside the US operates on metric; never use miles or feet in non-English voiceovers or subtitles!
      - **Section 5: Production & YouTube Publishing Spec (Tuning Knobs)** — YAML block capturing:
-       - `units`: `imperial_default` (`mi`, `ft`, `mph`)
+       - `units`: `imperial_for_en_metric_for_all_others` (`mi/ft/mph` for EN; `km/m/kmh` for all non-English)
        - `burned_in_titles`: `false` (default, so 4K video stays clean and never collides with YouTube CC subtitles)
        - `gpx_corner_map` (`top_right`, `26%` width) & `gpx_telemetry_hud` (`auto` — shown on moving scenes when 3s speed > 2 mph; suppressed on stills & stationary scenes <= 2 mph)
        - `low_res_broll_mode`: `pip_card` (`65%` centered card over blurred `16:9` backdrop for `< 720p` clips)
-       - `audio_mix`: `voiceover_persona: voice_jntybwupjc1s`, `live_dialog_boost: auto`, `bgm_under_vo_db: -7.5`, `bgm_riding_swell_db: +3.5`, `pip_broll_music_db: -6.5`
+       - `audio_mix`: `voiceover_persona: "$GEMINI_VOICE_ID"`, `live_dialog_boost: auto`, `bgm_under_vo_db: -7.5`, `bgm_riding_swell_db: +3.5`, `pip_broll_music_db: -6.5`
        - `agvs_bookends`: Signature AGVS starting postcard and finishing credits bookends (`enabled: true`, `intro_duration_s: 3.5`, `outro_duration_s: 4.5`, `studio_motto`, `location_badge`, `cast_credits`, `steed_credit`, `fuel_sponsors`).
        - `default_privacy`: `"unlisted"` (default for all uploads to allow immediate comments, previews, and language switchers without public feed spam)
        - `youtube_publishing.publishing_mode`:

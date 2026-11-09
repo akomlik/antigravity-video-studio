@@ -136,10 +136,15 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
 
 ### ARTICLE VIII: IMPERIAL UNITS DEFAULT, GPX WIDGETS, LOW-RES B-ROLL FRAMING & BROADCAST AUDIO MIX
 
-- **Universal Edition Unit Law (Imperial for EN, Metric for All Others):**
-    - **English Master Edition (`master_mp4`, `<project>.fcproj`):** Strictly uses **Imperial units (`mi`, `ft`, `mph`, `°F`)** for all on-screen telemetry HUDs, voice-over narrations, and primary video titles (primarily US audience, and UK/commonwealth viewers familiar with miles/mph). Zero on-screen metric clutter.
-    - **All Other Editions (`RU`, `UA`, etc. / `_RU.mp4`, `_UA.mp4`, `<project>_RU.fcproj`):** Strictly use **Metric units (`km`, `m`, `km/h`, `°C`)** for all on-screen telemetry HUDs (`КМ/Ч` / `КМ/ГОД`, `ВАТТ`, `УД/МИН` / `УД/ХВ`, `М`), voice-overs, localized titles, and descriptions. Zero on-screen Imperial clutter.
-    - In multi-language YouTube descriptions, the English primary story summary provides metric conversions in parentheses for international searchability (e.g., `21.5 mi (34.5 km)` and `531 ft (162 m)`).
+- **Universal Edition Unit Law (Imperial Exclusively for EN, Metric for ALL Other Languages):**
+    - **The Global Rationale:** Virtually every country outside the United States—and specifically all European nations (Spain, Germany, France, Italy, Ukraine, etc.) as well as Latin America and Asia—operates exclusively on the Metric system. Imperial units are completely foreign and disruptive to viewers listening in any language other than English.
+    - **English Master Edition (`master_mp4`, `<project>.fcproj`):** Strictly uses **Imperial units (`mi`, `ft`, `mph`, `°F`)** for all on-screen telemetry HUDs, voice-over narrations, subtitle tracks, and primary video titles (tailored for US and UK/Commonwealth audiences). Zero on-screen metric clutter. (In multi-language YouTube descriptions, metric conversions are included in parentheses for international searchability, e.g., `21.5 mi (34.5 km)` and `531 ft (162 m)`).
+    - **ANY and ALL Non-English Editions (`ES`, `DE`, `FR`, `IT`, `UA`, `RU`, etc. / `_<lang>.mp4`, `<project>_<lang>.fcproj`):** MUST strictly use **Metric units (`km`, `m`, `km/h`, `°C`)** across ALL modalities without exception:
+        1. **Voice-Over Narration & Audio Synthesis:** Spoken numbers must always use kilometers (`kilómetros`, `Kilometer`, `kilomètres`, `кілометрів`, `километров`), meters, and metric speed/elevation. Spoken miles or feet are strictly prohibited in non-English voiceovers.
+        2. **Subtitles & Caption Tracks (`.srt`):** All subtitle text and translations in non-English editions must display metric units only.
+        3. **Visual Badges & Waypoint Cards (`V2`):** Contextual distances or altitudes (e.g., `COLL DE FÀMENIA (515 M)` instead of `1,690 FT`) must be in meters and kilometers.
+        4. **Live Dynamic Telemetry HUD (`V4`):** Speed in `KM/H` (`КМ/Ч` / `КМ/ГОД`), elevation in meters (`M` / `М`), and power/heart rate. Zero Imperial abbreviations (`MPH`, `FT`).
+        5. **Postcard Bookend Tickets (`V1`):** Route stats in metric (`71 КМ | 640 М ПОДЪЕМ` / `71 KM | 640 M ELEVATION`). Zero on-screen Imperial clutter.
 - **Zero Burned-In Bottom Titles (`burned_in_titles: false` Default):**
     - Export master 4K MP4s with `--settings '{"burnCaptions": false}'` (keeping `C1` inside `.fcproj` disabled visually, used solely as timing metadata for `.srt` export). This guarantees 100% clean 4K video frames that never collide with YouTube's native CC subtitles on iPhone or desktop.
 - **Direct-from-GPX Corner Route Map & Smoothed Telemetry HUD (`gpx_widgets.py`):**
@@ -177,8 +182,15 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
             - If the BGM filename or path contains mellow keywords (`chillhop`, `chill`, `ambient`, `warm`, `scenic`, `lofi`) or BPM `< 95`:
                 - Add a subtle presence EQ filter (`equalizer=f=1800:t=q:w=1.2:g=2.0`) on the A2 chain so soft piano/guitar/synth melodies cut cleanly through mobile and laptop speakers without boosting sub-bass kicks into distortion.
     - **`A3` (Contextual Sound Effects):** Keep subtle (`-10 dB`) and never place SFX over spoken dialogue.
-    - **`A4` (Replicated Warm Voice-Over, `voice_jntybwupjc1s`):**
-        - Synthesize scene-synced narration segments using `gemini-3.8-flash-tts` with Alexander's vocal persona (`03_Audio_Library/03_Voice_Profile/voice_id.json`), normalized via `highpass=f=90, dynaudnorm=f=150:g=11:p=0.90, volume=2.5dB` to **`-16.0 dB` mean / `-1.0 dB` peak** (`12.5 dB` louder than ducked music).
+    - **`A4` (Studio-Dry Anti-Reverb Law & Normalization, `$GEMINI_VOICE_ID`):**
+        - **Biometric Voice Privacy & Zero-Git-Leak Law:** Alexander's replicated voice ID is a personal biometric credential. It MUST NEVER be hardcoded into tracked files in the Git repository! It is stored securely in 1Password under title `envvar:GEMINI_VOICE_ID` (vault `Private`, category `API_CREDENTIAL`) and loaded dynamically into the environment as `GEMINI_VOICE_ID` (or resolved via local git-ignored `.env` / `03_Voice_Profile/voice_id.json`). All scripts resolve it via `studio_config.get_gemini_voice_id()`.
+        - Because voice samples recorded on laptop microphones in residential rooms naturally capture room reflections, boxy acoustic resonance, and comb filtering, voice-over audio **MUST NEVER be processed with aggressive dynamic normalizers (`dynaudnorm`) that pump room reverb tails between words!**
+        - Instead, all voice-over stems (`A4`) are processed through the **Studio-Dry Anti-Reverb Chain**:
+            1. **Sub-bass Rumble Cut:** `highpass=f=95`
+            2. **Room Boxiness Notch:** `equalizer=f=380:width_type=q:w=1.4:g=-4.5,equalizer=f=600:width_type=q:w=1.6:g=-2.5` to eliminate hollow "laptop mic in an empty room" resonance.
+            3. **Spectral Dereverberation:** `afftdn=nr=12:nf=-38:tn=1` to suppress diffuse ambient reflections.
+            4. **Downward Expander / Tail Gate:** `agate=range=0.06:threshold=0.040:ratio=3.5:attack=10:release=90` to smoothly clamp room reverb decay between spoken phrases down to silence.
+            5. **Clean Broadcast Normalization:** `loudnorm=I=-16:TP=-1.5:LRA=9` (clean EBU R128 integrated loudness without dynamic pumping).
 
 ### ARTICLE IX: YOUTUBE PUBLISHING MODES (`en_only` / `option_a` / `option_b`), ISO `ua` STANDARD & COMPOSITE THUMBNAILS
 
@@ -194,8 +206,8 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
             - **EN Spoken TTS:** Pass **`Boo-zhe`** to TTS so it voices `[ˈbu.ʒə]` (never hard English `"Boo-ger"` or Spanish `"Boo-her"`), while keeping **`Búger`** in `.srt` subtitles and metadata.
             - **RU & UA Written + Spoken:** **`Буже`** (indeclinable, e.g., *«в Буже»*, never *«Бугер»* / *«Буґер»*).
     - **Exception — Pre-Consonantal `ll` (`Valldemossa` = *Vall* + *de Mossa*):** Because `ll` immediately precedes the consonant `d`, Spanish/English speakers reduce it to a clean `[l]`. Write and voice **`Валдемоса`** (or **`Вальдемоса`**, never *«Вайдемосса»*).
-- **Zero-Plaintext-Secrets Environment Setup:**
-    - Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, and `GOOGLE_OAUTH_CLIENT_SECRET` via your preferred environment manager (e.g., `direnv` + 1Password, shell profile, or a git-ignored `.env` file) and start Antigravity from that shell session so child processes inherit them automatically. Once authorized once, `~/.config/antigravity_youtube/token.json` caches the OAuth refresh token for subsequent YouTube API calls. Default video visibility to **`unlisted`** so the creator can preview, test comments/language switchers, and share the link without public feed spam (and avoiding YouTube's `private` mode comment-blocking).
+- **Zero-Plaintext-Secrets & Biometric Voice Security Environment Setup:**
+    - Set `GEMINI_API_KEY`, `GEMINI_VOICE_ID` (Alexander's secret replicated voice ID), `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `FLICKR_API_KEY` via Alexander's 1Password `direnv-manager` convention (`envvar:*` in vault `Private`) or a local git-ignored `.env` file. Antigravity and child processes inherit them automatically. Once authorized, `~/.config/antigravity_youtube/token.json` caches the OAuth refresh token for YouTube API calls. Default video visibility to **`unlisted`** so the creator can preview, test comments/language switchers, and share the link without public feed spam. Never commit API keys, tokens, or custom voice IDs to Git!
 - **Primary Voice-Over Language & Target Audience Alignment:**
     - **Default Language Rule:** The primary audio track (voice-over language) defaults to the **predominant language spoken in the raw video clips** (e.g. Ukrainian/Russian for candid conversations with Nina/friends, English for English-spoken group rides or solo cycling).
     - **Target Audience Override:** If the intended target audience requires a different language (e.g. English for US cycling teammates, Silicon Valley tech peers, or broader YouTube reach), Alexander or `Storyboard.md` may set `primary_audio_language: "en"`.

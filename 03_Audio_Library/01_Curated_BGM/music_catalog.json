@@ -274,6 +274,21 @@
       "source_site": "CreatorMix",
       "duration_s": 175,
       "notes": "Auto-fetched from CreatorMix (Album: Say I Will)"
+    },
+    {
+      "filename": "118bpm_CoastalSynthwave_NightDriveConfession_Creatormix.mp3",
+      "path": "03_Audio_Library/01_Curated_BGM/01_Rolling_Cadence/118bpm_CoastalSynthwave_NightDriveConfession_Creatormix.mp3",
+      "relpath": "01_Rolling_Cadence/118bpm_CoastalSynthwave_NightDriveConfession_Creatormix.mp3",
+      "category": "01_Rolling_Cadence",
+      "bpm": 118,
+      "beat_interval_s": 0.508,
+      "mood": "CoastalSynthwave",
+      "title": "Night Drive Confession",
+      "artist": "CreatorMix",
+      "album": "Neon Sunsets",
+      "source_site": "CreatorMix",
+      "duration_s": 183,
+      "notes": "Auto-fetched from CreatorMix (Album: Neon Sunsets)"
     }
   ]
 }

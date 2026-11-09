@@ -550,6 +550,14 @@ def extract_project_bookends_spec(project_dir: Path) -> dict:
                             if (val.startswith("'") and val.endswith("'")) or (val.startswith('"') and val.endswith('"')):
                                 val = val[1:-1]
                             spec["steed_credit"] = val.replace('\\"', '"')
+                        elif bl.startswith("cast_credits:"):
+                            val = bl.split(":", 1)[1].strip().strip("\"'")
+                            if val:
+                                spec["cast_credits"] = [p.strip() for p in val.split(" · ")] if " · " in val else [val]
+                        elif bl.startswith("cast_credits_ru:"):
+                            val = bl.split(":", 1)[1].strip().strip("\"'")
+                            if val:
+                                spec["cast_credits_ru"] = [p.strip() for p in val.split(" · ")] if " · " in val else [val]
                         elif bl.startswith("main_hero:"):
                             spec["main_hero"] = bl.split(":", 1)[1].strip().strip("\"'")
                         elif bl.startswith("github_repo:"):
@@ -841,7 +849,8 @@ def render_outro_canvas_4k(spec: dict, out_png: Path) -> Path:
     # 1. THE PELOTON & CAST
     draw.text((rx0 + 56, cur_y), cast_title, font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
     cur_y += 62
-    for c in spec.get("cast_credits", [])[:4]:
+    cast_list = spec.get("cast_credits_ru" if is_ru and spec.get("cast_credits_ru") else "cast_credits", [])
+    for c in cast_list[:4]:
         cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {c}", f_item, COLOR_ESPRESSO_INK, line_h=58)
     cur_y += 32
 

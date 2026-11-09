@@ -69,6 +69,7 @@ Whenever secrets (API keys, OAuth tokens) need to be stored or referenced, alway
 - **Account:** `my.1password.com`
 - **Vault:** `Private`
 - **Category:** `API_CREDENTIAL`
-- **Item Title:** `envvar:<VARIABLE_NAME>` (e.g. `envvar:FLICKR_API_KEY`, `envvar:GEMINI_API_KEY`)
+- **Item Title:** `envvar:<VARIABLE_NAME>` (e.g. `envvar:FLICKR_API_KEY`, `envvar:GEMINI_API_KEY`, `envvar:GEMINI_VOICE_ID`)
 - **Field:** `credential[concealed]=<secret_value>`
-- `~/Gdrive-gmail/.envrc` automatically loads and exports all `envvar:*` items into the environment at shell startup. Never write raw credentials to Git or plaintext project files.
+- `~/Gdrive-gmail/.envrc` automatically loads and exports all `envvar:*` items into the environment at shell startup.
+- **Biometric Voice ID Security Law:** Alexander's replicated voice persona (`GEMINI_VOICE_ID`) is a sensitive biometric private key that allows synthetic speech generation in Alexander's exact voice. It MUST NEVER be hardcoded into tracked files, sample configs, or committed to Git. Store it strictly in 1Password under `envvar:GEMINI_VOICE_ID` in vault `Private` and access it via `$GEMINI_VOICE_ID` or `studio_config.get_gemini_voice_id()`. Never write raw credentials to Git or plaintext project files.

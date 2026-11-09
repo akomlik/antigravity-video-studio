@@ -123,11 +123,16 @@ def check_bgm_non_reuse_preflight(proj_dir: Path, bgm_relpath: str, allow_used: 
 
 
 def prepare_paced_voiceovers(proj_dir: Path, raw_dir: Path, vo_cues: list[dict]):
-    print("Pacing & normalizing voiceover stems (-16.0 dB mean target)...")
+    print("Pacing & normalizing voiceover stems with Studio-Dry Anti-Reverb (-16.0 dB mean target)...")
     base_fc = (
         "silenceremove=start_periods=1:start_duration=0.05:start_threshold=-45dB,"
         "areverse,silenceremove=start_periods=1:start_duration=0.05:start_threshold=-45dB,areverse,"
-        "highpass=f=90,dynaudnorm=f=150:g=9:p=0.90,volume=2.0dB,alimiter=limit=0.92"
+        "highpass=f=95,"
+        "equalizer=f=380:width_type=q:w=1.4:g=-4.5,"
+        "equalizer=f=600:width_type=q:w=1.6:g=-2.5,"
+        "afftdn=nr=12:nf=-38:tn=1,"
+        "agate=range=0.06:threshold=0.040:ratio=3.5:attack=10:release=90,"
+        "loudnorm=I=-16:TP=-1.5:LRA=9"
     )
     for lang in ("en", "ua", "ru"):
         for cue in vo_cues:

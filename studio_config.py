@@ -9,6 +9,7 @@ paths without freezing machine-specific absolute paths into repository or catalo
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Optional, Union
@@ -231,3 +232,62 @@ def resolve_media_path(relpath: Union[Path, str]) -> Path:
         return cold_target
 
     return hot_target  # Default to hot media path
+
+
+def get_gemini_voice_id() -> Optional[str]:
+    """
+    Resolves Alexander's Gemini TTS Voice ID securely without checking secrets into Git.
+    Precedence:
+    1. os.environ.get("GEMINI_VOICE_ID") (direnv / shell)
+    2. Local .env file (git-ignored)
+    3. 03_Audio_Library/03_Voice_Profile/voice_id.json (git-ignored)
+    4. 1Password CLI: `op item get "envvar:GEMINI_VOICE_ID" --vault Private --fields credential --reveal`
+    """
+    # 1. Environment variable
+    v = os.environ.get("GEMINI_VOICE_ID")
+    if v and v.strip():
+        return v.strip()
+
+    # 2. Local .env file
+    env_file = STUDIO_ROOT / ".env"
+    if env_file.exists():
+        try:
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line.startswith("GEMINI_VOICE_ID="):
+                    val = line.split("=", 1)[1].strip().strip("\"'")
+                    if val:
+                        os.environ["GEMINI_VOICE_ID"] = val
+                        return val
+        except Exception:
+            pass
+
+    # 3. Local git-ignored voice profile JSON
+    voice_json = STUDIO_ROOT / "03_Audio_Library/03_Voice_Profile/voice_id.json"
+    if voice_json.exists():
+        try:
+            data = json.loads(voice_json.read_text(encoding="utf-8"))
+            val = data.get("voice_id")
+            if val:
+                os.environ["GEMINI_VOICE_ID"] = val
+                return val
+        except Exception:
+            pass
+
+    # 4. 1Password CLI
+    try:
+        res = subprocess.run(
+            ["op", "item", "get", "envvar:GEMINI_VOICE_ID", "--vault", "Private", "--fields", "credential", "--reveal"],
+            capture_output=True,
+            text=True,
+            timeout=8,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            val = res.stdout.strip()
+            os.environ["GEMINI_VOICE_ID"] = val
+            return val
+    except Exception:
+        pass
+
+    return None
+
