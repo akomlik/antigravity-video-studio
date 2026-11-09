@@ -561,25 +561,50 @@ def render_flashback_memory_badge(
 
 def render_translation_subtitle_card(
     spoken_text: str,
-    english_translation: str,
-    out_png: Path,
+    english_translation: str = None,
+    out_png: Path = None,
     canvas_size: tuple[int, int] = (3840, 2160),
+    translation_text: str = None,
+    card_width: int | None = None,
+    card_height: int | None = None,
 ) -> Path:
     """
-    Renders bilingual on-camera speech translations as a centered Vintage Telegram / Field Note Card (+40% Mobile Weight):
-    - Line 1 (Spoken RU/ES/UA): 64pt Bold in Postmark Crimson #B83A2A.
-    - Line 2 (English): 76pt Heavy/Bold in Deep Espresso #231F1D (with automatic wrapping).
-    - Dimensions: Width 2600..3000px, 16px solid Crimson top accent bar, 44px vertical padding.
-    - Centered horizontally at Y: 1710 (or Y: 1650 when wrapped).
+    Renders bilingual on-camera speech translations as a centered Vintage Telegram / Field Note Card:
+    - Dynamic Language Hierarchy ("Translation Is Always Primary"):
+      - Spoken line: 60pt Demi Bold in Postmark Crimson #B83A2A with quotes.
+      - Translation line: 76pt Heavy/Bold in Deep Espresso #231F1D (wrapped if needed) with Cyrillic font parity.
+      - If spoken is EN: Top line is Spoken EN ("..."), Bottom line is Russian Translation (76pt Bold Espresso).
+      - If spoken is RU: Top line is Spoken RU («...»), Bottom line is English Translation (76pt Bold Espresso).
+    - Dimensions: Width clamped to 2600..3000px, 16px solid Crimson top accent bar, 42px vertical padding.
+    - Centered horizontally at Y: 1710 (or Y: 1640 when wrapped).
     """
     w, h = canvas_size
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
 
     clean_spoken = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", spoken_text).strip()
-    clean_eng = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", english_translation).strip()
+    raw_trans = translation_text if translation_text is not None else (english_translation or "")
+    clean_trans = re.sub(r"[🚀📍📅🎬🚴⛰️⚠️♥📊]", "", raw_trans).strip()
 
-    f_spoken = load_apple_font("card_title", 64, text=clean_spoken)
-    f_eng = load_apple_font("hero_title", 76, text=clean_eng)
+    # Strip existing quotes from translation so it renders as clean bold editorial text
+    if clean_trans.startswith(("«", '"', "“", "'")) and clean_trans.endswith(("»", '"', "”", "'")):
+        clean_trans = clean_trans[1:-1].strip()
+
+    # Detect spoken language and apply standard quotation marks
+    spoken_is_cyrillic = bool(re.search(r"[\u0400-\u04FF]", clean_spoken))
+    if spoken_is_cyrillic:
+        if not (clean_spoken.startswith("«") and clean_spoken.endswith("»")):
+            clean_spoken = clean_spoken.strip('\'"')
+            clean_spoken = f"«{clean_spoken}»"
+    else:
+        if not (clean_spoken.startswith('"') and clean_spoken.endswith('"')):
+            clean_spoken = clean_spoken.strip('\'"«»')
+            clean_spoken = f'"{clean_spoken}"'
+
+    # Font styles
+    # Top Line: Spoken at 60pt Demi Bold in Crimson
+    # Bottom Line: Translation at 76pt Heavy/Bold in Deep Espresso (with Cyrillic font parity)
+    f_spoken = load_apple_font("card_subtitle", 60, text=clean_spoken)
+    f_trans = load_apple_font("card_title", 76, text=clean_trans)
 
     dummy = Image.new("RGBA", (100, 100))
     d_measure = ImageDraw.Draw(dummy)
@@ -589,50 +614,52 @@ def render_translation_subtitle_card(
 
     max_card_w = 3000
     min_card_w = 2600
-    max_text_w = max_card_w - 160
+    max_text_w = max_card_w - 180
 
-    words = clean_eng.split()
-    eng_lines = []
+    words = clean_trans.split()
+    trans_lines = []
     cur = ""
     for word in words:
         cand = f"{cur} {word}".strip() if cur else word
-        cb = d_measure.textbbox((0, 0), cand, font=f_eng)
+        cb = d_measure.textbbox((0, 0), cand, font=f_trans)
         if cb[2] - cb[0] <= max_text_w:
             cur = cand
         else:
             if cur:
-                eng_lines.append(cur)
+                trans_lines.append(cur)
             cur = word
     if cur:
-        eng_lines.append(cur)
+        trans_lines.append(cur)
 
-    longest_eng_w = max(
-        d_measure.textbbox((0, 0), line, font=f_eng)[2] - d_measure.textbbox((0, 0), line, font=f_eng)[0]
-        for line in eng_lines
-    )
-    content_w = max(w1, longest_eng_w)
-    card_w = max(min_card_w, min(max_card_w, content_w + 160))
+    longest_trans_w = max(
+        (d_measure.textbbox((0, 0), line, font=f_trans)[2] - d_measure.textbbox((0, 0), line, font=f_trans)[0])
+        for line in trans_lines
+    ) if trans_lines else 0
+    content_w = max(w1, longest_trans_w)
+    calc_w = max(min_card_w, min(max_card_w, content_w + 180))
+    card_w = max(calc_w, card_width) if card_width else calc_w
 
-    is_wrapped = len(eng_lines) > 1
-    card_h = 350 if is_wrapped else 260
+    is_wrapped = len(trans_lines) > 1
+    calc_h = 350 if is_wrapped else 260
+    card_h = max(calc_h, card_height) if card_height else calc_h
 
     x0 = (w - card_w) // 2
-    y0 = 1650 if is_wrapped else 1710
+    y0 = 1640 if is_wrapped else 1710
     x1, y1 = x0 + card_w, y0 + card_h
 
     draw_vintage_card(img, (x0, y0, x1, y1), accent_side="top", radius=20, accent_color=COLOR_CRIMSON, accent_width=16)
     draw = ImageDraw.Draw(img)
 
     t1_x = x0 + (card_w - w1) // 2
-    draw.text((t1_x, y0 + 44), clean_spoken, font=f_spoken, fill=COLOR_CRIMSON)
+    draw.text((t1_x, y0 + 42), clean_spoken, font=f_spoken, fill=COLOR_CRIMSON)
 
-    cur_eng_y = y0 + 128
-    for line in eng_lines:
-        lb = d_measure.textbbox((0, 0), line, font=f_eng)
+    cur_trans_y = y0 + 124
+    for line in trans_lines:
+        lb = d_measure.textbbox((0, 0), line, font=f_trans)
         lw = lb[2] - lb[0]
         lx = x0 + (card_w - lw) // 2
-        draw.text((lx, cur_eng_y), line, font=f_eng, fill=COLOR_ESPRESSO_INK)
-        cur_eng_y += 88
+        draw.text((lx, cur_trans_y), line, font=f_trans, fill=COLOR_ESPRESSO_INK)
+        cur_trans_y += 88
 
     out_png.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_png, "PNG", compress_level=1)
@@ -776,10 +803,38 @@ def render_declarative_overlays(
                     "file": rel_fname,
                     "start_s": tl_s,
                     "dur_s": cur_dur,
-                    "track": ov.get("track", "V3"),
+                    "track": ov.get("track", "V4"),
                     "fade_in_s": 0.25 if s_idx == 0 else 0.0,
                     "fade_out_s": 0.30 if s_idx == n_steps - 1 else 0.0,
                     "desc": ov.get("desc", f"Live Telemetry HUD @ {tl_s:.1f}s"),
+                })
+            continue
+
+        if kind == "translation_subtitle" and "pages" in ov:
+            pages = ov["pages"]
+            n_pages = len(pages)
+            for p_idx, page in enumerate(pages):
+                page_file = page.get("file", f"{ov.get('file_prefix', 'sub')}_{p_idx+1:02d}.png")
+                page_start = float(page["start_s"])
+                page_dur = float(page["dur_s"])
+                page_spoken = page.get("spoken", "")
+                page_trans = page.get("translation") or page.get("russian") or page.get("english", "")
+                page_png = overlays_dir / page_file
+                if not skip_render:
+                    render_translation_subtitle_card(
+                        spoken_text=page_spoken,
+                        translation_text=page_trans,
+                        english_translation=page.get("english"),
+                        out_png=page_png,
+                    )
+                expanded_items.append({
+                    "file": page_file,
+                    "start_s": page_start,
+                    "dur_s": page_dur,
+                    "track": page.get("track", ov.get("track", "V3")),
+                    "fade_in_s": float(page.get("fade_in_s", 0.25 if p_idx == 0 else 0.0)),
+                    "fade_out_s": float(page.get("fade_out_s", 0.30 if p_idx == n_pages - 1 else 0.0)),
+                    "desc": page.get("desc", f"Bilingual Subtitle Page {p_idx+1}"),
                 })
             continue
 
@@ -803,10 +858,12 @@ def render_declarative_overlays(
                     accent_color=accent_col,
                 )
             elif kind == "translation_subtitle":
+                trans = ov.get("translation") or ov.get("russian") or ov.get("english", "")
                 render_translation_subtitle_card(
-                    ov["spoken"],
-                    ov["english"],
-                    out_png,
+                    spoken_text=ov.get("spoken", ""),
+                    translation_text=trans,
+                    english_translation=ov.get("english"),
+                    out_png=out_png,
                 )
             elif kind == "strava_comparison":
                 render_strava_comparison_vintage_card(
@@ -826,11 +883,28 @@ def render_declarative_overlays(
             "file": ov["file"],
             "start_s": float(ov["start_s"]),
             "dur_s": float(ov["dur_s"]),
-            "track": ov.get("track", "V2"),
+            "track": ov.get("track", "V3" if kind == "translation_subtitle" else "V2"),
             "fade_in_s": float(ov.get("fade_in_s", 0.25)),
             "fade_out_s": float(ov.get("fade_out_s", 0.30)),
             "desc": ov.get("desc", ov["file"]),
         })
+
+    # Contiguous Subtitle Pass on track V3:
+    # If two consecutive subtitle cards on track V3 are contiguous (gap <= 0.08s)
+    # or slightly overlapping, clamp the earlier duration so they touch perfectly,
+    # and zero out the fade-out on the earlier card and the fade-in on the second card.
+    # This guarantees the parchment box holds stationary with no awkward dip to black!
+    v3_subs = [it for it in expanded_items if it.get("track") == "V3"]
+    v3_subs.sort(key=lambda x: x["start_s"])
+    for idx in range(len(v3_subs) - 1):
+        c1, c2 = v3_subs[idx], v3_subs[idx + 1]
+        c1_end = c1["start_s"] + c1["dur_s"]
+        if c1_end > c2["start_s"]:
+            c1["dur_s"] = round(c2["start_s"] - c1["start_s"], 2)
+            c1_end = c1["start_s"] + c1["dur_s"]
+        if abs(c1_end - c2["start_s"]) <= 0.08:
+            c1["fade_out_s"] = 0.0
+            c2["fade_in_s"] = 0.0
 
     return expanded_items
 

@@ -83,8 +83,9 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
 - **Track Assignment Standard & Zero-Script Project Law (`timeline_spec.json` + `build_timeline.py`):**
     - **The Zero-Script Project Law:** Project folders (`04_Project_Catalog/YEAR/<project>/`) are **100% declarative data** (`Storyboard.md` + `timeline_spec.json` + `narration_scripts.json`). **Never create, clone, or run per-project Python scripts** (`assemble_<project>.py`, `build_<project>_overlays.py`). All timeline assembly, overlay rendering, 1Hz live HUD generation, and RMS audio calibration are executed exclusively by the shared studio engine (`.agents/skills/build-timeline/scripts/build_timeline.py`), which enforces `check_zero_project_scripts_preflight()` and `verify_music_non_reuse()`.
     - `V1`: Primary Video & Background Blur Fill Track
-    - `V2`: Warm Vintage Parchment Character Callout Badges, Flashback Memory Cards & Bilingual Speech Cards
-    - `V3`: **Live 1Hz Dynamic Telemetry HUD (`live_hud/hud_XXXX.png`) & GPX Corner Route Maps** (never static HUDs; fades in on first second of run, holds at 100% solid opacity across internal 1s boundaries so the card never blinks, and fades out on the last second)
+    - `V2`: Warm Vintage Parchment Character Callout Badges & Flashback Memory Cards (e.g. `badge_*.png`)
+    - `V3`: Bilingual On-Camera Speech Translation Cards (`sub_*.png` via `render_translation_subtitle_card`; displays simultaneously with `V2` badges without track collisions)
+    - `V4`: **Live 1Hz Dynamic Telemetry HUD (`live_hud/hud_XXXX.png`) & GPX Corner Route Maps** (never static HUDs; fades in on first second of run, holds at 100% solid opacity across internal 1s boundaries so the card never blinks, and fades out on the last second)
     - `A1`: Native Camera Audio (Tire roll, freewheel clicks, speech, market punchlines, toasts, café banter)
     - `A2`: Dedicated Background Music Track (`03_Audio_Library/01_Curated_BGM/`) — **dynamically RMS-calibrated via `calculate_bgm_gains()` to `-15.5 dB` midrange-weighted RMS during riding/visuals and `-21.5 dB` under speech/VO (a smooth 6.0 dB duck; with automatic +1.5 dB & 1.8 kHz presence EQ for chillhop/ambient/warm tracks; never hardcode a fixed gain!)**
     - `A3`: Subtle Contextual Sound Effects (`03_Audio_Library/02_SFX/catalog.json` — 209 Brehov cinematic WAVs across `01_Whooshes_Soft` through `19_Ambient_Pads`, aligned by `peak_ms` so the sound peak lands on the exact frame of motion/caption reveal)
@@ -117,6 +118,17 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
 - **Storyboard Punchline Captions & First-Appearance Character Callout Badges (`V2`):**
     - **Character Identification Law ("Who's Who in the Frame"):** Viewers outside Alexander's immediate circle do not automatically know who is who when multiple riders or companions appear on screen. The first time a key person (e.g., **Nina**, **Bruce**, **Lisa**, **Ian**, **Pete**, **Brian**, **Chas**, **Paula**, **Jeff**, or university classmates) appears clearly in a video clip or still photo, place a sleek `3.0s–3.5s` frosted-glass **Character Callout Badge** on `V2` via `render_character_callout_badge()` in `gpx_widgets.py` (e.g., `NINA KOMLIK · Wife & Riding Partner` / `НИНА · Моя жена и спутница`, or `Left to Right: Paula · Alexander · Jeff (SJBC, April 2016)`).
     - **Narrative Punchline Captions (`V2`):** When `Storyboard.md` highlights a specific narrative joke, archival flashback year, or callback (e.g., *"APRIL 2016 · FIRST DI2 RENTAL AT PRO CYCLE HIRE"*, *"€20 -> €30 inflation (+ he's in Alcúdia every Tuesday!)"*, or *"Saved by Nina's sharp eyes: Front disc brake pad on the ground!"*), generate clean glassmorphic pill overlays on `V2`.
+- **Bilingual On-Camera Speech Cards & Dynamic Language Hierarchy Law (`V3`):**
+    - **Sequential Speech Pagination:** Continuous on-camera dialogue segments support sequential multi-sentence pagination. Dialogue scenes containing multiple sentences render consecutive cards (e.g., Card 1 from `00:20.0` to `00:24.5`, Card 2 from `00:24.5` to `00:29.0`) rather than stopping after the first sentence.
+    - **Contiguous Zero-Dip Transition:** For contiguous speech cards on track `V3` (gap $\le 0.08\text{s}$), the engine automatically clamps durations, zeros out fade-out on the earlier card, and zeros out fade-in on the second card (`fade_out_s=0.0`, `fade_in_s=0.0`). The Warm Vintage Parchment box holds completely rock-solid on screen while the text cuts instantaneously.
+    - **Dynamic Language Hierarchy ("Translation Is Always Primary"):**
+        - If spoken audio on camera is **English**:
+            - **Top Line (Spoken EN):** Spoken English in quotes at **60pt Demi Bold** in Postmark Crimson (`#B83A2A`).
+            - **Bottom Line (RU Translation):** Russian translation at **76pt Heavy/Bold** in Deep Espresso (`#231F1D`) with Cyrillic font parity (`HelveticaNeue Bold` / `Arial Bold`).
+        - If spoken audio on camera is **Russian**:
+            - **Top Line (Spoken RU):** Spoken Russian in quotes at **60pt Demi Bold** in Postmark Crimson (`#B83A2A`).
+            - **Bottom Line (EN Translation):** English translation at **76pt Heavy/Bold** in Deep Espresso (`#231F1D`).
+    - **Mobile Card Weight & Clamping:** Card width is clamped to **2600px–3000px** with generous vertical padding, 16px solid top crimson accent stripe, centered horizontally at `Y: 1710` (or `Y: 1640` when translation wraps).
 - **Color & Monochrome Integrity:** Conform iPhone 15 Pro `BT.2020` HDR clips to `Rec.709` linear light. Never apply color LUTs or saturation adjustments to 1977+ black-and-white film scans.
 
 ### ARTICLE VII: DIRECT TIMELINE ASSEMBLY & FILMCRAFT PLAYBACK REVIEW

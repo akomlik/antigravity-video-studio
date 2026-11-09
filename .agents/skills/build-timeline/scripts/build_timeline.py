@@ -586,7 +586,7 @@ def build_fcproj_from_spec(
             cuts_media_ids[cnum] = register_media(p, "Movie", width=w, height=h, dur_s=src_in + dur + 10.0)
 
     ticks_per_frame = TICKS_PER_SEC // 30
-    v1_items, a1_items, v2_items, v3_items, a2_items, a3_items, a4_items, a5_items = [], [], [], [], [], [], [], []
+    v1_items, a1_items, v2_items, v3_items, v4_items, a2_items, a3_items, a4_items, a5_items = [], [], [], [], [], [], [], [], []
 
     curr_frame = 0
     for cut in cuts_spec:
@@ -683,7 +683,7 @@ def build_fcproj_from_spec(
             "id": next_id,
             "item": overlay_ids[oname],
             "name": Path(oname).name,
-            "label": "Cerulean" if target_track == "V2" else "Lavender",
+            "label": "Cerulean" if target_track == "V2" else ("Mango" if target_track == "V3" else "Lavender"),
             "start": int(round(st_s * 30)) * ticks_per_frame,
             "duration": int(round(dur_s * 30)) * ticks_per_frame,
             "source_in": 0,
@@ -701,7 +701,9 @@ def build_fcproj_from_spec(
             "frame_hold": None,
             "scale_to_frame": True,
         }
-        if target_track == "V3":
+        if target_track == "V4":
+            v4_items.append(item_dict)
+        elif target_track == "V3":
             v3_items.append(item_dict)
         else:
             v2_items.append(item_dict)
@@ -906,7 +908,8 @@ def build_fcproj_from_spec(
                 "video_tracks": [
                     make_track(1, "Video", "Video 1", v1_items),
                     make_track(2, "Video", "V2 (Overlays / Badges)", v2_items),
-                    make_track(3, "Video", "V3 (Live Telemetry HUD & Maps)", v3_items),
+                    make_track(3, "Video", "V3 (Bilingual Speech Cards)", v3_items),
+                    make_track(4, "Video", "V4 (Live Telemetry HUD & Maps)", v4_items),
                 ],
                 "audio_tracks": [
                     make_track(1, "Audio", "A1 - Camera Audio", a1_items),
