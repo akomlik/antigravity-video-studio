@@ -204,6 +204,7 @@ AGVS v2 introduces a signature, data-driven bookend identity generated determini
 | :--- | :--- | :--- |
 | **Workspace Root** | `./` | Contains `README.md`, `editing_constitution.md`, `my_digital_brain.md`, and `.venv` (`google-genai`, `google-api-python-client`, `pillow`). |
 | **Agent Skills** | `.agents/skills/` | All 8 slash-command skills (`storyboard`, `build-timeline`, `publish-youtube`, `find-music`, `swap-music`, `ingest-media`, `interview-brain`, `relink-archive`). |
+| **Voice Cloning & Consent** | `03_Audio_Library/00_Voice_Cloning/` | Reference speech & mandatory spoken consent staging ([`README.md`](./03_Audio_Library/00_Voice_Cloning/README.md) guide for 1Password `$GEMINI_VOICE_ID` setup). |
 | **Voice Profile** | `03_Audio_Library/03_Voice_Profile/` | Reference voice audio & local voice cache (`voice_id.json` resolving `$GEMINI_VOICE_ID` from 1Password). |
 | **Curated Music Pool** | `03_Audio_Library/01_Curated_BGM/` | Reusable copyright-safe music (`[BPM]_[Mood]_[TrackName]_[Artist].mp3`). |
 | **Hot Raw Media** | `~/Movies/2026/YYYY-MM-DD_<Name>/` | Raw `.MP4`/`.MOV`/`.HEIC`/`.gpx` files, `.proxies/`, and synced `Storyboard.md`. |

@@ -32,6 +32,7 @@ my_digital_brain.md
 
 03_Audio_Library/00_Voice_Cloning/*
 !03_Audio_Library/00_Voice_Cloning/.placeholder
+!03_Audio_Library/00_Voice_Cloning/README.md
 
 03_Audio_Library/03_Voice_Profile/*
 !03_Audio_Library/03_Voice_Profile/.placeholder
