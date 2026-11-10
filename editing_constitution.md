@@ -290,3 +290,21 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
         - **Audio Hygiene Rule for AI Clips:** When weaving a `living_memory`, `paint_morph`, or `fpv_drone` clip into the timeline under `A4` Voice-Over, suppress any random AI-generated speech on `A1` while optionally preserving subtle ambient sound or crisp spot SFX (such as wine glasses clinking or ocean waves) at `-12 dB`.
 - **Interactive Co-Design in `/storyboard` & `/build-timeline`:**
     - During `/storyboard` co-design, the agent proposes 2–3 story-driven **AI Creative Artifact Candidates** (`ai_creative_artifacts` in `Storyboard.md` Section 5/6) and presents an interactive choice (`ask_question`) allowing Alexander to pick which AI artifacts to generate and weave into the timeline.
+
+### ARTICLE XIII: LONG-CLIP SEMANTIC DECOMPOSITION & LANDMARK SYNCHRONIZATION LAW
+
+- **The Long-Clip Blindness Prevention Standard ($\ge 12$s):**
+    - Clips longer than 12 seconds must never be treated as monolithic B-roll blocks, and must **never** default to arbitrary `src_in: 0.0` or `5.0`.
+    - Long video clips often contain critical micro-events, head-turns, roadside interactions, or staged multi-pass camera actions (e.g. riding away, doing a 180° turn, and passing the camera) deep into the file (e.g. at 40s or 50s).
+    - **Automated Contact-Strip Semantic Indexing (`extract_video_subclips.py`):**
+        - During Stage 0 Ingestion (`ingest_and_sync_media.py`), every video clip $\ge 12.0$s automatically has its 6-frame contact strip (`_strip.jpg`) analyzed via Gemini 3.8 Flash Vision into structured `sub_events` and `landmarks` with exact `[start_s, end_s]` timestamps.
+        - Results are permanently cached in `.proxies/<stem>_subclips.json`, written into `project_manifest.json` under each media item, and formatted directly into `Storyboard.md` under Section 3 (Chronological Media & GPS Log).
+- **The Landmark Dwell & Narrative Synchronization Rule:**
+    - When spoken narration, on-screen subtitles, or scene descriptions reference a specific landmark, hotel, restaurant, ruin, or historical place (e.g. *Hotel Pollentia*, *Restaurante Miramar*, *Muralles d'Alcúdia*, *S'Àmfora*):
+        1. The corresponding video cut's source interval `[src_in, src_in + dur]` **MUST encompass the landmark's indexed timestamp range**.
+        2. The landmark must enjoy **at least 3.0 to 4.0 seconds of clear visual dwell time** on screen so the viewer can absorb its presence and read its architectural facade/signage.
+        3. Never cut away before the landmark appears!
+        4. If the landmark is set against complex scenery, accompany it with an unmistakable directional overlay badge (top-left or bottom-left) explicitly identifying its name, founding year/era, and significance.
+- **Pre-Flight Timeline Synchronization Guard (`build_timeline.py`):**
+    - `build_timeline.py` performs a mandatory pre-flight inspection comparing cut durations and voiceover cues against the landmark index in `project_manifest.json`. If a cut claims to showcase a landmark but terminates prior to its appearance, the build raises an immediate pre-flight desync warning.
+

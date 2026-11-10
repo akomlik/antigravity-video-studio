@@ -122,6 +122,54 @@ def check_bgm_non_reuse_preflight(proj_dir: Path, bgm_relpath: str, allow_used: 
     print(f"✅ Pre-Flight Music Non-Reuse Check Passed: '{bgm_name}' is unique to {proj_dir.name}.")
 
 
+def check_landmark_synchronization_preflight(proj_dir: Path, cuts: list[dict], overlays: list[dict]):
+    """Article XIII: Ensures cuts referencing landmarks encompass the landmark's indexed timestamp range."""
+    manifest_path = proj_dir / "project_manifest.json"
+    if not manifest_path.exists():
+        return
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+
+    items_by_name = {m.get("filename"): m for m in (manifest.get("media_inventory") or [])}
+
+    for c in cuts:
+        src = c.get("source")
+        item = items_by_name.get(src)
+        if not item or not item.get("landmarks"):
+            continue
+
+        src_in = float(c.get("src_in", 0.0))
+        dur = float(c.get("dur", 0.0))
+        src_out = src_in + dur
+
+        for lm in item["landmarks"]:
+            t_rng = lm.get("timestamp_range", [])
+            if len(t_rng) != 2:
+                continue
+            lm_start, lm_end = float(t_rng[0]), float(t_rng[1])
+            lm_name = lm.get("name", "Unnamed Landmark")
+
+            cut_desc = c.get("desc", "").lower()
+            mentions_lm = any(k in cut_desc for k in lm_name.lower().split() if len(k) > 3)
+
+            if mentions_lm:
+                overlap_start = max(src_in, lm_start)
+                overlap_end = min(src_out, lm_end)
+                overlap_dur = max(0.0, overlap_end - overlap_start)
+
+                if overlap_dur < 2.0:
+                    print(
+                        f"\n⚠️ [ARTICLE XIII WARNING] Cut {c.get('cut_num')} ({src}) references '{lm_name}', "
+                        f"but cut window [{src_in:.1f}s - {src_out:.1f}s] provides only {overlap_dur:.1f}s dwell "
+                        f"over landmark window [{lm_start:.1f}s - {lm_end:.1f}s]!"
+                    )
+                else:
+                    print(f"✅ Cut {c.get('cut_num')} ({src}): landmark '{lm_name}' properly framed ({overlap_dur:.1f}s dwell).")
+
+
+
 def prepare_paced_voiceovers(proj_dir: Path, raw_dir: Path, vo_cues: list[dict]):
     print("Pacing & normalizing voiceover stems with Studio-Dry Anti-Reverb (-16.0 dB mean target)...")
     base_fc = (
@@ -369,7 +417,7 @@ def build_broadcast_audio_mixes(
         out_m4a = proj_dir / f"full_audio_{lang}.m4a"
         subprocess.run(
             [
-                "ffmpeg", "-y", "-i", str(bgm_track), "-i", str(cam_stem), "-i", str(sfx_stem),
+                "ffmpeg", "-y", "-stream_loop", "-1", "-i", str(bgm_track), "-i", str(cam_stem), "-i", str(sfx_stem),
                 "-i", str(dialog_key_stem), *vo_inputs, "-filter_complex", duck_fc,
                 "-map", "[norm_master]", "-t", str(total_dur), "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(out_wav),
             ],
@@ -1069,8 +1117,9 @@ def main():
     bgm_track = STUDIO_ROOT / bgm_rel
 
     cuts_spec = spec["cuts"]
-    total_dur = round(sum(float(c["dur"]) for c in cuts_spec), 2)
     overlays_spec = spec.get("overlays", [])
+    check_landmark_synchronization_preflight(proj_dir, cuts_spec, overlays_spec)
+    total_dur = round(sum(float(c["dur"]) for c in cuts_spec), 2)
     boosted_dialogs = spec.get("boosted_dialogs", [])
     sfx_cues = spec.get("sfx_cues", [])
     vo_cues = spec.get("vo_cues", [])
@@ -1080,16 +1129,24 @@ def main():
     if not args.mux_audio_only:
         bookends_cfg = spec.get("bookends", {})
         if bookends_cfg.get("enabled", True):
-            bookends_script = SCRIPTS_DIR / "agvs_bookends.py"
-            subprocess.run([
-                sys.executable, str(bookends_script),
-                "--project-dir", str(proj_dir),
-                "--first-clip", str(raw_dir / bookends_cfg["first_clip"]),
-                "--last-clip", str(raw_dir / bookends_cfg["last_clip"]),
-            ], check=True)
+            intro_mp4 = raw_dir / "bookend_intro_4K.mp4"
+            outro_mp4 = raw_dir / "bookend_outro_4K.mp4"
+            if not (intro_mp4.exists() and outro_mp4.exists() and intro_mp4.stat().st_size > 100_000 and outro_mp4.stat().st_size > 100_000):
+                bookends_script = SCRIPTS_DIR / "agvs_bookends.py"
+                subprocess.run([
+                    sys.executable, str(bookends_script),
+                    "--project-dir", str(proj_dir),
+                    "--first-clip", str(raw_dir / bookends_cfg["first_clip"]),
+                    "--last-clip", str(raw_dir / bookends_cfg["last_clip"]),
+                ], check=True)
         print("Rendering declarative Warm Vintage Parchment overlays & 1Hz Live Telemetry HUDs...")
     expanded_overlays_map = render_declarative_overlays(
-        overlays_spec, overlays_dir, raw_dir=raw_dir, skip_render=args.mux_audio_only
+        overlays_spec,
+        overlays_dir,
+        raw_dir=raw_dir,
+        skip_render=args.mux_audio_only,
+        cuts_spec=cuts_spec,
+        hud_mode=spec.get("hud_mode", "auto"),
     )
     expanded_overlays_en = expanded_overlays_map["en"]
     expanded_overlays_ru = expanded_overlays_map["ru"]

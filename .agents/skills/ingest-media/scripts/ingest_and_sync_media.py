@@ -858,6 +858,17 @@ def main():
     local_manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"Created {cat_manifest_path} [Genre: {genre} | Storyboard: {storyboard_status}] ({len(media_items)} items).")
 
+    # Step 0d: Automated Semantic Subclip & Landmark Indexing for clips >= 12s
+    try:
+        scripts_dir = Path(__file__).resolve().parent
+        if str(scripts_dir) not in sys.path:
+            sys.path.insert(0, str(scripts_dir))
+        from extract_video_subclips import process_project_subclips
+        print("Running automatic semantic subclip & landmark indexing across long clips...")
+        process_project_subclips(project_dir)
+    except Exception as e:
+        print(f"Note: Subclip indexing skipped or encountered notice: {e}")
+
 
 if __name__ == "__main__":
     main()
