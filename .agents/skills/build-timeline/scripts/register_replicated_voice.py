@@ -47,7 +47,7 @@ def ensure_24k_mono_wav(src_path: Path, out_path: Path) -> Path:
 
 
 def store_voice_id_securely(new_voice_id: str, project_dir: Path | None = None):
-    print(f"\nStoring replicated voice ID securely as a secret credential...")
+    print("\nStoring replicated voice ID securely via 1Password & 0o600 local cache...")
 
     # 1. Store in 1Password following Alexander's direnv-manager convention
     try:
@@ -73,25 +73,11 @@ def store_voice_id_securely(new_voice_id: str, project_dir: Path | None = None):
     except Exception as e:
         print(f"  ⚠️  Note: 1Password CLI update skipped or unavailable: {e}")
 
-    # 2. Store in local git-ignored .env file
-    env_file = STUDIO_ROOT / ".env"
-    lines = env_file.read_text(encoding="utf-8").splitlines() if env_file.exists() else []
-    found = False
-    new_lines = []
-    for line in lines:
-        if line.startswith("GEMINI_VOICE_ID="):
-            new_lines.append(f"GEMINI_VOICE_ID={new_voice_id}")
-            found = True
-        else:
-            new_lines.append(line)
-    if not found:
-        new_lines.append(f"GEMINI_VOICE_ID={new_voice_id}")
-    env_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-    print(f"  ✅ Updated local git-ignored .env file")
-
-    # 3. Store in local git-ignored 03_Audio_Library/03_Voice_Profile/voice_id.json
-    voice_json = VOICE_PROFILE_DIR / "voice_id.json"
-    voice_json.parent.mkdir(parents=True, exist_ok=True)
+    # 2. Store in local non-cloud-synced 0o600 cache (~/.config/antigravity_studio/voice_id.json)
+    local_cache_dir = Path("~/.config/antigravity_studio").expanduser()
+    local_cache_dir.mkdir(parents=True, exist_ok=True)
+    os.chmod(local_cache_dir, 0o700)
+    voice_json = local_cache_dir / "voice_id.json"
     voice_json.write_text(
         json.dumps(
             {
@@ -104,18 +90,18 @@ def store_voice_id_securely(new_voice_id: str, project_dir: Path | None = None):
         ),
         encoding="utf-8",
     )
-    print(f"  ✅ Updated git-ignored voice cache -> {voice_json.relative_to(STUDIO_ROOT)}")
+    os.chmod(voice_json, 0o600)
+    print(f"  ✅ Updated 0o600 local voice cache -> {voice_json}")
 
-    # 4. In active Storyboard.md (catalog is git-ignored), update voiceover_persona
+    # 3. In active Storyboard.md (catalog is git-ignored), ensure placeholder $GEMINI_VOICE_ID
     if project_dir and (project_dir / "Storyboard.md").exists():
         sb_file = project_dir / "Storyboard.md"
         text = sb_file.read_text(encoding="utf-8")
-        text = re.sub(r'voiceover_persona:\s*(?:"[^"]+"|\S+)', f'voiceover_persona: "$GEMINI_VOICE_ID"', text)
+        text = re.sub(r'voiceover_persona:\s*(?:"[^"]+"|\S+)', 'voiceover_persona: "$GEMINI_VOICE_ID"', text)
         sb_file.write_text(text, encoding="utf-8")
-        print(f"  ✅ Updated Storyboard.md persona -> $GEMINI_VOICE_ID")
+        print("  ✅ Updated Storyboard.md persona -> $GEMINI_VOICE_ID")
 
-    # CRITICAL: Never write raw voice IDs to tracked repository files (assemble_engine.py, editing_constitution.md, etc.)
-    print("  🛡️  Zero-leak standard enforced: No raw voice IDs written to git-tracked files.")
+    print("  🛡️  Zero-leak standard enforced: No raw voice IDs written to cloud-synced or git-tracked files.")
 
 
 def main():
@@ -190,20 +176,23 @@ def main():
     tmp_consent.unlink(missing_ok=True)
 
     voice_id = replicated_voice.id
-    print(f"\n🎉 SUCCESS! Replicated voice registered successfully!")
-    print(f"  Voice ID    : {voice_id}")
+    masked_id = f"{voice_id[:8]}***" if voice_id and len(voice_id) > 8 else "voice_***"
+    print("\n🎉 SUCCESS! Replicated voice registered successfully!")
+    print(f"  Voice ID    : {masked_id} (concealed)")
     print(f"  Display Name: {getattr(replicated_voice, 'display_name', args.display_name)}")
     print(f"  Model       : {getattr(replicated_voice, 'model', 'gemini-3.8-flash-tts')}")
 
-    # Store securely in 1Password, .env, and local cache (zero Git leaks)
+    # Store securely in 1Password and 0o600 local cache (zero cloud/Git leaks)
     store_voice_id_securely(voice_id, project_dir=args.project_dir)
 
-    # Resynthesize if requested
+    # Resynthesize if requested (pass GEMINI_VOICE_ID via env, never via CLI argv)
     if args.resynthesize and args.project_dir.exists():
-        print(f"\nRe-rendering voiceovers for {args.project_dir.name} using {voice_id}...")
+        print(f"\nRe-rendering voiceovers for {args.project_dir.name} using $GEMINI_VOICE_ID...")
         gen_script = STUDIO_ROOT / ".agents/skills/build-timeline/scripts/generate_voiceover.py"
+        child_env = dict(os.environ, GEMINI_VOICE_ID=voice_id)
         subprocess.run(
-            [sys.executable, str(gen_script), "--project-dir", str(args.project_dir), "--voice-id", voice_id],
+            [sys.executable, str(gen_script), "--project-dir", str(args.project_dir)],
+            env=child_env,
             check=True,
         )
         print("Re-building timeline with authentic voice mix...")

@@ -77,7 +77,6 @@ def test_non_monotonic_gpx_milepost_rejected(tmp_path: Path):
     bt.check_landmark_synchronization_preflight(proj, exempt_cuts, [])
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 2")
 def test_storyboard_has_no_raw_voice_id_or_abs_path(femenia_dir: Path):
     from agvs_core import config as agvs_config
 

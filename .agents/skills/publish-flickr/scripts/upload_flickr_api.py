@@ -102,15 +102,14 @@ def authenticate_interactive(api_key: str, api_secret: str) -> dict:
     }
 
     TOKEN_DIR.mkdir(parents=True, exist_ok=True)
+    os.chmod(TOKEN_DIR, 0o700)
     TOKEN_FILE.write_text(json.dumps(token_data, indent=2), encoding="utf-8")
+    os.chmod(TOKEN_FILE, 0o600)
     print(f"\n✓ Successfully authorized Flickr account: {token_data['username']} ({token_data['fullname']})")
-    print(f"✓ Cached credentials in {TOKEN_FILE}")
+    print(f"✓ Cached credentials with 0o600 permissions in {TOKEN_FILE}")
     print("\n💡 1Password Integration Tip:")
-    print("   To inject via 1Password / direnv and keep filesystem clean, add these to your environment:")
-    print(f"   export FLICKR_API_KEY=\"{api_key}\"")
-    print(f"   export FLICKR_API_SECRET=\"{api_secret}\"")
-    print(f"   export FLICKR_OAUTH_TOKEN=\"{token_data['oauth_token']}\"")
-    print(f"   export FLICKR_OAUTH_TOKEN_SECRET=\"{token_data['oauth_token_secret']}\"\n")
+    print("   Store envvar:FLICKR_API_KEY, envvar:FLICKR_API_SECRET, envvar:FLICKR_OAUTH_TOKEN, and")
+    print("   envvar:FLICKR_OAUTH_TOKEN_SECRET in vault 'Private' (secrets never echoed to terminal).\n")
 
     return token_data
 
