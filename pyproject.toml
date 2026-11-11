@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "antigravity-video-studio"
+version = "3.0.0"
+description = "Declarative 4K AI Video Production Studio & Core Engine (AGVS v3)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Alexander Komlik", email = "akomlik@gmail.com"}
+]
+dependencies = [
+    "pydantic>=2.7",
+    "Pillow>=10.0",
+    "google-genai>=1.0",
+    "google-api-python-client>=2.100",
+    "google-auth-oauthlib>=1.2",
+    "requests>=2.31",
+    "requests-oauthlib>=2.0",
+    "PyYAML>=6.0",
+    "bleequp-ranger-sync @ git+https://github.com/akomlik/bleequp-ranger-sync.git",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+cockpit = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+]
+
+[tool.setuptools.packages.find]
+include = ["agvs_core*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
