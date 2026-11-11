@@ -53,7 +53,6 @@ def test_ua_to_uk_wire_mapping_and_srt_sha256_skip(tmp_path: Path):
     assert (tmp_path / "captions.ua.srt").exists(), "Local file must remain captions.ua.srt!"
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 9")
 def test_youtube_default_privacy_unlisted_and_storyboard_headline_and_flickr_cat_dir(
     femenia_dir: Path, tmp_path: Path
 ):
