@@ -42,7 +42,6 @@ def test_warm_parchment_palette_and_cyrillic_bold_parity(tmp_path: Path):
     assert "bold" in style.lower() or "heavy" in style.lower()
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 6")
 def test_auto_speech_pagination_primary_translation_and_emoji_ban(tmp_path: Path):
     from agvs_core.bookends import OUTRO_CREDITS_SUBLINE_EN, OUTRO_CREDITS_SUBLINE_RU
     from agvs_core.vintage_cards import (

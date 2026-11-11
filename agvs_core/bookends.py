@@ -1,0 +1,1105 @@
+"""AGVS Signature Opening & Closing 4K Bookends Generator (Warm Vintage Travel Postcard & Credits)."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import random
+import re
+import subprocess
+import urllib.request
+import xml.etree.ElementTree as ET
+from pathlib import Path
+from typing import Any
+
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
+
+from agvs_core.config import find_binary, get_hot_media_dir, get_map_tile_cache_dir
+from agvs_core.telemetry_gpx import select_primary_ride_gpx
+from agvs_core.vintage_cards import load_apple_font, strip_unicode_emojis
+
+# ---------------------------------------------------------------------------
+# Color Palette: "Warm Mediterranean Parchment & Postage Ink"
+# ---------------------------------------------------------------------------
+COLOR_PARCHMENT_CENTER = (242, 236, 225)       # #F2ECE1
+COLOR_PARCHMENT_EDGE = (223, 211, 190)         # #DFD3BE
+COLOR_ESPRESSO_INK = (35, 31, 29, 255)         # #231F1D (Headlines, names, borders)
+COLOR_UMBER_INK = (92, 80, 67, 255)            # #5C5043 (Subtitles, roles, dividers)
+COLOR_POSTMARK_CRIMSON = (184, 58, 42, 255)    # #B83A2A (Stamps, route line, accents)
+COLOR_FOREST_GREEN = (45, 106, 79, 255)        # #2D6A4F (Start pin)
+COLOR_POLAROID_PAPER = (252, 249, 242, 255)    # #FCF9F2
+COLOR_POLAROID_BORDER = (216, 207, 192, 255)   # #D8CFC0
+COLOR_TICKET_BG = (230, 219, 200, 255)         # #E6DBC8
+COLOR_MAP_LAND = (239, 230, 213, 255)          # #EFE6D5
+COLOR_MAP_WATER = (202, 216, 216, 255)         # #CAD8D8
+
+OUTRO_CREDITS_SUBLINE_EN = "0% GRAVITY GUARANTEED ON DESCENTS ONLY   •   CRAFTED IN 4K · ZERO SCRIPTS HARMED"
+OUTRO_CREDITS_SUBLINE_RU = "0% ГРАВИТАЦИИ ТОЛЬКО НА СПУСКАХ   •   СНЯТО И СОБРАНО В 4K · БЕЗ РУЧНЫХ СКРИПТОВ"
+
+
+def create_warm_parchment_canvas(w: int = 3840, h: int = 2160) -> Image.Image:
+    """Generate a 4K Mediterranean parchment canvas with radial vignette and subtle paper grain."""
+    sw, sh = 480, 270
+    low_img = Image.new("RGBA", (sw, sh), (*COLOR_PARCHMENT_CENTER, 255))
+    d = ImageDraw.Draw(low_img)
+    cx, cy = sw / 2.0, sh / 2.0
+    max_r = math.hypot(cx, cy)
+
+    for step in range(24, 0, -1):
+        r_frac = step / 24.0
+        rad = max_r * r_frac
+        v = r_frac * r_frac * (3 - 2 * r_frac)
+        c_r = int(COLOR_PARCHMENT_CENTER[0] * (1 - v) + COLOR_PARCHMENT_EDGE[0] * v)
+        c_g = int(COLOR_PARCHMENT_CENTER[1] * (1 - v) + COLOR_PARCHMENT_EDGE[1] * v)
+        c_b = int(COLOR_PARCHMENT_CENTER[2] * (1 - v) + COLOR_PARCHMENT_EDGE[2] * v)
+        d.ellipse([cx - rad, cy - rad, cx + rad, cy + rad], fill=(c_r, c_g, c_b, 255))
+
+    low_img = low_img.filter(ImageFilter.GaussianBlur(20))
+    parchment = low_img.resize((w, h), resample=Image.Resampling.BICUBIC)
+
+    nw, nh = 960, 540
+    noise_img = Image.new("RGBA", (nw, nh), (128, 128, 128, 0))
+    noise_draw = ImageDraw.Draw(noise_img)
+    rng = random.Random(42)
+    for _ in range(12000):
+        nx = rng.randint(0, nw - 1)
+        ny = rng.randint(0, nh - 1)
+        val = rng.randint(0, 1)
+        clr = (92, 80, 67, 18) if val == 0 else (255, 255, 255, 22)
+        noise_draw.point((nx, ny), fill=clr)
+
+    noise_full = noise_img.resize((w, h), resample=Image.Resampling.BILINEAR)
+    return Image.alpha_composite(parchment, noise_full)
+
+
+def parse_gpx_points(gpx_path: Path) -> list[tuple[float, float, float]]:
+    """Extract (lat, lon, ele) coordinates from GPX trackpoints."""
+    if not gpx_path or not gpx_path.exists():
+        return []
+    try:
+        tree = ET.parse(gpx_path)
+        root = tree.getroot()
+        ns = {"gpx": "http://www.topografix.com/GPX/1/1"}
+        pts = []
+        for trkpt in root.findall(".//gpx:trkpt", ns):
+            lat = float(trkpt.attrib["lat"])
+            lon = float(trkpt.attrib["lon"])
+            ele_el = trkpt.find("gpx:ele", ns)
+            ele = float(ele_el.text) if ele_el is not None else 0.0
+            pts.append((lat, lon, ele))
+        if not pts:
+            for trkpt in root.findall(".//trkpt"):
+                lat = float(trkpt.attrib["lat"])
+                lon = float(trkpt.attrib["lon"])
+                ele_el = trkpt.find("ele")
+                ele = float(ele_el.text) if ele_el is not None else 0.0
+                pts.append((lat, lon, ele))
+        return pts
+    except Exception:
+        return []
+
+
+def latlon_to_tile(lat: float, lon: float, z: int) -> tuple[int, int]:
+    lat_rad = math.radians(lat)
+    n = 2.0 ** z
+    xtile = int((lon + 180.0) / 360.0 * n)
+    ytile = int((1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n)
+    return xtile, ytile
+
+
+def to_mercator_pixels(lat: float, lon: float, z: int) -> tuple[float, float]:
+    lat_rad = math.radians(lat)
+    n = 2.0 ** z
+    x = (lon + 180.0) / 360.0 * n * 256.0
+    y = (1.0 - math.asinh(math.tan(lat_rad)) / math.pi) / 2.0 * n * 256.0
+    return x, y
+
+
+def fetch_and_render_vintage_basemap(
+    pts: list[tuple[float, float, float]],
+    map_w: int = 1420,
+    map_h: int = 1390,
+    margin: float = 0.22,
+    cache_dir: Path | None = None,
+    target_latlon: tuple[float, float] | None = None,
+    use_farthest: bool = False,
+) -> tuple[Image.Image, list[tuple[float, float]], tuple[float, float], tuple[float, float]]:
+    """Fetch and stitch basemap tiles cached in local working cache (never inside Google Drive)."""
+    if cache_dir is None:
+        cache_dir = get_map_tile_cache_dir()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    if pts:
+        lats = [p[0] for p in pts]
+        lons = [p[1] for p in pts]
+        min_lat, max_lat = min(lats), max(lats)
+        min_lon, max_lon = min(lons), max(lons)
+        if target_latlon is not None:
+            summit_pt = (float(target_latlon[0]), float(target_latlon[1]), 0.0)
+        elif use_farthest:
+            p0 = pts[0]
+            summit_pt = max(pts, key=lambda p: (p[0] - p0[0]) ** 2 + ((p[1] - p0[1]) * 0.77) ** 2)
+        else:
+            summit_pt = max(pts, key=lambda p: p[2])
+    else:
+        min_lat, max_lat = 39.75, 39.95
+        min_lon, max_lon = 2.80, 3.15
+        summit_pt = (float(target_latlon[0]), float(target_latlon[1]), 0.0) if target_latlon else (39.852, 3.122, 20.0)
+
+    lat_span = max(max_lat - min_lat, 0.04)
+    lon_span = max(max_lon - min_lon, 0.04)
+    b_min_lat = min_lat - margin * lat_span
+    b_max_lat = max_lat + margin * lat_span
+    b_min_lon = min_lon - margin * lon_span
+    b_max_lon = max_lon + margin * lon_span
+
+    zoom = 12 if max(lat_span, lon_span) < 0.35 else 11
+
+    tx0, ty0 = latlon_to_tile(b_max_lat, b_min_lon, zoom)
+    tx1, ty1 = latlon_to_tile(b_min_lat, b_max_lon, zoom)
+    tx0 = max(0, tx0 - 1)
+    tx1 = tx1 + 1
+    ty0 = max(0, ty0 - 1)
+    ty1 = ty1 + 1
+
+    cols = tx1 - tx0 + 1
+    rows = ty1 - ty0 + 1
+
+    stitched = Image.new("RGBA", (cols * 256, rows * 256), (*COLOR_MAP_LAND[:3], 255))
+    tile_fetched = False
+
+    for ix, x in enumerate(range(tx0, tx1 + 1)):
+        for iy, y in enumerate(range(ty0, ty1 + 1)):
+            tile_file = cache_dir / f"esri_topo_{zoom}_{x}_{y}.jpg"
+            if not tile_file.exists():
+                url = f"https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{zoom}/{y}/{x}"
+                req = urllib.request.Request(url, headers={"User-Agent": "AntigravityVideoStudio/3.0"})
+                try:
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        tile_file.write_bytes(resp.read())
+                except Exception:
+                    pass
+            if tile_file.exists():
+                try:
+                    t_img = Image.open(tile_file).convert("RGBA")
+                    stitched.paste(t_img, (ix * 256, iy * 256))
+                    tile_fetched = True
+                except Exception:
+                    pass
+
+    def to_stitch_px(lat: float, lon: float) -> tuple[float, float]:
+        px, py = to_mercator_pixels(lat, lon, zoom)
+        return px - tx0 * 256.0, py - ty0 * 256.0
+
+    crop_x0, crop_y0 = to_stitch_px(b_max_lat, b_min_lon)
+    crop_x1, crop_y1 = to_stitch_px(b_min_lat, b_max_lon)
+    cw = crop_x1 - crop_x0
+    ch = crop_y1 - crop_y0
+
+    target_aspect = map_w / map_h
+    cur_aspect = cw / max(ch, 1.0)
+    if cur_aspect > target_aspect:
+        new_ch = cw / target_aspect
+        diff = new_ch - ch
+        crop_y0 -= diff / 2.0
+        crop_y1 += diff / 2.0
+    else:
+        new_cw = ch * target_aspect
+        diff = new_cw - cw
+        crop_x0 -= diff / 2.0
+        crop_x1 += diff / 2.0
+
+    cw = crop_x1 - crop_x0
+    ch = crop_y1 - crop_y0
+
+    if tile_fetched:
+        crop_box = (
+            int(max(0, crop_x0)),
+            int(max(0, crop_y0)),
+            int(min(stitched.width, crop_x1)),
+            int(min(stitched.height, crop_y1)),
+        )
+        cropped_map = stitched.crop(crop_box).resize((map_w, map_h), resample=Image.Resampling.BICUBIC)
+        parchment_tint = Image.new("RGB", (map_w, map_h), (244, 236, 222))
+        map_rgb = ImageChops.multiply(cropped_map.convert("RGB"), parchment_tint)
+        map_img = map_rgb.convert("RGBA")
+    else:
+        map_img = Image.new("RGBA", (map_w, map_h), (*COLOR_MAP_LAND[:3], 255))
+        d_off = ImageDraw.Draw(map_img)
+        d_off.polygon(
+            [(map_w * 0.55, 0), (map_w, 0), (map_w, map_h * 0.45), (map_w * 0.65, map_h * 0.35)],
+            fill=(*COLOR_MAP_WATER[:3], 255),
+        )
+        d_off.polygon(
+            [(map_w * 0.70, map_h * 0.40), (map_w, map_h * 0.35), (map_w, map_h), (map_w * 0.85, map_h)],
+            fill=(*COLOR_MAP_WATER[:3], 255),
+        )
+
+    projected = []
+    for p in pts:
+        px, py = to_stitch_px(p[0], p[1])
+        mx = (px - crop_x0) / cw * map_w
+        my = (py - crop_y0) / ch * map_h
+        projected.append((mx, my))
+
+    start_px = projected[0] if projected else (map_w * 0.72, map_h * 0.78)
+    summit_raw = to_stitch_px(summit_pt[0], summit_pt[1])
+    summit_px = ((summit_raw[0] - crop_x0) / cw * map_w, (summit_raw[1] - crop_y0) / ch * map_h)
+
+    d_map = ImageDraw.Draw(map_img)
+    font_grat = load_apple_font("body_regular", 18)
+    lat_step = 0.05
+    start_lat_grid = math.floor(b_min_lat / lat_step) * lat_step
+    while start_lat_grid <= b_max_lat:
+        _, gy = to_stitch_px(start_lat_grid, b_min_lon)
+        g_my = (gy - crop_y0) / ch * map_h
+        if 20 <= g_my <= map_h - 20:
+            d_map.line([(18, g_my), (map_w - 18, g_my)], fill=(180, 168, 150, 75), width=1)
+            d_map.text((24, g_my - 20), f"{start_lat_grid:.2f}° N", font=font_grat, fill=(130, 118, 102, 170))
+        start_lat_grid += lat_step
+
+    lon_step = 0.05
+    start_lon_grid = math.floor(b_min_lon / lon_step) * lon_step
+    while start_lon_grid <= b_max_lon:
+        gx, _ = to_stitch_px(b_max_lat, start_lon_grid)
+        g_mx = (gx - crop_x0) / cw * map_w
+        if 20 <= g_mx <= map_w - 20:
+            d_map.line([(g_mx, 18), (g_mx, map_h - 18)], fill=(180, 168, 150, 75), width=1)
+            d_map.text((g_mx + 6, map_h - 38), f"{start_lon_grid:.2f}° E", font=font_grat, fill=(130, 118, 102, 170))
+        start_lon_grid += lon_step
+
+    return map_img, projected, start_px, summit_px
+
+
+def draw_cartographic_neatline(draw: ImageDraw.ImageDraw, w: int, h: int) -> None:
+    bw = 8
+    tick_len = 24
+    for x in range(0, w, tick_len):
+        idx = (x // tick_len) % 2
+        c = (35, 31, 29, 255) if idx == 0 else (252, 249, 242, 255)
+        draw.rectangle([x, 0, min(x + tick_len, w), bw], fill=c)
+        draw.rectangle([x, h - bw, min(x + tick_len, w), h], fill=c)
+    for y in range(0, h, tick_len):
+        idx = (y // tick_len) % 2
+        c = (35, 31, 29, 255) if idx == 0 else (252, 249, 242, 255)
+        draw.rectangle([0, y, bw, min(y + tick_len, h)], fill=c)
+        draw.rectangle([w - bw, y, w, min(y + tick_len, h)], fill=c)
+
+    draw.rectangle([0, 0, w - 1, h - 1], outline=(35, 31, 29, 255), width=2)
+    draw.rectangle([14, 14, w - 15, h - 15], outline=(92, 80, 67, 255), width=2)
+
+
+def draw_compass_rose(draw: ImageDraw.ImageDraw, cx: int, cy: int, r: int = 42) -> None:
+    draw.polygon([(cx, cy - r), (cx + 9, cy - 8), (cx, cy)], fill=(184, 58, 42, 255))
+    draw.polygon([(cx, cy - r), (cx - 9, cy - 8), (cx, cy)], fill=(92, 80, 67, 255))
+    draw.polygon([(cx, cy + r), (cx + 9, cy + 8), (cx, cy)], fill=(184, 58, 42, 255))
+    draw.polygon([(cx, cy + r), (cx - 9, cy + 8), (cx, cy)], fill=(92, 80, 67, 255))
+    draw.polygon([(cx + r, cy), (cx + 8, cy + 9), (cx, cy)], fill=(184, 58, 42, 255))
+    draw.polygon([(cx + r, cy), (cx + 8, cy - 9), (cx, cy)], fill=(92, 80, 67, 255))
+    draw.polygon([(cx - r, cy), (cx - 8, cy - 9), (cx, cy)], fill=(184, 58, 42, 255))
+    draw.polygon([(cx - r, cy), (cx - 8, cy + 9), (cx, cy)], fill=(92, 80, 67, 255))
+    draw.ellipse([cx - 4, cy - 4, cx + 4, cy + 4], fill=(35, 31, 29, 255))
+    f_n = load_apple_font("body_bold", 22)
+    bbox = draw.textbbox((0, 0), "N", font=f_n)
+    nw = bbox[2] - bbox[0]
+    draw.text((cx - nw // 2, cy - r - 26), "N", font=f_n, fill=(184, 58, 42, 255))
+
+
+def draw_postmark_watermark(draw: ImageDraw.ImageDraw, cx: int, cy: int) -> None:
+    crimson_faint = (184, 58, 42, 90)
+    draw.ellipse([cx - 46, cy - 46, cx + 46, cy + 46], outline=crimson_faint, width=3)
+    draw.ellipse([cx - 38, cy - 38, cx + 38, cy + 38], outline=crimson_faint, width=1)
+    f_stamp = load_apple_font("stamp_typewriter", 13)
+    draw.text((cx - 28, cy - 14), "MALLORCA", font=f_stamp, fill=crimson_faint)
+    draw.text((cx - 22, cy + 2), "AGVS '26", font=f_stamp, fill=crimson_faint)
+    for offset_y in [-18, 0, 18]:
+        pts = []
+        for x in range(cx - 210, cx - 46):
+            y = cy + offset_y + int(4.5 * math.sin(x * 0.14))
+            pts.append((x, y))
+        draw.line(pts, fill=crimson_faint, width=2)
+
+
+def _resolve_project_raw_dir(project_dir: Path) -> Path:
+    hot_media = get_hot_media_dir()
+    manifest_p = project_dir / "project_manifest.json"
+    if manifest_p.exists():
+        try:
+            m = json.loads(manifest_p.read_text(encoding="utf-8"))
+            raw_folder = m.get("raw_media_folder", "")
+            if raw_folder:
+                cand = hot_media / raw_folder
+                if cand.exists():
+                    return cand
+        except Exception:
+            pass
+    year_match = re.match(r"^(\d{4})-", project_dir.name)
+    year_sub = year_match.group(1) if year_match else "2026"
+    cand = hot_media / year_sub / project_dir.name
+    if cand.exists():
+        return cand
+    return project_dir
+
+
+def extract_project_bookends_spec(project_dir: Path) -> dict[str, Any]:
+    """Extract bookend metadata and tuning knobs from Storyboard.md and timeline_spec.json."""
+    spec: dict[str, Any] = {
+        "enabled": True,
+        "intro_duration_s": 3.5,
+        "outro_duration_s": 4.5,
+        "studio_motto": "Discipline · Data · Gratitude",
+        "studio_motto_ru": "Дисциплина · Данные · Благодарность",
+        "location_badge": "MALLORCA // BONAIRE ➔ BAY OF POLLENÇA & ALCÚDIA",
+        "place_name": "MALLORCA",
+        "place_name_ru": "МАЙОРКА",
+        "route_subtitle": "BONAIRE  ➔  BAY OF POLLENÇA & ALCÚDIA",
+        "route_subtitle_ru": "БОНАЙРЕ  ➔  ЗАЛИВ ПОЙЕНСА И АЛЬКУДИЯ",
+        "start_label": "START: BONAIRE",
+        "start_label_ru": "СТАРТ: БОНАЙРЕ",
+        "turnaround_label": "TURNAROUND",
+        "turnaround_label_ru": "РАЗВОРОТ",
+        "turnaround_lat": None,
+        "turnaround_lon": None,
+        "cast_credits": [
+            "Nina Komlik — Co-Producer & Adventure Partner",
+            "Mallorca Peloton & Friends — Island Crew",
+        ],
+        "cast_credits_ru": [
+            "Нина Комлик — Главный вдохновитель и спутница",
+            "Друзья на Майорке — Островная команда",
+        ],
+        "steed_credit": "Trek Madone 7 (Personal build on 2016 Craigslist frame · Stationed on island since June 2022)",
+        "steed_credit_ru": "Trek Madone 7 (Сборка на раме с Craigslist 2016 · На острове с июня 2022)",
+        "main_hero": "Antigravity Video Studio (AGVS v3.0)",
+        "github_repo": "github.com/akomlik/antigravity-video-studio",
+        "fuel_sponsors": "Mallorca Espresso & Mediterranean Sunshine",
+        "fuel_sponsors_ru": "Майоркинский эспрессо и средиземноморское солнце",
+        "date_str": "2026-11-10",
+        "short_title": "MALLORCA RIDE & MEMORIES",
+        "short_title_ru": "МАЙОРКА: ЗАЕЗД И ВОСПОМИНАНИЯ",
+        "distance_mi": 32.6,
+        "elevation_ft": 640,
+        "gpx_file": None,
+        "first_clip": None,
+        "last_clip": None,
+    }
+
+    raw_dir = _resolve_project_raw_dir(project_dir)
+    storyboard_path = project_dir / "Storyboard.md"
+    manifest_path = project_dir / "project_manifest.json"
+
+    if manifest_path.exists():
+        try:
+            m = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if m.get("gpx_file"):
+                for cand in (project_dir / m["gpx_file"], raw_dir / m["gpx_file"]):
+                    if cand.exists():
+                        spec["gpx_file"] = cand
+                        break
+        except Exception:
+            pass
+
+    if not spec["gpx_file"]:
+        primary_gpx, _ = select_primary_ride_gpx(raw_dir, project_name=project_dir.name)
+        if primary_gpx is None and raw_dir != project_dir:
+            primary_gpx, _ = select_primary_ride_gpx(project_dir, project_name=project_dir.name)
+        if primary_gpx:
+            spec["gpx_file"] = primary_gpx
+
+    if storyboard_path.exists():
+        text = storyboard_path.read_text(encoding="utf-8")
+        m_date = re.search(r"(\d{4}-\d{2}-\d{2})", project_dir.name)
+        if m_date:
+            spec["date_str"] = m_date.group(1)
+
+        m_title = re.search(r"\*\s*\*\*Primary.*?\*\*:?\s*`?([^`\n]+)`?", text)
+        if m_title:
+            raw_t = m_title.group(1).strip()
+            cleaned_t = re.sub(r"^\d{4}-\d{2}-\d{2}\s*[·•-]\s*", "", raw_t)
+            if " · " in cleaned_t:
+                cleaned_t = cleaned_t.split(" · ")[-1].strip()
+            spec["short_title"] = strip_unicode_emojis(cleaned_t).upper()
+
+        m_dist = re.search(r"([\d.]+)\s*mi\b", text, re.IGNORECASE)
+        if m_dist:
+            spec["distance_mi"] = float(m_dist.group(1))
+        m_ele = re.search(r"([\d,]+)\s*ft\s*ascent", text, re.IGNORECASE)
+        if m_ele:
+            spec["elevation_ft"] = int(m_ele.group(1).replace(",", ""))
+
+        if spec["elevation_ft"] >= 1500:
+            spec["studio_motto"] = "Gravity Reduction Module: FAILED (Climbing Anyway)"
+        elif spec["distance_mi"] <= 25:
+            spec["studio_motto"] = "Powered by Espresso, Pastries & 0.2s FFmpeg Remux"
+        else:
+            spec["studio_motto"] = "No Riders Were Dropped in the Making of This Film (Mostly)"
+
+        if "agvs_bookends:" in text:
+            try:
+                m_block = re.search(r"agvs_bookends:\s*\n((?:\s+.*\n)+)", text)
+                if m_block:
+                    for bl in m_block.group(1).splitlines():
+                        bl = bl.strip()
+                        if bl.startswith("enabled:"):
+                            spec["enabled"] = "true" in bl.lower()
+                        elif bl.startswith("intro_duration_s:"):
+                            spec["intro_duration_s"] = float(bl.split(":", 1)[1].strip())
+                        elif bl.startswith("outro_duration_s:"):
+                            spec["outro_duration_s"] = float(bl.split(":", 1)[1].strip())
+                        elif bl.startswith("studio_motto:"):
+                            spec["studio_motto"] = bl.split(":", 1)[1].strip().strip("\"'")
+                        elif bl.startswith("location_badge:"):
+                            spec["location_badge"] = bl.split(":", 1)[1].strip().strip("\"'")
+                        elif bl.startswith("place_name:"):
+                            spec["place_name"] = bl.split(":", 1)[1].strip().strip("\"'")
+                        elif bl.startswith("route_subtitle:"):
+                            spec["route_subtitle"] = bl.split(":", 1)[1].strip().strip("\"'")
+                        elif bl.startswith("steed_credit:"):
+                            val = bl.split(":", 1)[1].strip()
+                            if (val.startswith("'") and val.endswith("'")) or (val.startswith('"') and val.endswith('"')):
+                                val = val[1:-1]
+                            spec["steed_credit"] = val.replace('\\"', '"')
+                        elif bl.startswith("cast_credits:"):
+                            val = bl.split(":", 1)[1].strip().strip("\"'")
+                            if val:
+                                spec["cast_credits"] = [p.strip() for p in val.split(" · ")] if " · " in val else [val]
+                        elif bl.startswith("cast_credits_ru:"):
+                            val = bl.split(":", 1)[1].strip().strip("\"'")
+                            if val:
+                                spec["cast_credits_ru"] = [p.strip() for p in val.split(" · ")] if " · " in val else [val]
+                        elif bl.startswith("main_hero:"):
+                            spec["main_hero"] = bl.split(":", 1)[1].strip().strip("\"'")
+                        elif bl.startswith("github_repo:"):
+                            spec["github_repo"] = bl.split(":", 1)[1].strip().strip("\"'")
+                        elif bl.startswith("fuel_sponsors:"):
+                            spec["fuel_sponsors"] = bl.split(":", 1)[1].strip().strip("\"'")
+            except Exception:
+                pass
+
+    if "location_badge" in spec and " ➔ " in spec["location_badge"]:
+        parts = spec["location_badge"].split(" ➔ ")
+        if "//" in parts[0]:
+            subparts = parts[0].split("//")
+            spec["place_name"] = subparts[0].strip()
+            spec["route_subtitle"] = f"{subparts[1].strip()}  ➔  {parts[1].strip()}"
+
+    tspec_path = project_dir / "timeline_spec.json"
+    if tspec_path.exists():
+        try:
+            tspec = json.loads(tspec_path.read_text(encoding="utf-8"))
+            bcfg = tspec.get("bookends", {})
+            for k in (
+                "enabled",
+                "intro_duration_s",
+                "outro_duration_s",
+                "first_clip",
+                "last_clip",
+                "place_name", "place_name_ru",
+                "route_subtitle", "route_subtitle_ru",
+                "start_label", "start_label_ru",
+                "turnaround_label", "turnaround_label_ru",
+                "turnaround_lat", "turnaround_lon",
+                "short_title", "short_title_ru",
+                "studio_motto", "studio_motto_ru",
+                "distance_mi", "elevation_ft",
+                "cast_credits", "cast_credits_ru",
+                "steed_credit", "steed_credit_ru",
+                "fuel_sponsors", "fuel_sponsors_ru",
+            ):
+                if k in bcfg and bcfg[k] is not None:
+                    spec[k] = bcfg[k]
+        except Exception:
+            pass
+
+    return spec
+
+
+def render_intro_canvas_4k(spec: dict[str, Any], out_png: Path) -> Path:
+    """Render the split-stage 4K Opening Postcard Canvas."""
+    w, h = 3840, 2160
+    canvas = create_warm_parchment_canvas(w, h)
+
+    pw, ph = 1864, 1184
+    shadow_card = Image.new("RGBA", (pw, ph), (35, 31, 29, 130))
+    shadow_card_rot = shadow_card.rotate(-2.0, resample=Image.Resampling.BICUBIC, expand=True)
+    sw, sh = shadow_card_rot.size
+    sx = int(2670 - sw / 2 + 18)
+    sy = int(1025 - sh / 2 + 24)
+
+    shadow_mask = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    shadow_mask.paste(shadow_card_rot, (sx, sy), shadow_card_rot)
+    shadow_mask = shadow_mask.filter(ImageFilter.GaussianBlur(36))
+    canvas = Image.alpha_composite(canvas, shadow_mask)
+
+    draw = ImageDraw.Draw(canvas)
+
+    motto_text = strip_unicode_emojis(spec.get("studio_motto", "")).upper()
+    f_stamp = load_apple_font("stamp_typewriter", 38)
+
+    f_motto_size = 36
+    f_motto = load_apple_font("card_subtitle", f_motto_size, text=motto_text)
+    dummy_draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    bbox = dummy_draw.textbbox((0, 0), motto_text, font=f_motto)
+    text_w = bbox[2] - bbox[0]
+
+    max_stamp_w = 1420
+    stamp_w = min(max_stamp_w, max(1120, text_w + 80))
+    while text_w > (stamp_w - 68) and f_motto_size > 22:
+        f_motto_size -= 2
+        f_motto = load_apple_font("card_subtitle", f_motto_size, text=motto_text)
+        bbox = dummy_draw.textbbox((0, 0), motto_text, font=f_motto)
+        text_w = bbox[2] - bbox[0]
+
+    stamp_h = 144
+    stamp_img = Image.new("RGBA", (stamp_w, stamp_h), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(stamp_img)
+    sd.rounded_rectangle([2, 2, stamp_w - 3, stamp_h - 3], radius=6, outline=COLOR_POSTMARK_CRIMSON, width=4)
+    sd.rounded_rectangle([8, 8, stamp_w - 9, stamp_h - 9], radius=4, outline=COLOR_POSTMARK_CRIMSON, width=2)
+    sd.text((28, 18), "AGVS // ANTIGRAVITY VIDEO STUDIO", font=f_stamp, fill=COLOR_POSTMARK_CRIMSON)
+    sd.text((30, 78), motto_text, font=f_motto, fill=COLOR_ESPRESSO_INK)
+
+    stamp_rot = stamp_img.rotate(-1.5, resample=Image.Resampling.BICUBIC, expand=True)
+    canvas.paste(stamp_rot, (130, 95), stamp_rot)
+
+    place_name = strip_unicode_emojis(spec.get("place_name", "MALLORCA")).upper()
+    route_sub = strip_unicode_emojis(spec.get("route_subtitle", "BONAIRE -> BAY OF POLLENÇA & ALCÚDIA")).upper()
+    f_hero = load_apple_font("hero_title", 96, text=place_name)
+    f_sub = load_apple_font("section_header", 34, text=route_sub)
+
+    draw.text((130, 240), place_name, font=f_hero, fill=COLOR_ESPRESSO_INK)
+
+    arrow_seps = [" ➔ ", " -> ", " → ", " -- ", " - "]
+    sep_used = next((s for s in arrow_seps if s in route_sub), None)
+    if sep_used:
+        p1, p2 = route_sub.split(sep_used, 1)
+        p1, p2 = p1.strip(), p2.strip()
+        b1 = draw.textbbox((134, 362), p1, font=f_sub)
+        draw.text((134, 362), p1, font=f_sub, fill=COLOR_POSTMARK_CRIMSON)
+        ax = b1[2] + 16
+        ay = 362 + (b1[3] - b1[1]) // 2
+        draw.line([(ax, ay), (ax + 24, ay)], fill=COLOR_POSTMARK_CRIMSON, width=4)
+        draw.polygon([(ax + 20, ay - 6), (ax + 30, ay), (ax + 20, ay + 6)], fill=COLOR_POSTMARK_CRIMSON)
+        draw.text((ax + 44, 362), p2, font=f_sub, fill=COLOR_POSTMARK_CRIMSON)
+    else:
+        clean_sub = route_sub.replace("➔", "->").replace("→", "->")
+        draw.text((134, 362), clean_sub, font=f_sub, fill=COLOR_POSTMARK_CRIMSON)
+
+    map_box_x = 130
+    map_box_y = 440
+    map_w = 1420
+    map_h = 1390
+
+    gpx_path = spec.get("gpx_file")
+    pts = parse_gpx_points(gpx_path) if gpx_path else []
+    t_lat = spec.get("turnaround_lat")
+    t_lon = spec.get("turnaround_lon")
+    t_latlon = (float(t_lat), float(t_lon)) if (t_lat is not None and t_lon is not None) else None
+    use_farthest = bool(spec.get("elevation_ft", 1000) < 1000)
+    basemap_img, projected_pts, start_px, summit_px = fetch_and_render_vintage_basemap(
+        pts, map_w, map_h, target_latlon=t_latlon, use_farthest=use_farthest
+    )
+
+    b_draw = ImageDraw.Draw(basemap_img)
+    if len(projected_pts) >= 2:
+        b_draw.line(projected_pts, fill=(252, 249, 242, 240), width=12, joint="curve")
+        b_draw.line(projected_pts, fill=COLOR_POSTMARK_CRIMSON, width=6, joint="curve")
+
+    spx, spy = int(start_px[0]), int(start_px[1])
+    b_draw.ellipse([spx - 20, spy - 20, spx + 20, spy + 20], fill=COLOR_FOREST_GREEN, outline=(252, 249, 242, 255), width=4)
+    b_draw.ellipse([spx - 7, spy - 7, spx + 7, spy + 7], fill=(252, 249, 242, 255))
+    st_label = spec.get("start_label_ru", "СТАРТ: БОНАЙРЕ") if spec.get("lang") == "ru" else spec.get("start_label", "START: BONAIRE")
+    st_label = strip_unicode_emojis(st_label)
+    f_pill = load_apple_font("section_header", 48, text=st_label)
+    s_bbox = b_draw.textbbox((0, 0), st_label, font=f_pill)
+    sw_p = s_bbox[2] - s_bbox[0] + 36
+    sh_p = s_bbox[3] - s_bbox[1] + 24
+    slx = min(map_w - sw_p - 20, max(20, spx - sw_p // 2))
+    sly = min(map_h - sh_p - 20, max(20, spy - 48 - sh_p))
+    b_draw.rounded_rectangle([slx, sly, slx + sw_p, sly + sh_p], radius=12, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
+    b_draw.text((slx + 18 - s_bbox[0], sly + 12 - s_bbox[1]), st_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
+
+    sum_px = int(summit_px[0]), int(summit_px[1])
+    b_draw.ellipse([sum_px[0] - 20, sum_px[1] - 20, sum_px[0] + 20, sum_px[1] + 20], fill=COLOR_POSTMARK_CRIMSON, outline=(252, 249, 242, 255), width=4)
+    b_draw.ellipse([sum_px[0] - 7, sum_px[1] - 7, sum_px[0] + 7, sum_px[1] + 7], fill=(252, 249, 242, 255))
+    sum_label = spec.get("turnaround_label_ru", "РАЗВОРОТ") if spec.get("lang") == "ru" else spec.get("turnaround_label", "TURNAROUND")
+    sum_label = strip_unicode_emojis(sum_label)
+    f_pill_sum = load_apple_font("section_header", 48, text=sum_label)
+    sm_bbox = b_draw.textbbox((0, 0), sum_label, font=f_pill_sum)
+    smw = sm_bbox[2] - sm_bbox[0] + 36
+    smh = sm_bbox[3] - sm_bbox[1] + 24
+    smlx = min(map_w - smw - 20, max(20, sum_px[0] - smw // 2))
+    smly = min(map_h - smh - 20, max(20, sum_px[1] + 32))
+    b_draw.rounded_rectangle([smlx, smly, smlx + smw, smly + smh], radius=12, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
+    b_draw.text((smlx + 18 - sm_bbox[0], smly + 12 - sm_bbox[1]), sum_label, font=f_pill_sum, fill=COLOR_ESPRESSO_INK)
+
+    draw_compass_rose(b_draw, cx=map_w - 75, cy=85, r=42)
+    draw_cartographic_neatline(b_draw, map_w, map_h)
+
+    map_shadow = Image.new("RGBA", (map_w + 32, map_h + 32), (0, 0, 0, 0))
+    ms_draw = ImageDraw.Draw(map_shadow)
+    ms_draw.rectangle([16, 16, map_w + 16, map_h + 16], fill=(35, 31, 29, 90))
+    map_shadow = map_shadow.filter(ImageFilter.GaussianBlur(16))
+    canvas.paste(map_shadow, (map_box_x - 8, map_box_y - 8), map_shadow)
+    canvas.paste(basemap_img, (map_box_x, map_box_y))
+
+    tx0, ty0 = 130, 1920
+    tx1, ty1 = 3690, 2060
+    draw.rectangle([tx0, ty0, tx1, ty1], fill=COLOR_TICKET_BG)
+    draw.line([(tx0, ty0), (tx1, ty0)], fill=COLOR_UMBER_INK, width=3)
+    draw.line([(tx0, ty1), (tx1, ty1)], fill=COLOR_UMBER_INK, width=3)
+
+    if spec.get("lang") == "ru":
+        dist_km = round(float(spec.get("distance_mi", 32.6)) * 1.60934, 1)
+        ele_m = int(round(float(spec.get("elevation_ft", 640)) * 0.3048))
+        ticket_str = (
+            f"ДАТА: {spec.get('date_str', '2026-11-10')}     •     "
+            f"{strip_unicode_emojis(spec.get('short_title', 'МАЙОРКА: ЗАЕЗД И ВОСПОМИНАНИЯ'))}     •     "
+            f"{dist_km} КМ  |  {ele_m} М ПОДЪЕМ"
+        )
+    else:
+        dist_val = f"{float(spec.get('distance_mi', 32.6)):.1f}"
+        ele_val = f"{int(spec.get('elevation_ft', 640)):,}"
+        ticket_str = (
+            f"DATE: {spec.get('date_str', '2026-11-10')}     •     "
+            f"{strip_unicode_emojis(spec.get('short_title', 'MALLORCA RIDE & MEMORIES'))}     •     "
+            f"{dist_val} MI  |  {ele_val} FT CLIMBING"
+        )
+
+    f_ticket = load_apple_font("stamp_typewriter", 46, text=ticket_str)
+    t_bbox = draw.textbbox((0, 0), ticket_str, font=f_ticket)
+    tw = t_bbox[2] - t_bbox[0]
+    tx_pos = tx0 + (tx1 - tx0 - tw) // 2
+    ty_pos = ty0 + (ty1 - ty0 - (t_bbox[3] - t_bbox[1])) // 2 - 2
+    draw.text((tx_pos, ty_pos), ticket_str, font=f_ticket, fill=COLOR_ESPRESSO_INK)
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(out_png)
+    return out_png
+
+
+def render_outro_canvas_4k(spec: dict[str, Any], out_png: Path) -> Path:
+    """Render the 4K Closing Bookend Canvas with Warm Mediterranean Parchment and localized credits."""
+    w, h = 3840, 2160
+    canvas = create_warm_parchment_canvas(w, h)
+
+    pw, ph = 1664, 1072
+    shadow_card = Image.new("RGBA", (pw, ph), (35, 31, 29, 130))
+    shadow_card_rot = shadow_card.rotate(1.5, resample=Image.Resampling.BICUBIC, expand=True)
+    sw, sh = shadow_card_rot.size
+    sx = int(1075 - sw / 2 + 18)
+    sy = int(1030 - sh / 2 + 24)
+
+    shadow_mask = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    shadow_mask.paste(shadow_card_rot, (sx, sy), shadow_card_rot)
+    shadow_mask = shadow_mask.filter(ImageFilter.GaussianBlur(36))
+    canvas = Image.alpha_composite(canvas, shadow_mask)
+
+    draw = ImageDraw.Draw(canvas)
+
+    rx0, ry0 = 2120, 180
+    rw, rh = 1570, 1660
+    rx1, ry1 = rx0 + rw, ry0 + rh
+
+    draw.rounded_rectangle([rx0, ry0, rx1, ry1], radius=14, fill=COLOR_POLAROID_PAPER, outline=COLOR_POLAROID_BORDER, width=2)
+
+    is_ru = spec.get("lang") == "ru"
+    h1_text = "СОЗДАТЕЛЬ: АЛЕКСАНДР КОМЛИК" if is_ru else "CREATED BY ALEXANDER KOMLIK"
+    h2_text = "ПРОИЗВОДСТВО ANTIGRAVITY VIDEO STUDIO" if is_ru else "AN ANTIGRAVITY VIDEO STUDIO PRODUCTION"
+    f_h1 = load_apple_font("hero_title", 62, text=h1_text)
+    f_h2 = load_apple_font("section_header", 36, text=h2_text)
+    draw.text((rx0 + 56, ry0 + 44), h1_text, font=f_h1, fill=COLOR_ESPRESSO_INK)
+    draw.text((rx0 + 58, ry0 + 124), h2_text, font=f_h2, fill=COLOR_POSTMARK_CRIMSON)
+
+    f_contact = load_apple_font("stamp_mono", 38)
+    contact_str = "@akomlik   •   github.com/akomlik/antigravity-video-studio"
+    cb = draw.textbbox((0, 0), contact_str, font=f_contact)
+    cw = cb[2] - cb[0]
+    px0 = rx0 + 56
+    py0 = ry0 + 184
+    px1 = rx1 - 56
+    py1 = py0 + 64
+    draw.rounded_rectangle([px0, py0, px1, py1], radius=12, fill=COLOR_TICKET_BG, outline=COLOR_UMBER_INK, width=2)
+    draw.text((px0 + (px1 - px0 - cw) // 2, py0 + 12), contact_str, font=f_contact, fill=COLOR_ESPRESSO_INK)
+
+    div_y = py1 + 28
+    draw.line([(rx0 + 48, div_y), (rx1 - 48, div_y)], fill=COLOR_UMBER_INK, width=3)
+    dcx = (rx0 + rx1) // 2
+    draw.polygon([(dcx, div_y - 8), (dcx + 8, div_y), (dcx, div_y + 8), (dcx - 8, div_y)], fill=COLOR_POSTMARK_CRIMSON)
+
+    cast_title = "АКТЕРЫ И ВДОХНОВЕНИЕ" if is_ru else "THE PELOTON & CAST"
+    steed_title = "ТЕХНИКА И ТЕЛЕМЕТРИЯ" if is_ru else "MACHINERY & TELEMETRY"
+    fuel_title = "ПИТАНИЕ И ЭНЕРГИЯ" if is_ru else "FUEL & CATERING"
+
+    f_cat = load_apple_font("section_header", 52, text=cast_title + steed_title + fuel_title)
+    f_item = load_apple_font("body_bold", 50, text=str(spec.get("steed_credit", "")) + (spec.get("cast_credits", [""])[0] if spec.get("cast_credits") else ""))
+
+    def draw_wrapped_line(x: int, y: int, text: str, font: Any, fill: tuple[int, int, int, int], max_w: int = rw - 130, line_h: int = 58) -> int:
+        words = strip_unicode_emojis(text).split()
+        lines = []
+        cur = ""
+        for wd in words:
+            cand = f"{cur} {wd}".strip() if cur else wd
+            bb = font.getbbox(cand)
+            if bb[2] - bb[0] <= max_w:
+                cur = cand
+            else:
+                if cur:
+                    lines.append(cur)
+                cur = f"  {wd}"
+        if cur:
+            lines.append(cur)
+        for ln in lines:
+            draw.text((x, y), ln, font=font, fill=fill)
+            y += line_h
+        return y
+
+    cur_y = div_y + 36
+    draw.text((rx0 + 56, cur_y), cast_title, font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
+    cur_y += 62
+    cast_list = spec.get("cast_credits_ru" if is_ru and spec.get("cast_credits_ru") else "cast_credits", [])
+    for c in cast_list[:4]:
+        cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {c}", f_item, COLOR_ESPRESSO_INK, line_h=58)
+    cur_y += 32
+
+    draw.text((rx0 + 56, cur_y), steed_title, font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
+    cur_y += 62
+    steed_str = f"• {spec.get('steed_credit')}"
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, steed_str, f_item, COLOR_ESPRESSO_INK, line_h=58)
+    tech_line1 = (
+        "• Очки BleeqUP Ranger AI (100% живые повороты головы) • iPhone 15 Pro"
+        if is_ru
+        else "• BleeqUP Ranger AI Glasses (100% Organic Head-Turns) • iPhone 15 Pro"
+    )
+    tech_line2 = "• Garmin Edge 840 • my_digital_brain.md • AGVS Engine v3.0"
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, tech_line1, f_item, COLOR_ESPRESSO_INK, line_h=58)
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, tech_line2, f_item, COLOR_ESPRESSO_INK, line_h=58)
+    cur_y += 32
+
+    draw.text((rx0 + 56, cur_y), fuel_title, font=f_cat, fill=COLOR_POSTMARK_CRIMSON)
+    cur_y += 62
+    cur_y = draw_wrapped_line(rx0 + 76, cur_y, f"• {spec.get('fuel_sponsors')}", f_item, COLOR_ESPRESSO_INK, line_h=58)
+
+    tx0, ty0 = 130, 1920
+    tx1, ty1 = 3690, 2060
+    draw.rectangle([tx0, ty0, tx1, ty1], fill=COLOR_TICKET_BG)
+    draw.line([(tx0, ty0), (tx1, ty0)], fill=COLOR_UMBER_INK, width=3)
+    draw.line([(tx0, ty1), (tx1, ty1)], fill=COLOR_UMBER_INK, width=3)
+
+    foot_line1 = OUTRO_CREDITS_SUBLINE_RU if is_ru else OUTRO_CREDITS_SUBLINE_EN
+    repo_url = spec.get("github_repo", "github.com/akomlik/antigravity-video-studio")
+    foot_line2 = f"СТУДИЙНЫЙ ДВИЖОК AGVS   •   {repo_url.upper()}" if is_ru else f"AGVS STUDIO ENGINE   •   {repo_url.upper()}"
+
+    f_strip = load_apple_font("stamp_mono", 40, text=foot_line1 + foot_line2)
+    fb1 = draw.textbbox((0, 0), foot_line1, font=f_strip)
+    tw1 = fb1[2] - fb1[0]
+    draw.text((tx0 + (tx1 - tx0 - tw1) // 2, ty0 + 26), foot_line1, font=f_strip, fill=COLOR_ESPRESSO_INK)
+
+    fb2 = draw.textbbox((0, 0), foot_line2, font=f_strip)
+    tw2 = fb2[2] - fb2[0]
+    draw.text((tx0 + (tx1 - tx0 - tw2) // 2, ty0 + 78), foot_line2, font=f_strip, fill=COLOR_POSTMARK_CRIMSON)
+
+    out_png.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(out_png)
+    return out_png
+
+
+def render_polaroid_border_png(
+    width: int,
+    height: int,
+    video_w: int,
+    video_h: int,
+    margin_top: int = 32,
+    margin_side: int = 32,
+    margin_bottom: int = 140,
+    script_text: str | None = None,
+    out_png: Path | None = None,
+) -> Path | None:
+    """Create a warm Polaroid paper frame with transparent center for video."""
+    img = Image.new("RGBA", (width, height), COLOR_POLAROID_PAPER)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, width - 1, height - 1], outline=COLOR_POLAROID_BORDER, width=2)
+    d.rectangle([margin_side, margin_top, margin_side + video_w, margin_top + video_h], fill=(0, 0, 0, 0))
+
+    if script_text:
+        clean_script = strip_unicode_emojis(script_text)
+        f_script = load_apple_font("postcard_script", 52, text=clean_script)
+        bbox = d.textbbox((0, 0), clean_script, font=f_script)
+        th = bbox[3] - bbox[1]
+        tx = margin_side + 40
+        ty = height - margin_bottom + (margin_bottom - th) // 2 - 6
+        d.text((tx, ty), clean_script, font=f_script, fill=COLOR_ESPRESSO_INK)
+
+    cx = width - margin_side - 80
+    cy = height - margin_bottom // 2
+    draw_postmark_watermark(d, cx, cy)
+
+    if out_png:
+        out_png.parent.mkdir(parents=True, exist_ok=True)
+        img.save(out_png)
+    return out_png
+
+
+def _composite_bookend_mp4(
+    canvas_png: Path,
+    clip_path: Path,
+    out_mp4: Path,
+    *,
+    duration_s: float,
+    clip_start_s: float,
+    vw: int,
+    vh: int,
+    center_xy: tuple[int, int],
+    tilt_deg: float,
+    border_stem: str,
+    script_en: str,
+    script_ru: str,
+) -> Path:
+    out_mp4.parent.mkdir(parents=True, exist_ok=True)
+    ffmpeg_bin = find_binary("ffmpeg") or "ffmpeg"
+
+    margin_top = 32
+    margin_side = 32
+    margin_bottom = 140
+    pw = vw + margin_side * 2
+    ph = vh + margin_top + margin_bottom
+
+    is_ru = "_RU" in out_mp4.name or "_ru" in out_mp4.name
+    border_png = out_mp4.parent / (f"{border_stem}_ru.png" if is_ru else f"{border_stem}.png")
+    script_txt = script_ru if is_ru else script_en
+    render_polaroid_border_png(
+        width=pw,
+        height=ph,
+        video_w=vw,
+        video_h=vh,
+        margin_top=margin_top,
+        margin_side=margin_side,
+        margin_bottom=margin_bottom,
+        script_text=script_txt,
+        out_png=border_png,
+    )
+
+    pos_x = int(center_xy[0] - pw / 2)
+    pos_y = int(center_xy[1] - ph / 2)
+
+    filtergraph = (
+        f"[1:v]trim=start=0:duration={duration_s},setpts=PTS-STARTPTS,"
+        f"scale={vw}:{vh}:force_original_aspect_ratio=increase,crop={vw}:{vh},"
+        f"pad={pw}:{ph}:{margin_side}:{margin_top}:color=0x00000000[v_padded];"
+        f"[v_padded][2:v]overlay=0:0:format=auto[card];"
+        f"[card]rotate={tilt_deg}*PI/180:c=none:ow=rotw({tilt_deg}*PI/180):oh=roth({tilt_deg}*PI/180):bilinear=1[card_rot];"
+        f"[0:v][card_rot]overlay={pos_x}:{pos_y}:format=auto[v_out];"
+        f"[1:a]atrim=start=0:duration={duration_s},asetpts=PTS-STARTPTS,volume=0.0dB[a_out]"
+    )
+
+    base_inputs = [
+        ffmpeg_bin, "-y",
+        "-loop", "1", "-t", str(duration_s), "-i", str(canvas_png),
+        "-ss", str(clip_start_s), "-t", str(duration_s), "-i", str(clip_path),
+        "-i", str(border_png),
+        "-filter_complex", filtergraph,
+        "-map", "[v_out]",
+        "-map", "[a_out]",
+    ]
+    cmd = [*base_inputs, "-c:v", "h264_videotoolbox", "-b:v", "38M", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", str(out_mp4)]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        cmd_fallback = [*base_inputs, "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", str(out_mp4)]
+        res = subprocess.run(cmd_fallback, capture_output=True, text=True)
+        if res.returncode != 0:
+            raise RuntimeError(f"FFmpeg bookend compositing failed: {res.stderr[-400:]}")
+    return out_mp4
+
+
+def composite_intro_bookend_mp4(
+    canvas_png: Path,
+    first_clip_path: Path,
+    out_mp4: Path,
+    duration_s: float = 3.5,
+    clip_start_s: float = 0.0,
+) -> Path:
+    return _composite_bookend_mp4(
+        canvas_png=canvas_png,
+        clip_path=first_clip_path,
+        out_mp4=out_mp4,
+        duration_s=duration_s,
+        clip_start_s=clip_start_s,
+        vw=1800,
+        vh=1012,
+        center_xy=(2670, 1025),
+        tilt_deg=-2.0,
+        border_stem="polaroid_intro_border",
+        script_en='"Wish you were here! — AGVS"',
+        script_ru="«Жаль, что вас здесь нет! — AGVS»",
+    )
+
+
+def composite_outro_bookend_mp4(
+    canvas_png: Path,
+    last_clip_path: Path,
+    out_mp4: Path,
+    duration_s: float = 4.5,
+    clip_start_s: float = 0.0,
+) -> Path:
+    return _composite_bookend_mp4(
+        canvas_png=canvas_png,
+        clip_path=last_clip_path,
+        out_mp4=out_mp4,
+        duration_s=duration_s,
+        clip_start_s=clip_start_s,
+        vw=1600,
+        vh=900,
+        center_xy=(1075, 1030),
+        tilt_deg=1.5,
+        border_stem="polaroid_outro_border",
+        script_en='"Another day in paradise — AGVS"',
+        script_ru="«Еще один день в раю — AGVS»",
+    )
+
+
+def _select_bookend_video_clips(
+    project_dir: Path,
+    raw_dir: Path,
+    spec: dict[str, Any],
+    first_clip: Path | None = None,
+    last_clip: Path | None = None,
+) -> tuple[Path, Path]:
+    video_exts = (".mov", ".mp4", ".m4v")
+
+    def resolve_cand(name_or_path: str | Path | None) -> Path | None:
+        if not name_or_path:
+            return None
+        p = Path(name_or_path)
+        if p.is_absolute() and p.exists() and p.suffix.lower() in video_exts:
+            return p
+        for base in (raw_dir, project_dir):
+            cand = base / p.name
+            if cand.exists() and cand.suffix.lower() in video_exts:
+                return cand
+        return None
+
+    intro_clip = resolve_cand(first_clip) or resolve_cand(spec.get("first_clip"))
+    outro_clip = resolve_cand(last_clip) or resolve_cand(spec.get("last_clip"))
+
+    # Inspect timeline_spec.json cuts dynamically (zero project-hardcoded filenames)
+    tspec_p = project_dir / "timeline_spec.json"
+    if (intro_clip is None or outro_clip is None) and tspec_p.exists():
+        try:
+            tspec = json.loads(tspec_p.read_text(encoding="utf-8"))
+            video_cuts = [
+                c["source"]
+                for c in tspec.get("cuts", [])
+                if not c.get("is_still")
+                and not str(c.get("source", "")).startswith(("bookend_", "ai_"))
+                and Path(str(c.get("source", ""))).suffix.lower() in video_exts
+            ]
+            if intro_clip is None:
+                for src in video_cuts:
+                    cand = resolve_cand(src)
+                    if cand:
+                        intro_clip = cand
+                        break
+            if outro_clip is None:
+                for src in reversed(video_cuts):
+                    cand = resolve_cand(src)
+                    if cand:
+                        outro_clip = cand
+                        break
+        except Exception:
+            pass
+
+    if intro_clip is None or outro_clip is None:
+        vids = sorted(
+            p for p in raw_dir.iterdir()
+            if p.is_file() and p.suffix.lower() in video_exts and not p.name.startswith(("bookend_", "ai_", "."))
+        ) if raw_dir.exists() else []
+        if intro_clip is None and vids:
+            intro_clip = vids[0]
+        if outro_clip is None and vids:
+            outro_clip = vids[-1]
+
+    if intro_clip is None:
+        raise FileNotFoundError(f"No video files found in {raw_dir}")
+    if outro_clip is None:
+        outro_clip = intro_clip
+    return intro_clip, outro_clip
+
+
+def generate_project_bookends(
+    project_dir: Path,
+    out_dir: Path | None = None,
+    first_clip: Path | None = None,
+    last_clip: Path | None = None,
+) -> tuple[Path, Path]:
+    """Generate both EN and RU 4K bookend video clips for a project."""
+    project_dir = Path(project_dir).expanduser().resolve()
+    if out_dir is None:
+        out_dir = project_dir / "overlays"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    spec = extract_project_bookends_spec(project_dir)
+
+    intro_canvas = out_dir / "bookend_intro_canvas_4K.png"
+    outro_canvas = out_dir / "bookend_outro_canvas_4K.png"
+    render_intro_canvas_4k(spec, intro_canvas)
+    render_outro_canvas_4k(spec, outro_canvas)
+
+    spec_ru = dict(spec)
+    spec_ru["lang"] = "ru"
+    spec_ru["place_name"] = spec.get("place_name_ru", "МАЙОРКА")
+    spec_ru["route_subtitle"] = spec.get("route_subtitle_ru", "БОНАЙРЕ  ➔  ЗАЛИВ ПОЙЕНСА И АЛЬКУДИЯ")
+    spec_ru["studio_motto"] = spec.get("studio_motto_ru", "ДИСЦИПЛИНА · ДАННЫЕ · БЛАГОДАРНОСТЬ")
+    spec_ru["short_title"] = spec.get("short_title_ru", "МАЙОРКА: ЗАЕЗД И ВОСПОМИНАНИЯ")
+    spec_ru["cast_credits"] = spec.get("cast_credits_ru", [
+        "Нина Комлик — Главный вдохновитель и спутница",
+        "Друзья на Майорке — Островная команда",
+    ])
+    spec_ru["steed_credit"] = spec.get("steed_credit_ru", "Trek Madone 7 (Сборка на раме с Craigslist 2016 · На острове с июня 2022)")
+    spec_ru["fuel_sponsors"] = spec.get("fuel_sponsors_ru", "Майоркинский эспрессо и средиземноморское солнце")
+
+    intro_canvas_ru = out_dir / "bookend_intro_canvas_4K_RU.png"
+    outro_canvas_ru = out_dir / "bookend_outro_canvas_4K_RU.png"
+    render_intro_canvas_4k(spec_ru, intro_canvas_ru)
+    render_outro_canvas_4k(spec_ru, outro_canvas_ru)
+
+    raw_dir = _resolve_project_raw_dir(project_dir)
+    intro_clip, outro_clip = _select_bookend_video_clips(project_dir, raw_dir, spec, first_clip=first_clip, last_clip=last_clip)
+
+    intro_mp4 = out_dir / "bookend_intro_4K.mp4"
+    outro_mp4 = out_dir / "bookend_outro_4K.mp4"
+    composite_intro_bookend_mp4(intro_canvas, intro_clip, intro_mp4, duration_s=float(spec.get("intro_duration_s", 3.5)), clip_start_s=0.0)
+    composite_outro_bookend_mp4(outro_canvas, outro_clip, outro_mp4, duration_s=float(spec.get("outro_duration_s", 4.5)), clip_start_s=2.0)
+
+    intro_mp4_ru = out_dir / "bookend_intro_4K_RU.mp4"
+    outro_mp4_ru = out_dir / "bookend_outro_4K_RU.mp4"
+    composite_intro_bookend_mp4(intro_canvas_ru, intro_clip, intro_mp4_ru, duration_s=float(spec.get("intro_duration_s", 3.5)), clip_start_s=0.0)
+    composite_outro_bookend_mp4(outro_canvas_ru, outro_clip, outro_mp4_ru, duration_s=float(spec.get("outro_duration_s", 4.5)), clip_start_s=2.0)
+
+    return intro_mp4, outro_mp4
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Generate signature AGVS bookends (Warm Vintage Travel)")
+    parser.add_argument("project_dir", type=str, nargs="?", default=None, help="Path to project directory")
+    parser.add_argument("--project-dir", dest="project_dir_opt", type=str, default=None, help="Path to project directory")
+    parser.add_argument("--out-dir", type=str, default=None, help="Output overlays directory")
+    parser.add_argument("--first-clip", type=str, default=None, help="First video clip for opening")
+    parser.add_argument("--last-clip", type=str, default=None, help="Last video clip for outro")
+    args = parser.parse_args(argv)
+
+    pdir_str = args.project_dir_opt or args.project_dir
+    if not pdir_str:
+        parser.error("project_dir is required")
+
+    pdir = Path(pdir_str).expanduser().resolve()
+    outd = Path(args.out_dir).expanduser().resolve() if args.out_dir else None
+    first_c = Path(args.first_clip).expanduser().resolve() if args.first_clip else None
+    last_c = Path(args.last_clip).expanduser().resolve() if args.last_clip else None
+
+    intro_mp4, outro_mp4 = generate_project_bookends(pdir, outd, first_clip=first_c, last_clip=last_c)
+    print(f"AGVS Bookends generated:\n  Intro: {intro_mp4}\n  Outro: {outro_mp4}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
