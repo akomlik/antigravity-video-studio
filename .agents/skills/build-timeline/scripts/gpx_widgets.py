@@ -31,80 +31,13 @@ COLOR_CRIMSON         = (184, 58, 42, 255)     # #B83A2A (Accent stripe, highlig
 COLOR_FOREST_GREEN    = (45, 106, 79, 255)     # #2D6A4F (Start pin, normal metrics)
 
 
-def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    r = 6371000.0
-    p1, p2 = math.radians(lat1), math.radians(lat2)
-    dp, dl = math.radians(lat2 - lat1), math.radians(lon2 - lon1)
-    a = math.sin(dp / 2.0) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2.0) ** 2
-    return 2.0 * r * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
-
-
-def load_gpx_stream(gpx_path: Path) -> list[dict]:
-    """Parses a .gpx file into a smoothed 1Hz telemetry stream with Imperial & metric units."""
-    root = ET.parse(gpx_path).getroot()
-    pts = []
-    tot_m = 0.0
-
-    for trkpt in root.iter():
-        if not trkpt.tag.endswith("trkpt"):
-            continue
-        lat = float(trkpt.attrib["lat"])
-        lon = float(trkpt.attrib["lon"])
-        ele, ts, hr, cad, pwr = 0.0, None, 0, 0, 0
-        for c in trkpt.iter():
-            tag = c.tag.split("}")[-1]
-            if tag == "ele" and c.text:
-                ele = float(c.text)
-            elif tag == "time" and c.text:
-                ts = dt.datetime.fromisoformat(c.text.replace("Z", "+00:00"))
-            elif tag == "hr" and c.text:
-                hr = int(float(c.text))
-            elif tag == "cad" and c.text:
-                cad = int(float(c.text))
-            elif tag in ("power", "watts") and c.text:
-                pwr = int(float(c.text))
-        if ts is None:
-            continue
-
-        spd_mph = 0.0
-        grad_pct = 0.0
-        if pts:
-            prev = pts[-1]
-            d = haversine_m(prev["lat"], prev["lon"], lat, lon)
-            dts = max((ts - prev["time"]).total_seconds(), 0.001)
-            spd_mph = (d / dts) * 2.236936
-            tot_m += d
-            # Compute smoothed gradient over ~15m window
-            back_idx = max(0, len(pts) - 5)
-            d_win = haversine_m(pts[back_idx]["lat"], pts[back_idx]["lon"], lat, lon)
-            if d_win > 5.0:
-                grad_pct = ((ele - pts[back_idx]["ele"]) / d_win) * 100.0
-
-        pts.append({
-            "time": ts,
-            "lat": lat,
-            "lon": lon,
-            "ele": ele,
-            "ele_ft": int(round(ele * 3.28084)),
-            "dist_mi": round(tot_m / 1609.344, 2),
-            "spd_mph": round(min(spd_mph, 58.0), 1),
-            "grad_pct": round(max(-25.0, min(25.0, grad_pct)), 1),
-            "hr": hr,
-            "cad": cad,
-            "pwr": pwr,
-        })
-
-    # Article I / Constitution requirement: 3-second rolling average for speed and power to eliminate 1Hz GPS coordinate quantization jitter
-    if len(pts) > 3:
-        for i in range(len(pts)):
-            i_start = max(0, i - 1)
-            i_end = min(len(pts), i + 2)
-            win = pts[i_start:i_end]
-            pts[i]["spd_mph"] = round(sum(p["spd_mph"] for p in win) / len(win), 1)
-            if any(p["pwr"] > 0 for p in win):
-                pts[i]["pwr"] = int(round(sum(p["pwr"] for p in win) / len(win)))
-
-    return pts
+from agvs_core.telemetry_gpx import (
+    ACTIVITY_SPEED_THRESHOLDS,
+    haversine_m,
+    load_gpx_track as load_gpx_stream,
+    select_primary_ride_gpx,
+    should_show_telemetry_hud as _core_should_show_telemetry_hud,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -867,9 +800,9 @@ def render_declarative_overlays(
     auto_gpx_pts: list[dict] = []
     any_cut_hud_override = any(c.get("hud") is True for c in (cuts_spec or []))
     if raw_dir and raw_dir.exists() and cuts_spec and ((hud_mode or "auto").lower() != "off" or any_cut_hud_override):
-        gpx_files = sorted(raw_dir.glob("*.gpx"))
-        if gpx_files:
-            auto_gpx_pts = get_gpx(gpx_files[0].name)
+        primary_gpx, _ = select_primary_ride_gpx(raw_dir)
+        if primary_gpx:
+            auto_gpx_pts = get_gpx(primary_gpx.name)
 
     expanded_items_en: list[dict] = []
     expanded_items_ru: list[dict] = []

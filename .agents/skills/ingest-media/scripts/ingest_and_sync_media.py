@@ -29,6 +29,7 @@ STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).reso
 if str(STUDIO_ROOT) not in sys.path:
     sys.path.insert(0, str(STUDIO_ROOT))
 BGM_ROOT = STUDIO_ROOT / "03_Audio_Library" / "01_Curated_BGM"
+from agvs_core.telemetry_gpx import parse_gpx_with_summary, select_primary_ride_gpx  # noqa: E402
 
 from agvs_core.ingest_sync import (  # noqa: E402
     classify_video_source_device,
@@ -837,10 +838,11 @@ def main():
     convert_heic_to_jpg(project_dir)
     run_bleequp_ranger_sync_if_needed(project_dir, args.skip_bleequp_sync, args.force_resync)
 
-    gpx_files = list(project_dir.glob("*.gpx")) + list(project_dir.glob("*.GPX"))
+    primary_gpx, archival_gpx = select_primary_ride_gpx(project_dir, project_name=project_dir.name)
+    gpx_files = ([primary_gpx] + archival_gpx) if primary_gpx else []
     gpx_points, total_km, total_elev_m = ([], 0.0, 0.0)
-    if gpx_files:
-        gpx_points, total_km, total_elev_m = parse_gpx(gpx_files[0])
+    if primary_gpx:
+        gpx_points, total_km, total_elev_m = parse_gpx_with_summary(primary_gpx)
 
     def _is_raw_capture(f: Path) -> bool:
         if not f.is_file() or f.name.startswith("."):

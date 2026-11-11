@@ -41,7 +41,6 @@ def test_hud_mode_off_with_single_cut_override():
     assert gw.should_show_telemetry_hud("VIDEO_1762770000000.MP4", rolling_speed_mph=1.2, mode="auto") is False
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 5")
 def test_40m_grade_smoothing_eliminates_1m_barometric_spikes(tmp_path: Path):
     from agvs_core.telemetry_gpx import load_gpx_track
 
@@ -54,7 +53,6 @@ def test_40m_grade_smoothing_eliminates_1m_barometric_spikes(tmp_path: Path):
     assert min(steady_grades) >= 5.5
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 5")
 def test_ride_date_primary_gpx_selector(tmp_path: Path):
     from agvs_core.telemetry_gpx import select_primary_ride_gpx
 
@@ -69,7 +67,6 @@ def test_ride_date_primary_gpx_selector(tmp_path: Path):
     assert [p.name for p in archival] == ["2017_Mallorca312_167km_route.gpx"]
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 5")
 def test_mallorca_phonetic_toponym_linter():
     from agvs_core.telemetry_gpx import normalize_mallorca_toponyms, validate_mallorca_toponyms
 
