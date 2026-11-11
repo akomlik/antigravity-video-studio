@@ -225,148 +225,15 @@ def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom
     }
 
 
-def master_outro_fade_filter(total_dur_s: float, fade_dur_s: float = 2.2) -> str:
-    """Returns the mandatory Synchronized Outro Audio Fade ffmpeg filter string (Half-Sine S-curve to -inf dB)."""
-    st = max(0.0, total_dur_s - fade_dur_s)
-    return f"afade=t=out:st={st:.2f}:d={fade_dur_s:.2f}:curve=hsin"
-
-
-def measure_volume_stats(audio_path: Path) -> dict:
-    """
-    Measures raw mean_volume and max_volume in dB via ffmpeg volumedetect.
-    Returns:
-      {
-        "mean_volume": float,
-        "max_volume": float,
-      }
-    """
-    ffmpeg_bin = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
-    out = subprocess.check_output(
-        [ffmpeg_bin, "-i", str(audio_path), "-af", "volumedetect", "-f", "null", "-"],
-        stderr=subprocess.STDOUT,
-    ).decode("utf-8", errors="replace")
-    mean_vol = -16.0
-    max_vol = -1.0
-    for line in out.splitlines():
-        if "mean_volume:" in line:
-            try:
-                mean_vol = float(line.split("mean_volume:")[1].split("dB")[0].strip())
-            except ValueError:
-                pass
-        elif "max_volume:" in line:
-            try:
-                max_vol = float(line.split("max_volume:")[1].split("dB")[0].strip())
-            except ValueError:
-                pass
-    return {"mean_volume": mean_vol, "max_volume": max_vol}
-
-
-def measure_mean_volume_db(audio_path: Path) -> float:
-    """Measures raw RMS mean_volume in dB via ffmpeg volumedetect."""
-    return measure_volume_stats(audio_path)["mean_volume"]
-
-
-def is_mellow_bgm_track(bgm_path: Path) -> bool:
-    """
-    Detects if a BGM track is mellow/chillhop/ambient based on keywords in filename/path
-    ('chillhop', 'chill', 'ambient', 'warm', 'scenic', 'lofi') or BPM < 95.
-    """
-    s = str(bgm_path).lower()
-    keywords = ["chillhop", "chill", "ambient", "warm", "scenic", "lofi"]
-    if any(kw in s for kw in keywords):
-        return True
-    m = re.search(r"(\d{2,3})\s*bpm", s)
-    if m:
-        try:
-            bpm = int(m.group(1))
-            if bpm < 95:
-                return True
-        except ValueError:
-            pass
-    return False
-
-
-def calculate_bgm_gains(
-    bgm_path: Path,
-    target_riding_db: float = -17.5,
-    target_ducked_db: float = -23.5,
-    max_peak_headroom_db: float = -1.5,
-) -> dict:
-    """
-    Calculates BGM fader gains, presence EQ, and enforces the Mandatory Peak Headroom Guard.
-    Baseline targets:
-      - Riding / Open Visual Swells (`target_riding_db`): -17.5 dB RMS
-      - Ducked Under VO / Live Speech (`target_ducked_db`): -23.5 dB RMS (smooth 6.0 dB duck)
-    Mandatory Peak Headroom Guard:
-      - Raw audio peak ceiling is capped at -1.5 dBFS (or -2.0 dBFS when presence EQ is enabled)
-        to prevent digital clipping and master bus distortion.
-      - Never applies excessive positive gain to pre-mastered music.
-    Mellow / Chillhop Presence:
-      - Instead of inflating sub-bass, applies presence EQ filter (1.8 kHz) so melody and rhythm
-        cut cleanly through mobile speakers without distorting the bass.
-    """
-    stats = measure_volume_stats(bgm_path)
-    raw_mean_db = stats["mean_volume"]
-    raw_max_db = stats["max_volume"]
-
-    is_mellow = is_mellow_bgm_track(bgm_path)
-    # For mellow tracks, use presence EQ to cut through mobile phone speakers
-    eq_filter = "equalizer=f=1800:t=q:w=1.2:g=2.0" if is_mellow else ""
-    # Safe peak ceiling reserves 0.5 dB for the presence EQ boost
-    safe_peak_ceiling = -2.0 if is_mellow else max_peak_headroom_db
-    max_allowed_gain_db = round(safe_peak_ceiling - raw_max_db, 1)
-
-    effective_target_riding_db = target_riding_db
-    effective_target_ducked_db = target_ducked_db
-
-    desired_riding_gain_db = round(effective_target_riding_db - raw_mean_db, 1)
-    riding_gain_db = min(desired_riding_gain_db, max_allowed_gain_db)
-    ducked_gain_db = round(riding_gain_db - (target_riding_db - target_ducked_db), 1)
-    swell_boost_db = round(riding_gain_db - ducked_gain_db, 1)
-
-    return {
-        "raw_mean_db": raw_mean_db,
-        "raw_max_db": raw_max_db,
-        "is_mellow": is_mellow,
-        "mellow_boost_db": 0.0,
-        "target_riding_db": effective_target_riding_db,
-        "target_ducked_db": effective_target_ducked_db,
-        "base_target_riding_db": target_riding_db,
-        "base_target_ducked_db": target_ducked_db,
-        "max_allowed_gain_db": max_allowed_gain_db,
-        "riding_gain_db": riding_gain_db,
-        "ducked_gain_db": ducked_gain_db,
-        "swell_boost_db": swell_boost_db,
-        "eq_filter": eq_filter,
-    }
-
-
-def compute_bgm_ducked_gain_db(bgm_path: Path, target_ducked_mean_db: float = -23.5) -> float:
-    """
-    Computes the exact ducked fader gain (dB) required for a music track under VO/speech.
-    Defaults to -23.5 dB.
-    """
-    res = calculate_bgm_gains(bgm_path, target_ducked_db=target_ducked_mean_db)
-    return res["ducked_gain_db"]
-
-
-def filter_vo_cues_for_same_language_dialog(vo_cues: list, dialog_windows_by_lang: dict, lang: str) -> list:
-    """
-    Same-Language Live Dialogue Honor Law:
-    Removes any voice-over cue in `lang` that overlaps a live on-camera dialogue window in the SAME language (`lang`),
-    so synthetic narration never covers live speech in the same language (e.g., EN VO honors live EN speech;
-    RU VO honors live RU speech).
-    """
-    same_lang_windows = dialog_windows_by_lang.get(lang, [])
-    if not same_lang_windows:
-        return vo_cues
-    filtered = []
-    for cue in vo_cues:
-        cue_key, st, ed = cue[0], cue[1], cue[2]
-        overlaps = any(max(st, d_st) < min(ed, d_ed) - 0.15 for d_st, d_ed in same_lang_windows)
-        if not overlaps:
-            filtered.append(cue)
-    return filtered
+from agvs_core.audio_dsp import (
+    calculate_bgm_gains,
+    compute_bgm_ducked_gain_db,
+    filter_vo_cues_for_same_language_dialog,
+    is_mellow_bgm_track,
+    master_outro_fade_filter,
+    measure_mean_volume_db,
+    measure_volume_stats,
+)
 
 
 def apply_v017_essential_sound_via_cli(cli_bin: str, fcproj_path: Path, seq: dict):

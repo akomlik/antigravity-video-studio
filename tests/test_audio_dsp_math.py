@@ -43,7 +43,6 @@ def test_mellow_bgm_detection_and_presence_eq(tmp_path: Path):
     assert "equalizer=f=1800" in calib["eq_filter"]
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 7")
 def test_bgm_180hz_highpass_rms_and_ear_tested_ducking(tmp_path: Path):
     from agvs_core.audio_dsp import build_bgm_ducking_volume_expr, calculate_bgm_gains
 
@@ -78,7 +77,6 @@ def test_bgm_180hz_highpass_rms_and_ear_tested_ducking(tmp_path: Path):
     assert "between(t," in expr or "min(" in expr
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 7")
 def test_vo_single_pass_studio_dry_and_no_atempo_stretch(tmp_path: Path):
     from agvs_core.audio_dsp import (
         STUDIO_DRY_VO_FILTER,
@@ -107,7 +105,6 @@ def test_vo_single_pass_studio_dry_and_no_atempo_stretch(tmp_path: Path):
     assert "atempo" not in applied_filters
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 7")
 def test_same_language_vo_dialog_collision_and_sfx_peak_alignment(studio_root: Path):
     from agvs_core.audio_dsp import (
         SameLanguageAudioOverlapError,
@@ -129,7 +126,8 @@ def test_same_language_vo_dialog_collision_and_sfx_peak_alignment(studio_root: P
     import json
 
     cat = json.loads(catalog_path.read_text(encoding="utf-8"))
-    sample_entry = next(e for e in cat["effects"] if e.get("peak_ms", 0) > 50)
+    entries = cat if isinstance(cat, list) else cat["effects"]
+    sample_entry = next(e for e in entries if e.get("peak_ms", 0) > 50)
     cut_boundary_s = 10.0
     aligned_start = resolve_sfx_start_s(
         sfx_relpath=sample_entry["relpath"],
