@@ -5,8 +5,8 @@ description: Conducts an interactive Q&A interview session to build and enrich m
 
 # Interactive Digital Brain Q&A Builder (`/interview-brain`)
 
-## Quota Guardrail
-Always run this conversational skill on **Gemini 3.8 Flash** so multi-turn Q&A interviews consume **0%** of the 5-hour Gemini 4 Argon quota.
+## Frontier Conversational Mode (Google AI Ultra)
+Runs directly on **Gemini 4 Carbon / Argon** with full biographical nuance and memory synthesis across life eras.
 
 ## Interview Protocol
 1. Read `./my_digital_brain.md` to see which life chapters or project domains already have notes and which have open placeholders.

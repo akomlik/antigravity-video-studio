@@ -81,3 +81,35 @@ def test_mallorca_phonetic_toponym_linter():
     fixed = normalize_mallorca_toponyms(bad_ru, lang="ru")
     assert validate_mallorca_toponyms(fixed) == []
     assert "Майорка" in fixed and "Пойенса" in fixed and "Сойер" in fixed and "Йук" in fixed
+
+
+def test_explicit_live_telemetry_hud_preserved_when_archival_gpx_present(tmp_path: Path):
+    from agvs_core.vintage_cards import render_declarative_overlays
+
+    raw_dir = tmp_path / "2026-11-05_Femenia_Climbing"
+    raw_dir.mkdir()
+    _write_synthetic_climb_gpx(raw_dir / "2017_Mallorca312_167km_route.gpx", date_iso="2017-04-29", n_points=20)
+    overlays_dir = tmp_path / "overlays"
+
+    cuts = [{"cut_num": 1, "source": "VIDEO_1762335000000.MP4", "is_still": False, "src_in": 0.0, "dur": 4.0}]
+    overlays = [
+        {
+            "kind": "live_telemetry_hud",
+            "start_s": 0.0,
+            "dur_s": 4.0,
+            "metrics_profile": {
+                "spd_mph": [15.0, 15.2, 15.4, 15.6],
+                "pwr": [180, 185, 190, 195],
+                "hr": [135, 136, 137, 138],
+                "grad_pct": [6.0, 6.2, 6.4, 6.5],
+                "ele_ft": [900, 905, 910, 915],
+            },
+        }
+    ]
+    res = render_declarative_overlays(
+        overlays, overlays_dir, raw_dir=raw_dir, skip_render=True, cuts_spec=cuts, hud_mode="auto"
+    )
+    v4_en = [it for it in res["en"] if it.get("track") == "V4"]
+    v4_ru = [it for it in res["ru"] if it.get("track") == "V4"]
+    assert len(v4_en) == 4
+    assert len(v4_ru) == 4

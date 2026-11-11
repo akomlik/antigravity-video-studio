@@ -1,6 +1,6 @@
 ---
 name: build-timeline
-description: Interactive & one-command 4K timeline builder (Studio v2). Presents an in-chat clickable alignment card (Primary Language, Music Selection with 10s audio preview, Publishing Mode), writes choices to Storyboard.md automatically, downloads linked YouTube flashbacks, renders GPX corner maps & telemetry HUD, generates replicated voice-over (EN/UA/RU), builds the 4-track broadcast audio mix in FilmCraft MCP, exports clean 4K MP4, generates composite thumbnail, metadata & facebook_promo.md, and pauses for review before YouTube upload.
+description: Interactive & one-command 4K timeline builder (AGVS v3 / agvs_core). Presents an in-chat clickable alignment card (Primary Language, Music Selection with 10s audio preview, Publishing Mode), writes choices to Storyboard.md automatically, downloads linked YouTube flashbacks, renders GPX corner maps & telemetry HUD, generates replicated voice-over (EN/UA/RU), builds the 4-track broadcast audio mix in FilmCraft MCP, exports clean 4K MP4, generates composite thumbnail, metadata & facebook_promo.md, and pauses for review before YouTube upload.
 ---
 
 # Stage 1: Interactive & Unified Timeline Assembly (`/build-timeline`)
@@ -90,16 +90,16 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
 
 ---
 
-### Step 4: Synthesize Voice-Over & 4-Track Broadcast Mix
-1. **Replicated Voice-Over (`A4`):**
-   - Run `generate_voiceover.py` using Alexander's custom voice persona (resolved dynamically via `$GEMINI_VOICE_ID` from 1Password / `.env`) to synthesize scene-synced 48 kHz stereo narration (`-16 LUFS`) for the selected primary language (and UA/RU if `option_b` was chosen).
-   - **Same-Language Dialogue Honor Law:** Never place voice-over in language $L$ over live camera dialogue spoken in that same language $L$ (`filter_vo_cues_for_same_language_dialog`). Duck foreign-language dialogue by `-12 dB` under translation VO.
+### Step 4: Synthesize Voice-Over & Ear-Tested 4-Track Broadcast Mix (`agvs_core.audio_dsp`)
+1. **Single-Pass Studio-Dry Replicated Voice-Over (`A4`):**
+   - Run `generate_voiceover.py` using Alexander's custom voice persona (resolved dynamically via `$GEMINI_VOICE_ID` from 1Password / `0o600` local cache) to synthesize scene-synced 48 kHz stereo narration (`-16 LUFS` single-pass Studio-Dry, `1.00x` natural speech speed—never applying `atempo > 1.0` or double-dereverb).
+   - **Same-Language Dialogue Honor Law:** Never place voice-over in language $L$ over live camera dialogue spoken in that same language $L$ (`verify_no_same_language_vo_dialog_overlap`). Duck foreign-language dialogue by `-12 dB` under translation VO.
 2. **Live Dialogue Normalization (`A1`):**
-   - Extract and normalize camera conversation with a 120 Hz high-pass filter + `+16..22 dB` boost + `dynaudnorm` (`-22 dB` mean). Remove overlapping SFX.
-3. **BGM Audio Architecture (`A2`):**
-   - Calibrate music so it sits at **`-28.5 dB` mean** under speech (`12.5 dB` quieter than VO/dialogue), swelling by `+5.0 dB` (`-23.5 dB` mean) during pure riding.
-   - Begin with a `1.5s–2.0s` music intro before the first VO cue.
-   - End with a mandatory `2.0s–2.5s` half-sine audio fade-out (`curve=hsin`) matching the visual dip-to-black.
+   - Extract and normalize camera conversation using sample-accurate `atrim` + `120 Hz` high-pass filter + post-mix `dynaudnorm` (`-16.0 dB` mean / `-1.0 dB` peak). Remove overlapping SFX.
+3. **Midrange-Weighted BGM Audio Architecture (`A2`):**
+   - Measure BGM loudness behind a 4th-order `180 Hz` high-pass filter (`24 dB/oct`, ignoring sub-bass inflation) with Mandatory Peak Headroom Guard ($\le -1.5\text{ dBFS}$), automatic `+1.5 dB` mellow/chillhop (`< 95 BPM` / chill / ambient / warm / lofi) offset, and `1800 Hz` (`+2.0 dB`) presence EQ.
+   - Keep open riding/visual swells at **`-15.5 to -18.0 dB` midrange RMS** (`-16.0 dB` mellow / `-17.5 dB` standard) and apply a smooth keyframed **`6.0–7.5 dB` duck** (`6.5 dB` default) under VO/live speech to **`-21.5 to -24.5 dB` midrange RMS**—never crushing mellow tracks into the `-28.5..-30 dB` floor.
+   - Begin with a `1.5s–2.0s` music intro before the first VO cue, and end with a unified single-source **`2.2s`** half-sine outro fade (`curve=hsin`) matching the visual dip-to-black.
 4. **Captions (`C1`):**
    - Set `burnCaptions: false` and `enabled: false` inside `.fcproj` so the 4K video frame has **zero burned-in bottom titles** (subtitles served via `.srt`).
 
@@ -116,8 +116,8 @@ Before synthesizing voice-over, rendering GPX maps, or building the timeline, pr
      - Enforces `check_zero_project_scripts_preflight()` and `check_bgm_non_reuse_preflight()`.
      - **Universal Unit Law (Imperial for EN, Metric for All Other Languages):** Master English edition strictly uses Imperial units (`mi`, `ft`, `mph`), while ANY and ALL non-English editions (Russian, Ukrainian, Spanish, German, French, etc.) strictly use Metric units (`km`, `m`, `km/h`, `°C`) across voiceover narrations, `.srt` subtitles, on-screen badges, telemetry HUDs, and bookends.
      - Renders all Warm Vintage Parchment character/flashback badges on `V2` (100% localized with font parity and metric units for non-English editions), **edition-targeted single-language translation cards on `V3`** (clean, zero redundant cards when speaking native edition language), and **1Hz Live Dynamic Telemetry HUD series on `V4` (`live_hud/` Imperial for Master EN, and `live_hud_ru/` Metric for Russian Edition, strictly terminating at cut boundaries when stopping)** via `render_declarative_overlays()`. Also generates fully localized opening/closing AGVS signature bookends on `V1` (`bookend_*_4K_RU.mp4`).
-     - Enforces the **Mandatory Peak Headroom Guard** (ceiling $\le -1.5\text{ dBFS}$) via `calculate_bgm_gains()` to calibrate BGM gain to **`-17.5 dB` RMS** during riding/visual swells and **`-23.5 dB` RMS** under speech/VO, applying a 1.8kHz presence EQ on chillhop tracks without clipping the master audio bus.
-     - Builds and polishes both Master EN (`<project_name>.fcproj`) and Russian Edition (`<project_name>_RU.fcproj`) projects (`schema_version: 17`).
+     - Enforces the **Mandatory Peak Headroom Guard** (ceiling $\le -1.5\text{ dBFS}$) via `calculate_bgm_gains()` (`180 Hz` midrange RMS) to calibrate BGM gain to **`-15.5..-18.0 dB` midrange RMS** during riding/visual swells and **`-21.5..-24.5 dB` midrange RMS** under speech/VO (`6.5 dB` smooth keyframed duck), applying `+1.5 dB` mellow offset + `1.8 kHz` presence EQ on chillhop tracks without clipping the master audio bus.
+     - Builds and polishes `<project_name>.fcproj` (and `<project_name>_RU.fcproj` when `edition_visual_mode == "localized_4k_render"`, enforcing `verify_and_repair_v1_continuity` **after** bookends are attached so 0 black-frame tick gaps exist).
 2. **Open Live in FilmCraft GUI:** `build_timeline.py` automatically launches `FilmCraft.app` (`v0.18.0+`) with the `.fcproj` file so Alexander can press Spacebar and play the timeline immediately.
 3. **🛑 MANDATORY PRE-RENDER GATE (NEVER RENDER MP4 WITHOUT USER OK):**
    - **STOP HERE** before running `--render-export`.

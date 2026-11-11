@@ -936,6 +936,12 @@ def render_declarative_overlays(
         for ov in (overlays_spec or [])
         if ov.get("position") == "top_left" and ov.get("kind") not in ("live_telemetry_hud", "telemetry_hud")
     ]
+    explicit_hud_windows = [
+        (float(ov["start_s"]), float(ov["start_s"]) + float(ov["dur_s"]))
+        for ov in (overlays_spec or [])
+        if ov.get("kind") in ("live_telemetry_hud", "telemetry_hud")
+    ]
+    suppressed_auto_hud_windows = top_left_windows + explicit_hud_windows
     if auto_gpx_pts and cuts_spec:
         tl_cursor = 0.0
         for cut in cuts_spec:
@@ -982,7 +988,10 @@ def render_declarative_overlays(
                 sec_ts = ct + dt.timedelta(seconds=src_in + t)
                 t = round(t + cur_dur, 2)
 
-                if any(step_tl_s < w_end and (step_tl_s + cur_dur) > w_start for w_start, w_end in top_left_windows):
+                if any(
+                    step_tl_s < w_end and (step_tl_s + cur_dur) > w_start
+                    for w_start, w_end in suppressed_auto_hud_windows
+                ):
                     continue
 
                 best_pt = None
@@ -1037,8 +1046,6 @@ def render_declarative_overlays(
             continue
 
         if kind in ("live_telemetry_hud", "telemetry_hud"):
-            if auto_gpx_pts and cuts_spec:
-                continue
             start_s = float(ov["start_s"])
             dur_s = float(ov["dur_s"])
             step_s = float(ov.get("step_s", 1.0))

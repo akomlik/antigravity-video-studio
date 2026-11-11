@@ -1,6 +1,6 @@
-# AGVS — Antigravity Video Studio v2 (`@akomlik`)
+# AGVS — Antigravity Video Studio v3 (`@akomlik`)
 
-Welcome to **AGVS (Antigravity Video Studio v2)**! Open-source repository: [**`akomlik/antigravity-video-studio`**](https://github.com/akomlik/antigravity-video-studio). This guide walks you through your complete end-to-end autonomous video production workflow—from writing a 5-line rough draft and dropping raw camera files into `~/Movies/2026/`, to co-developing `Storyboard.md` (with signature AGVS bookends, YouTube Publishing & Composite Thumbnail specs), rendering GPX route maps & telemetry HUDs, synthesizing warm replicated voice-over (`EN` / `UA` / `RU`), building a broadcast-balanced 4-track timeline in **FilmCraft** (or **DaVinci Resolve**), and publishing 1 or 3 localized 4K editions to YouTube and Flickr via their native APIs.
+Welcome to **AGVS v3 (Antigravity Video Studio)** — powered by the unified **`agvs_core/`** modular Python engine and **Google AI Ultra (`Gemini 4 Carbon / Argon`)**! Open-source repository: [**`akomlik/antigravity-video-studio`**](https://github.com/akomlik/antigravity-video-studio). This guide walks you through your complete end-to-end autonomous video production workflow—from writing a 5-line rough draft and dropping raw camera files into `~/Movies/2026/`, to co-developing `Storyboard.md` (with signature AGVS bookends, YouTube Publishing & Composite Thumbnail specs), rendering GPX route maps & telemetry HUDs, synthesizing warm replicated voice-over (`EN` / `UA` / `RU`), building a broadcast-balanced 4-track timeline in **FilmCraft** (or **DaVinci Resolve**), and publishing 1 or 3 localized 4K editions to YouTube and Flickr via their native APIs.
 
 > **Environment Setup (Bring Your Own Env Manager):**
 > Set `GEMINI_API_KEY`, `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `FLICKR_*` credentials using whichever method you prefer (see [Section 9](#9-optional-zero-plaintext-secret-management-with-1password--direnv-alexanders-protocol) for Alexander's 1Password `envvar:*` protocol, or use `.zshrc` / local `.env`), then launch **Gemini** or **Antigravity** from that shell session so all skills and scripts inherit your environment variables automatically with zero wrapper dependencies:
@@ -29,19 +29,19 @@ Thumbnail: "SAVED AT THE GATE" with selfie + brake caliper cutout.
 ```
 
 Then run the streamlined workflow:
-1. **Stage 0: 2-Pass Storyboard Co-Creation (`/storyboard`):**
+1. **Stage 0: Unified Frontier Storyboard Co-Creation (`/storyboard` — Gemini 4 Carbon / Argon):**
    ```text
    /storyboard ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
    ```
-   - **Pass 1 (Gemini 3.8 Flash):** Converts `.HEIC` $\rightarrow$ `.jpg`, extracts `.proxies/` video thumbnails, syncs Garmin `.gpx` telemetry (`mi`, `ft`, `mph`), inspects live camera audio levels, and builds the baseline structural scaffold.
-   - **Pass 2 (Gemini 4 Argon — Creative Director):** Weaves emotional flashbacks from [`my_digital_brain.md`](./my_digital_brain.md) (e.g. Nina at the 2018 Búger fountain), polishes the narrative arc, writes the trilingual voiceover scripts, and designs the composite thumbnail.
-2. **Stage 1: Interactive Assembly & 4K Export:**
+   - **Automated Ingest & Telemetry (`agvs_core.ingest_sync` + `ranger_sync`):** Converts `.HEIC` $\rightarrow$ `.jpg`, extracts `.proxies/` video thumbnails & contact strips, syncs Garmin `.gpx` telemetry (`mi`, `ft`, `mph` with `>= 40m` grade smoothing), and scans Lightroom `.lrcat` route flashbacks.
+   - **Creative Director & Lore Weaving:** Weaves emotional flashbacks from [`my_digital_brain.md`](./my_digital_brain.md), polishes the narrative arc around a single Controlling Idea (`Сверхзадача`), writes trilingual voiceover scripts, and designs the composite thumbnail.
+2. **Stage 1: Interactive Assembly & 4K Export (`/build-timeline`):**
    ```text
    /build-timeline ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
    ```
    - Presents an interactive in-chat alignment card (`ask_question`, 1 question per turn) to confirm primary language (defaulting to live spoken language), background music (with 10s audio previews via Mac speaker), telemetry HUD visibility, and publishing mode.
-   - Enforces 100% V1 visual continuity (auto-repairing black gaps), builds the 4-track broadcast mix (`A1` camera speech boosted to `-22 dB`, `A2` music auto-ducked `-6.0 dB`, `A3` SFX, `A4` voiceover), applies 2-axis Ken Burns motion to photos, and exports clean 4K MP4 with native Dip-to-Black and synchronized outro audio fade.
-   - **Always losslessly remuxes `_RU.mp4` by default (`0.2s` `ffmpeg copy`)** into `~/Movies/Exports/YEAR/<project>_RU.mp4` for instant Flickr and WhatsApp sharing with family and classmates in Russia and Crimea who cannot access YouTube.
+   - Enforces post-bookend V1 visual continuity (`0` tick gaps), builds the ear-tested 4-track broadcast mix (`A1` camera speech normalized via `120 Hz` HPF + `dynaudnorm` to `-16 dB` mean, `A2` `180 Hz` midrange-calibrated BGM at `-15.5..-18.0 dB` riding swells with smooth `6.0–7.5 dB` keyframed ducking to `-21.5..-24.5 dB` under speech, `A3` `peak_ms`-aligned SFX, `A4` single-pass Studio-Dry VO at `-16 LUFS`), applies 2-axis Ken Burns motion to photos, pauses at the FilmCraft pre-render review gate, and exports clean 4K MP4 (`3840x2160`) with a unified `2.2s` half-sine outro fade.
+   - **4K Multi-Language Edition Export (`edition_visual_mode`):** Defaults to `"universal_4k_remux"` (`0.2s` lossless `ffmpeg -map 0:v:0 -map 1:a:0 -c:v copy -c:a copy` into `~/Movies/Exports/YEAR/<project>_RU.mp4` & `_UA.mp4`), or `"localized_4k_render"` (full `3840x2160` 4K `filmcraft-cli` render when `live_hud_ru/` or `_4K_RU.mp4` localized bookends are active—never downscaling to `1080p`).
 3. **Stage 2: Headless YouTube & Flickr Publishing:**
    ```text
    /publish-youtube ~/Movies/2026/2026-11-02_Nina_Pollenca_Loop
@@ -52,7 +52,9 @@ Then run the streamlined workflow:
 
 ---
 
-## 2. End-to-End Studio v2 Architecture Diagram
+## 2. End-to-End AGVS v3 Architecture Diagram (`agvs_core/`)
+
+> Architectural reference & v3 modular blueprint: [`docs/ARCHITECTURE_AUDIT_v3.md`](./docs/ARCHITECTURE_AUDIT_v3.md)
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -61,38 +63,35 @@ Then run the streamlined workflow:
 └───────────────────────────────────────────────┬───────────────────────────────────────────────┘
                                                 ▼
 ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
-│ STAGE 0: Co-Design & Lore Harvest (/storyboard ~/Movies/2026/YYYY-MM-DD_<Name>)               │
-│ • Enforces FilmCraft >= v0.17.0 (auto-syncs filmcraft-cli) & runs ranger-sync if needed       │
+│ STAGE 0: Co-Design & Lore Harvest (/storyboard -> agvs_core.ingest_sync & flashback_lrcat)    │
+│ • Enforces FilmCraft >= v0.17.0 & runs ranger_sync v0.2 (RTC brownout + <250ms batch guard)   │
 │ • Converts .HEIC -> .jpg, extracts .proxies/, syncs .gpx (Imperial mi/ft/mph + 40m grade)     │
 │ • Co-develops Storyboard.md (Scenes 00..N + Section 5 Publishing & Composite Thumbnail Spec)  │
 │ • Harvests new people, landmarks & gear lore into my_digital_brain.md                         │
 └───────────────────────────────────────────────┬───────────────────────────────────────────────┘
                                                 ▼
 ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
-│ STAGE 1: Interactive Assembly & Render (/build-timeline ~/Movies/2026/YYYY-MM-DD_<Name>)      │
-│ • In-Chat Alignment Card (ask_question, 1 question/turn): Primary Language, Music (10s audio  │
-│   preview via Mac speaker with ▶️ Listen vs ✅ Select), and Publishing Mode (option_a unlisted) │
-│ • Automatically updates Storyboard.md with your selections (zero manual file editing!)        │
-│ • V1: Continuity auto-repair (zero black gaps), 4K cuts, Ken Burns stills, 62% PiP B-roll card │
-│ • V2: Translucent GPX Corner Route Maps + conditional smoothed Telemetry HUD                  │
-│ • A1: Speech-boosted live camera dialog (-22 dB mean, 120 Hz HPF + dynaudnorm) / Ambience     │
-│ • A2: Multi-phase BGM (-7.5 dB under VO, native Essential Sound auto-ducking & +3.5 dB swell) │
+│ STAGE 1: Declarative Assembly & Render (/build-timeline -> agvs_core.timeline_builder)        │
+│ • Pydantic v2 Validation: ProjectManifest + TimelineSpec + StoryboardTuningSpec pre-flight    │
+│ • V1: Post-bookend continuity repair (0 tick gaps), 4K cuts, Ken Burns stills, 62% PiP cards  │
+│ • V2/V3/V4: Warm Vintage Parchment cards, paginated primary-translation cards, 1Hz GPX HUD    │
+│ • A1: Speech-boosted live camera dialog (-16 dB mean / -1 dB peak, 120 Hz HPF + dynaudnorm)   │
+│ • A2: 180 Hz midrange BGM (-15.5..-18.0 dB riding, 6.0-7.5 dB duck to -21.5..-24.5 dB)        │
 │ • A3: Tamed PiP B-roll audio (-6.5 dB) / peak_ms-aligned Brehov SFX (never over speech)       │
-│ • A4: Replicated warm Voice-Over ($GEMINI_VOICE_ID, -16 LUFS, EN / UA / RU)                     │
-│ • Exports clean 4K MP4 (burnCaptions: false) + 0.2s remuxed _UA.mp4 & _RU.mp4 (ffmpeg copy)   │
+│ • A4: Single-pass Studio-Dry Voice-Over ($GEMINI_VOICE_ID, -16 LUFS, 1.00x natural speed)     │
+│ • Exports clean 4K MP4 (burnCaptions: false) + universal_4k_remux (0.2s) or localized_4k      │
 └───────────────────────────────────────────────┬───────────────────────────────────────────────┘
                                                 ▼
 ┌───────────────────────────────────────────────────────────────────────────────────────────────┐
-│ STAGE 2: Headless YouTube Publishing (/publish-youtube ~/Movies/2026/YYYY-MM-DD_<Name>)       │
-│ • MANDATORY APPROVAL GATE: Always pauses for human review before touching YouTube API         │
+│ STAGE 2: Headless YouTube & Flickr Release (/publish-youtube -> agvs_core.youtube_pub)        │
+│ • MANDATORY APPROVAL GATE: HumanApprovalRequiredError blocks any unapproved automated upload  │
 │ • Generates Imperial titles, clean 00:00 chapters, .srt tracks (en, ua -> uk, ru)             │
 │ • SHA-256 caption hash caching: Skips captions.insert if unchanged (saves 1,200 quota units)  │
 │ • Generates localized 1920x1080 Composite Thumbnails (thumbnail.jpg, _ua.jpg, _ru.jpg)        │
-│ • Uploads via YouTube Data API v3 (inherited env vars + cached OAuth token):                  │
+│ • Uploads via YouTube Data API v3 (default privacy: "unlisted"):                              │
 │   - option_a (Default): 1 English 4K video (Unlisted) + EN/UA/RU titles, descs & .srts        │
 │   - option_b (Milestones): 3 4K editions (EN + UA/RU Unlisted) + pinned switcher comment      │
-│ • Automatically losslessly remuxes _RU.mp4 (0.2s) for instant Flickr & WhatsApp sharing        │
-│ • Prints ready-to-copy Facebook promotional post and 📸 Flickr publishing metadata in chat     │
+│ • Cross-links Flickr _RU.mp4 release & prints copy-ready Facebook + Strava + WhatsApp boxes   │
 └───────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -111,18 +110,19 @@ gpx_corner_map: true                  # true (default: 3.5s top-right GPX progre
 gpx_telemetry_hud: "auto"             # "auto" (activity-aware: > 2.0 mph ride / > 0.8 mph hike; off at stops & stills) | "always" | "off"
 low_res_broll_mode: "pip_card"        # "pip_card" (62% framed inset over blurred 4K backdrop for <1080p clips) | "full"
 
-# Audio & Voice-Over Knobs (4-Track Broadcast Mix)
+# Audio & Voice-Over Knobs (4-Track Ear-Tested Broadcast Mix)
 voiceover_persona: "$GEMINI_VOICE_ID" # Inherited from environment variable GEMINI_VOICE_ID
-voiceover_gain_db: -0.5               # Matches normalized live speech (-19 dB mean)
-live_dialog_boost: "auto"             # Boosts quiet BleeqUP camera speech (<-35 dB) to -22 dB mean & strips overlapping SFX
-bgm_gain_under_vo_db: -7.5            # Warmly audible underneath voiceover (-26 dB mean)
-bgm_swell_riding_db: +3.5             # Swells to -4.0 dB (-22.9 dB mean) during riding-only sections
+voiceover_target_lufs: -16.0          # Single-pass Studio-Dry EBU R128 integrated loudness (1.00x natural speed)
+live_dialog_boost: "auto"             # 120 Hz HPF + sample-accurate atrim + post-mix dynaudnorm (-16 dB mean / -1 dB peak)
+bgm_riding_midrange_rms_db: -16.0     # 180 Hz HPF midrange RMS (-16.0 dB mellow/+1.5 dB offset, -17.5 dB standard; <= -1.5 dBFS peak)
+bgm_duck_db: 6.5                      # Smooth 6.0-7.5 dB keyframed duck under VO/speech (-21.5..-24.5 dB midrange RMS)
 pip_broll_music_gain_db: -6.5         # Tames smartphone B-roll music (-30 dB mean) so it never overpowers
 
 # YouTube Localization & Publishing Knobs
-publishing_mode: "option_b"           # "en_only" | "option_a" (Everyday default: 1 video + en/ua/ru .srt) | "option_b" (Special occasions: EN Private + UA/RU Unlisted voiceover editions)
+edition_visual_mode: "universal_4k_remux" # "universal_4k_remux" (default 0.2s 4K copy) | "localized_4k_render" (full 3840x2160 RU render)
+publishing_mode: "option_a"           # "en_only" | "option_a" (Everyday default: 1 Unlisted 4K master + en/ua/ru .srt) | "option_b" (3 Unlisted 4K voiced editions)
 toponym_phonetics: "mallorca_yeismo"  # Phonetic ll before vowel -> й/є (Майорка, Пойенса/Поєнса, Сойер/Соєр, Йук); pre-consonantal ll in Valldemossa -> Валдемоса
-default_privacy: "private"            # Primary video uploaded as "private" for review; UA/RU editions as "unlisted"
+default_privacy: "unlisted"           # Default "unlisted" so pinned language-switcher comments & previews work immediately
 playlists:
   - "Mallorca"
   - "2026 Mallorca Cycling"
@@ -187,14 +187,16 @@ AGVS v2 introduces a signature, data-driven bookend identity generated determini
 
 ---
 
-## 4. Google AI Pro Quota Guide (Which Model to Select)
+## 4. Unified Frontier Model Workflow (Google AI Ultra Plan)
 
-| Workflow Step / Slash Command | **Recommended Model** | **Why** |
+With **Google AI Ultra (`20x` continuous headroom)**, AGVS v3 runs **Gemini 4 Carbon / Argon** end-to-end across every stage without manual model toggling or Pro-tier quota workarounds:
+
+| Workflow Step / Slash Command | **Active Engine** | **Role** |
 | :--- | :--- | :--- |
-| **1. Pre-Processing (`/ingest-media`)** | 🟢 **Gemini 3.8 Flash** | Runs local Python (`ranger-sync`, `sips`, `ffmpeg`, GPX math) at 0% Argon cost. |
-| **2. Drafting & Co-Developing `/storyboard`** | 🟢 **Gemini 3.8 Flash** *(or Argon Medium)* | Inspects `.proxies/*_thumb.jpg` thumbnails, drafts `Storyboard.md` + Section 5, and updates `my_digital_brain.md`. |
-| **3. Curating Browser Music (`/find-music`)** | 🟢 **Gemini 3.8 Flash** | Filters open YouTube Audio Library & `creatormix.com` tabs (`< 3:00`). |
-| **4. Building & Publishing (`/build-timeline`, `/publish-youtube`)** | 🟢 **Gemini 3.8 Flash** | All audio mixing, GPX widget rendering, voiceover synthesis, and YouTube API uploads run via deterministic Python scripts in `.venv`. |
+| **1. Pre-Processing (`/ingest-media`)** | **Gemini 4 Carbon / Argon** + `agvs_core.ingest_sync` | Runs `ranger_sync` v0.2, `sips`, `ffmpeg`, 40m GPX telemetry, and contact-strip landmark/stop-sync vision analysis. |
+| **2. Co-Developing `/storyboard`** | **Gemini 4 Carbon / Argon** | Inspects `.proxies/*_thumb.jpg` & contact sheets, weaves `my_digital_brain.md` flashbacks, and drafts `Storyboard.md`. |
+| **3. Curating Music (`/find-music`, `/swap-music`)** | **Gemini 4 Carbon / Argon** + `agvs_core.music_catalog` | Enforces Anti-Monotony Non-Reuse across `04_Project_Catalog/` and fetches `< 3:00` tracks from CreatorMix / YouTube Audio Library. |
+| **4. Building & Publishing (`/build-timeline`, `/publish-youtube`, `/publish-flickr`)** | **Gemini 4 Carbon / Argon** + `agvs_core.services` | Validates Pydantic v2 schemas, renders Warm Vintage cards & 4K timelines, pauses at human gates, and publishes via YouTube/Flickr APIs. |
 
 ---
 
@@ -202,8 +204,8 @@ AGVS v2 introduces a signature, data-driven bookend identity generated determini
 
 | Folder / File | Location | Purpose |
 | :--- | :--- | :--- |
-| **Workspace Root** | `./` | Contains `README.md`, `editing_constitution.md`, `my_digital_brain.md`, and `.venv` (`google-genai`, `google-api-python-client`, `pillow`). |
-| **Agent Skills** | `.agents/skills/` | All 8 slash-command skills (`storyboard`, `build-timeline`, `publish-youtube`, `find-music`, `swap-music`, `ingest-media`, `interview-brain`, `relink-archive`). |
+| **Workspace Root & Core Package** | `./` & `./agvs_core/` | `pyproject.toml`, `studio.conf`, `agvs_core/` (schemas, ingest, GPX, audio DSP, vintage cards, bookends, timeline builder, YouTube/Flickr pub, Cockpit `services/`), and `tests/` (`< 15s` golden regression suite). |
+| **Agent Skills (Thin CLI Shims)** | `.agents/skills/` | All 9 slash-command skills (`storyboard`, `build-timeline`, `publish-youtube`, `publish-flickr`, `find-music`, `swap-music`, `ingest-media`, `interview-brain`, `relink-archive`) backed by `< 40`-line CLI shims over `agvs_core`. |
 | **Voice Cloning & Consent** | `03_Audio_Library/00_Voice_Cloning/` | Reference speech & mandatory spoken consent staging ([`README.md`](./03_Audio_Library/00_Voice_Cloning/README.md) guide for 1Password `$GEMINI_VOICE_ID` setup). |
 | **Voice Profile** | `03_Audio_Library/03_Voice_Profile/` | Reference voice audio & local cache (resolving `$GEMINI_VOICE_ID` from inherited environment). |
 | **Curated Music Pool** | `03_Audio_Library/01_Curated_BGM/` | Reusable copyright-safe music (`[BPM]_[Mood]_[TrackName]_[Artist].mp3`). |

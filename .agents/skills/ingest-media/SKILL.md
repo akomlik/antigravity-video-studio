@@ -5,9 +5,9 @@ description: Universal pre-processor for any video project folder (cycling ride,
 
 # Ingest & Synchronize Universal Project Media (`/ingest-media`)
 
-## Model & Execution Instructions
-1. Execute this skill using **Gemini 3.8 Flash** to preserve Gemini 4 Argon quota.
-2. Treat `scripts/ingest_and_sync_media.py` as a black box—do not read its source code into context.
+## Execution Instructions (`agvs_core.ingest_sync`)
+1. Runs seamlessly on **Gemini 4 Carbon / Argon** (Google AI Ultra unified frontier workflow).
+2. Execute the thin CLI wrapper `scripts/ingest_and_sync_media.py` (backed by `agvs_core.ingest_sync`) without reading its source code into context.
 3. Run `ingest_and_sync_media.py` on the target folder (add `--force-resync` if you want to re-run `ranger-sync` on an already-synced folder, or `--skip-bleequp-sync` to skip):
    ```bash
    python3 ./.agents/skills/ingest-media/scripts/ingest_and_sync_media.py --project-dir "<path_to_folder>" --genre auto

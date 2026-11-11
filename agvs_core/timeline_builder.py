@@ -1213,7 +1213,7 @@ def polish_and_render_project(
     cli_bin = find_binary("filmcraft-cli")
     if run_essential_sound or output_mp4:
         env_status = verify_filmcraft_environment(auto_sync_cli=True, check_remote=False)
-        cli_bin = env_status.get("cli_binary") or cli_bin or "/opt/homebrew/bin/filmcraft-cli"
+        cli_bin = env_status.get("cli_binary") or cli_bin or "filmcraft-cli"
 
     data = json.loads(fcproj_path.read_text(encoding="utf-8"))
     proj = data["project"]
