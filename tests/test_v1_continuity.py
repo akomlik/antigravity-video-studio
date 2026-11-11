@@ -47,7 +47,6 @@ def test_simulated_rounding_drift_repaired():
         assert v1[i]["start"] + v1[i]["duration"] == v1[i + 1]["start"]
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 8")
 def test_post_bookend_continuity_and_disabled_burn_captions_and_4k_editions(tmp_path: Path):
     from agvs_core.timeline_builder import (
         attach_bookend_cuts_if_needed,
