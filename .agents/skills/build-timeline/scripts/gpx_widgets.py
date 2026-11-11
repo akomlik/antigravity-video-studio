@@ -13,6 +13,7 @@ Generates 4K UHD (3840x2160) transparent PNG overlays directly from a Garmin/Str
 import datetime as dt
 import math
 import re
+import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -92,6 +93,17 @@ def load_gpx_stream(gpx_path: Path) -> list[dict]:
             "cad": cad,
             "pwr": pwr,
         })
+
+    # Article I / Constitution requirement: 3-second rolling average for speed and power to eliminate 1Hz GPS coordinate quantization jitter
+    if len(pts) > 3:
+        for i in range(len(pts)):
+            i_start = max(0, i - 1)
+            i_end = min(len(pts), i + 2)
+            win = pts[i_start:i_end]
+            pts[i]["spd_mph"] = round(sum(p["spd_mph"] for p in win) / len(win), 1)
+            if any(p["pwr"] > 0 for p in win):
+                pts[i]["pwr"] = int(round(sum(p["pwr"] for p in win) / len(win)))
+
     return pts
 
 
@@ -821,6 +833,8 @@ def render_declarative_overlays(
     raw_dir: Path | None = None,
     skip_render: bool = False,
     edition: str | None = None,
+    cuts_spec: list[dict] | None = None,
+    hud_mode: str = "auto",
 ) -> dict[str, list[dict]] | list[dict]:
     """
     Universal declarative overlay renderer and timeline expander.
@@ -849,8 +863,113 @@ def render_declarative_overlays(
             gpx_cache[gpx_name] = load_gpx_stream(gp) if gp.exists() else []
         return gpx_cache[gpx_name]
 
+    # Auto-detect project GPX file in raw_dir when cuts_spec is provided
+    auto_gpx_pts: list[dict] = []
+    if raw_dir and raw_dir.exists() and cuts_spec and (hud_mode or "auto").lower() != "off":
+        gpx_files = sorted(raw_dir.glob("*.gpx"))
+        if gpx_files:
+            auto_gpx_pts = get_gpx(gpx_files[0].name)
+
     expanded_items_en: list[dict] = []
     expanded_items_ru: list[dict] = []
+
+    # 1. Automatic Engine-Level 1Hz Live GPX Telemetry HUD across all moving cuts
+    # Suppress top-left HUD whenever a top_left overlay badge is active so they never collide!
+    top_left_windows = [
+        (float(ov["start_s"]), float(ov["start_s"]) + float(ov["dur_s"]))
+        for ov in (overlays_spec or [])
+        if ov.get("position") == "top_left" and ov.get("kind") not in ("live_telemetry_hud", "telemetry_hud")
+    ]
+    if auto_gpx_pts and cuts_spec:
+        tl_cursor = 0.0
+        for cut in cuts_spec:
+            dur_s = float(cut["dur"])
+            cut_start_s = round(tl_cursor, 2)
+            tl_cursor = round(tl_cursor + dur_s, 2)
+
+            src = str(cut.get("source", ""))
+            if (
+                cut.get("is_still")
+                or cut.get("hud") is False
+                or src.startswith(("bookend_", "ai_", "pollentia_spotlight"))
+                or not should_show_telemetry_hud(src, rolling_speed_mph=99.0, mode=hud_mode)
+            ):
+                continue
+
+            cp = raw_dir / src if raw_dir else None
+            if not cp or not cp.exists():
+                continue
+
+            ct = None
+            try:
+                cmd = [
+                    "ffprobe", "-v", "error",
+                    "-show_entries", "format_tags=creation_time",
+                    "-of", "default=noprint_wrappers=1:nokey=1",
+                    str(cp),
+                ]
+                out_ct = subprocess.check_output(cmd).decode().strip()
+                if out_ct:
+                    ct = dt.datetime.fromisoformat(out_ct.replace("Z", "+00:00"))
+            except Exception:
+                pass
+            if ct is None:
+                continue
+
+            src_in = float(cut.get("src_in", 0.0))
+            t = 0.0
+            step_s = 1.0
+            while t < dur_s - 1e-4:
+                cur_dur = min(step_s, round(dur_s - t, 2))
+                step_tl_s = round(cut_start_s + t, 2)
+                sec_ts = ct + dt.timedelta(seconds=src_in + t)
+                t = round(t + cur_dur, 2)
+
+                if any(step_tl_s < w_end and (step_tl_s + cur_dur) > w_start for w_start, w_end in top_left_windows):
+                    continue
+
+                # Find nearest 1Hz GPX point
+                best_pt = None
+                best_diff = 999999.0
+                for p in auto_gpx_pts:
+                    diff = abs((p["time"] - sec_ts).total_seconds())
+                    if diff < best_diff:
+                        best_diff = diff
+                        best_pt = p
+
+                if best_pt is None or best_diff > 3.0:
+                    continue
+                if not should_show_telemetry_hud(src, rolling_speed_mph=best_pt["spd_mph"], mode=hud_mode):
+                    continue
+
+                pt = dict(best_pt)
+                rel_fname_en = f"live_hud/hud_{int(round(step_tl_s * 10)):04d}.png"
+                out_png_en = overlays_dir / rel_fname_en
+                if not skip_render:
+                    render_telemetry_hud_widget(pt, out_png_en, units="imperial", lang="en")
+                expanded_items_en.append({
+                    "file": rel_fname_en,
+                    "start_s": step_tl_s,
+                    "dur_s": cur_dur,
+                    "track": "V4",
+                    "fade_in_s": 0.0,
+                    "fade_out_s": 0.0,
+                    "desc": f"Live Telemetry HUD @ {step_tl_s:.1f}s ({src})",
+                })
+
+                rel_fname_ru = f"live_hud_ru/hud_{int(round(step_tl_s * 10)):04d}.png"
+                out_png_ru = overlays_dir / rel_fname_ru
+                if not skip_render:
+                    render_telemetry_hud_widget(pt, out_png_ru, units="metric", lang="ru")
+                expanded_items_ru.append({
+                    "file": rel_fname_ru,
+                    "start_s": step_tl_s,
+                    "dur_s": cur_dur,
+                    "track": "V4",
+                    "fade_in_s": 0.0,
+                    "fade_out_s": 0.0,
+                    "desc": f"Live Telemetry HUD @ {step_tl_s:.1f}s (Metric, {src})",
+                })
 
     for ov in overlays_spec:
         kind = ov.get("kind", "character_badge")
@@ -858,12 +977,44 @@ def render_declarative_overlays(
         accent_col = COLOR_FOREST_GREEN if "green" in accent_name else COLOR_CRIMSON
         pos = ov.get("position", "bottom_left")
 
+        # Hard ban on static HUD PNGs so no LLM can ever place a frozen HUD card
+        if kind == "static_png" and Path(ov.get("file", "")).name.lower().startswith("hud_"):
+            continue
+
         if kind in ("live_telemetry_hud", "telemetry_hud"):
+            # Skip manual live_telemetry_hud entries when automatic engine-level GPX HUD is active
+            if auto_gpx_pts and cuts_spec:
+                continue
             start_s = float(ov["start_s"])
             dur_s = float(ov["dur_s"])
             step_s = float(ov.get("step_s", 1.0))
             pts = get_gpx(ov.get("gpx_file", ""))
-            gpx_start_idx = int(ov.get("gpx_start_idx", len(pts) // 4 if pts else 0))
+            gpx_start_idx = ov.get("gpx_start_idx")
+            if gpx_start_idx is None:
+                clip_file = ov.get("clip_file") or ov.get("clip")
+                if clip_file and raw_dir and pts:
+                    cp = raw_dir / clip_file
+                    if cp.exists():
+                        try:
+                            cmd = ["ffprobe", "-v", "error", "-show_entries", "format_tags=creation_time", "-of", "default=noprint_wrappers=1:nokey=1", str(cp)]
+                            out_ct = subprocess.check_output(cmd).decode().strip()
+                            if out_ct:
+                                ct = dt.datetime.fromisoformat(out_ct.replace("Z", "+00:00"))
+                                clip_start_time = ct + dt.timedelta(seconds=float(ov.get("src_in", 0.0)))
+                                best_idx = 0
+                                best_diff = 999999
+                                for i, p in enumerate(pts):
+                                    diff = abs((p["time"] - clip_start_time).total_seconds())
+                                    if diff < best_diff:
+                                        best_diff = diff
+                                        best_idx = i
+                                gpx_start_idx = best_idx
+                        except Exception:
+                            pass
+            if gpx_start_idx is None:
+                gpx_start_idx = len(pts) // 4 if pts else 0
+            else:
+                gpx_start_idx = int(gpx_start_idx)
             prof = ov.get("metrics_profile") or {}
 
             steps = []
@@ -1089,7 +1240,7 @@ def render_declarative_overlays(
         expanded_items_en.append(item_en)
         expanded_items_ru.append(item_ru)
 
-    # Contiguous Subtitle Pass on track V3 for both editions:
+    # Contiguous Subtitle Pass on track V3 and Contiguous Live HUD Pass on track V4 for both editions:
     for item_list in (expanded_items_en, expanded_items_ru):
         v3_subs = [it for it in item_list if it.get("track") == "V3"]
         v3_subs.sort(key=lambda x: x["start_s"])
@@ -1102,6 +1253,26 @@ def render_declarative_overlays(
             if abs(c1_end - c2["start_s"]) <= 0.08:
                 c1["fade_out_s"] = 0.0
                 c2["fade_in_s"] = 0.0
+
+        v4_huds = [it for it in item_list if it.get("track") == "V4"]
+        v4_huds.sort(key=lambda x: x["start_s"])
+        for idx, h_item in enumerate(v4_huds):
+            if idx == 0:
+                h_item["fade_in_s"] = 0.25
+            if idx == len(v4_huds) - 1:
+                h_item["fade_out_s"] = 0.30
+        for idx in range(len(v4_huds) - 1):
+            c1, c2 = v4_huds[idx], v4_huds[idx + 1]
+            c1_end = c1["start_s"] + c1["dur_s"]
+            if c1_end > c2["start_s"]:
+                c1["dur_s"] = round(c2["start_s"] - c1["start_s"], 2)
+                c1_end = c1["start_s"] + c1["dur_s"]
+            if abs(c1_end - c2["start_s"]) <= 0.15:
+                c1["fade_out_s"] = 0.0
+                c2["fade_in_s"] = 0.0
+            else:
+                c1["fade_out_s"] = 0.30
+                c2["fade_in_s"] = 0.25
 
     if edition == "en":
         return expanded_items_en

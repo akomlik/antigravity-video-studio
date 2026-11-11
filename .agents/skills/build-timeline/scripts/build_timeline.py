@@ -198,7 +198,7 @@ def prepare_paced_voiceovers(proj_dir: Path, raw_dir: Path, vo_cues: list[dict])
             )
             dur = get_duration(tmp_wav)
             if dur > max_dur:
-                tempo = min(1.35, max(1.01, (dur / max_dur) * 1.01))
+                tempo = min(1.12, max(1.01, (dur / max_dur) * 1.01))
                 subprocess.run(
                     ["ffmpeg", "-y", "-i", str(tmp_wav), "-filter:a", f"atempo={tempo:.4f}", "-ar", "48000", "-ac", "2", str(paced_wav)],
                     check=True, capture_output=True,
@@ -208,9 +208,27 @@ def prepare_paced_voiceovers(proj_dir: Path, raw_dir: Path, vo_cues: list[dict])
                 print(f"  [{lang}] {cue_key}: {dur:.2f}s -> {final_dur:.2f}s (atempo={tempo:.2f}x, window={start_s:.1f}s..{start_s+final_dur:.1f}s)")
             else:
                 tmp_wav.replace(paced_wav)
+                final_dur = dur
                 print(f"  [{lang}] {cue_key}: {dur:.2f}s (1.00x natural, window={start_s:.1f}s..{start_s+dur:.1f}s)")
             if raw_dir.exists():
                 shutil.copy2(paced_wav, raw_dir / paced_wav.name)
+
+        # Pre-Flight Voiceover Non-Overlap Guard for this language
+        for idx in range(len(vo_cues) - 1):
+            c_curr = vo_cues[idx]
+            c_next = vo_cues[idx + 1]
+            p_curr = proj_dir / f"voiceover_{lang}_{c_curr['id']}_paced.wav"
+            if not p_curr.exists():
+                continue
+            end_curr = float(c_curr["start_s"]) + get_duration(p_curr)
+            st_next = float(c_next["start_s"])
+            if end_curr > st_next + 0.05:
+                raise RuntimeError(
+                    f"\n🚨 FATAL PRE-FLIGHT ERROR: Overlapping Voiceover Cues in [{lang}]!\n"
+                    f"  {c_curr['id']} ends at {end_curr:.2f}s, which collides with {c_next['id']} starting at {st_next:.2f}s "
+                    f"(overlap = {end_curr - st_next:.2f}s)!\n"
+                    f"  Adjust cut durations and vo_cues start_s in timeline_spec.json so every cue finishes cleanly before the next starts."
+                )
 
 
 def generate_srt_subtitles(proj_dir: Path, vo_cues: list[dict], live_subtitles: list[dict]):
@@ -634,6 +652,8 @@ def build_fcproj_from_spec(
                 src = "bookend_intro_4K_RU.mp4"
             elif src == "bookend_outro_4K.mp4" and (overlays_dir / "bookend_outro_4K_RU.mp4").exists():
                 src = "bookend_outro_4K_RU.mp4"
+            elif src == "pollentia_spotlight_4K.mp4" and (overlays_dir / "pollentia_spotlight_4K_RU.mp4").exists():
+                src = "pollentia_spotlight_4K_RU.mp4"
         is_still = bool(cut.get("is_still", False))
         dur = float(cut["dur"])
         src_in = float(cut.get("src_in", 0.0))
@@ -657,6 +677,8 @@ def build_fcproj_from_spec(
                 src = "bookend_intro_4K_RU.mp4"
             elif src == "bookend_outro_4K.mp4" and (overlays_dir / "bookend_outro_4K_RU.mp4").exists():
                 src = "bookend_outro_4K_RU.mp4"
+            elif src == "pollentia_spotlight_4K.mp4" and (overlays_dir / "pollentia_spotlight_4K_RU.mp4").exists():
+                src = "pollentia_spotlight_4K_RU.mp4"
         is_still = bool(cut.get("is_still", False))
         src_in = float(cut.get("src_in", 0.0))
         dur = float(cut["dur"])
@@ -774,27 +796,37 @@ def build_fcproj_from_spec(
             v2_items.append(item_dict)
         next_id += 1
 
-    bgm_clip_id = next_id
-    next_id += 1
-    a2_items.append({
-        "id": bgm_clip_id,
-        "item": bgm_media_id,
-        "name": bgm_track.name,
-        "label": "Caribbean",
-        "start": 0,
-        "duration": int(round(total_dur * 30)) * ticks_per_frame,
-        "source_in": 0,
-        "speed": 1.0,
-        "reverse": False,
-        "enabled": True,
-        "link": None,
-        "group": None,
-        "effects": [],
-        "markers": [],
-        "gain_db": float(riding_gain_db),
-        "frame_hold": None,
-        "scale_to_frame": False,
-    })
+    bgm_file_dur = max(10.0, get_duration(bgm_track))
+    rem_bgm = total_dur
+    bgm_cursor_s = 0.0
+    last_bgm_clip_id = None
+    while rem_bgm > 0.05:
+        seg_dur = min(bgm_file_dur, rem_bgm)
+        bgm_clip_id = next_id
+        next_id += 1
+        last_bgm_clip_id = bgm_clip_id
+        a2_items.append({
+            "id": bgm_clip_id,
+            "item": bgm_media_id,
+            "name": bgm_track.name,
+            "label": "Caribbean",
+            "start": int(round(bgm_cursor_s * 30)) * ticks_per_frame,
+            "duration": int(round(seg_dur * 30)) * ticks_per_frame,
+            "source_in": 0,
+            "speed": 1.0,
+            "reverse": False,
+            "enabled": True,
+            "link": None,
+            "group": None,
+            "effects": [],
+            "markers": [],
+            "gain_db": float(riding_gain_db),
+            "frame_hold": None,
+            "scale_to_frame": False,
+        })
+        bgm_cursor_s += seg_dur
+        rem_bgm -= seg_dur
+
     tid_outro = next_id
     next_id += 1
     a2_transitions = [{
@@ -802,7 +834,7 @@ def build_fcproj_from_spec(
         "effect": {"effect": "constant_power", "enabled": True, "params": {}},
         "start": int(round((total_dur - 2.5) * 30)) * ticks_per_frame,
         "duration": int(round(2.5 * 30)) * ticks_per_frame,
-        "from": bgm_clip_id,
+        "from": last_bgm_clip_id,
         "to": None,
         "align": "EndAtCut",
         "reverse": False,
