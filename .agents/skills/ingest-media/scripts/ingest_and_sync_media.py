@@ -48,7 +48,7 @@ def run_filmcraft_version_check(studio_root: Path):
 
 
 def convert_heic_to_jpg(project_dir: Path):
-    """Step 0a: Converts iPhone .HEIC stills to high-quality .jpg via macOS sips and preserves EXIF + Finder capture dates."""
+    """Step 0a: Converts iPhone .HEIC stills to high-quality .jpg, bakes upright pixel orientation (Orientation=1), and preserves EXIF + Finder capture dates."""
     exiftool_bin = shutil.which("exiftool") or "/opt/homebrew/bin/exiftool"
     for heic in list(project_dir.glob("*.HEIC")) + list(project_dir.glob("*.heic")):
         jpg_out = heic.with_suffix(".jpg")
@@ -69,6 +69,45 @@ def convert_heic_to_jpg(project_dir: Path):
                     "-overwrite_original",
                     "-tagsFromFile", str(heic),
                     "-all:all",
+                    str(jpg_out),
+                ],
+                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+            )
+
+    # Mandatory Upright Pixel Orientation Guard for all local JPEGs (FilmCraft GPU decodes raw pixels without EXIF rotation)
+    try:
+        from PIL import Image, ImageOps
+        for jpg_p in list(project_dir.glob("*.jpg")) + list(project_dir.glob("*.JPG")):
+            if jpg_p.is_symlink():
+                continue
+            with Image.open(jpg_p) as im:
+                ori = im.getexif().get(274, 1)
+                if ori != 1:
+                    st = jpg_p.stat()
+                    upright = ImageOps.exif_transpose(im)
+                    exif_bytes = upright.info.get("exif")
+                    save_kw = {"quality": 95, "subsampling": 0}
+                    if exif_bytes:
+                        save_kw["exif"] = exif_bytes
+                    upright.save(jpg_p, "JPEG", **save_kw)
+                    if Path(exiftool_bin).is_file():
+                        subprocess.run(
+                            [exiftool_bin, "-overwrite_original", "-Orientation=1", "-n", str(jpg_p)],
+                            check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                        )
+                    os.utime(jpg_p, (st.st_atime, st.st_mtime))
+                    print(f"[✓] Baked upright pixel orientation on {jpg_p.name} (was EXIF Orientation={ori})")
+    except Exception as exc:
+        print(f"Note: EXIF orientation check warning: {exc}")
+
+    # Sync FileCreateDate / FileModifyDate from DateTimeOriginal after any pixel transpose
+    for heic in list(project_dir.glob("*.HEIC")) + list(project_dir.glob("*.heic")):
+        jpg_out = heic.with_suffix(".jpg")
+        if jpg_out.exists() and abs(jpg_out.stat().st_mtime - heic.stat().st_mtime) > 2.0 and Path(exiftool_bin).is_file():
+            subprocess.run(
+                [
+                    exiftool_bin,
+                    "-overwrite_original",
                     "-FileCreateDate<DateTimeOriginal",
                     "-FileModifyDate<DateTimeOriginal",
                     str(jpg_out),
@@ -106,12 +145,20 @@ def run_bleequp_ranger_sync_if_needed(project_dir: Path, skip_sync: bool, force_
                 "--write-filesystem",
                 "--overwrite-original",
             ],
+            capture_output=True,
+            text=True,
             check=False,
         )
+        if res.stdout:
+            print(res.stdout, end="")
         if res.returncode == 0:
             marker.touch()
         else:
-            print(f"Warning: ranger-sync exited with code {res.returncode}")
+            if res.stderr:
+                print(res.stderr, file=sys.stderr, end="")
+            raise RuntimeError(
+                f"ranger-sync failed with exit code {res.returncode} — aborting ingest to prevent out-of-order timeline."
+            )
     else:
         print("Note: ranger-sync not on PATH; proceeding with existing files.")
 
@@ -295,7 +342,9 @@ def probe_media_file(filepath: Path, proxy_dir: Path):
                 make = (tags.get("com.apple.quicktime.make", "") + tags.get("encoder", "")).lower()
                 if "apple" in make or filepath.suffix.lower() == ".mov":
                     info["source_device"] = "iPhone_15_Pro"
-                elif (info["width"], info["height"]) in [(3200, 1800), (1800, 3200), (1920, 1080), (1080, 1920)]:
+                elif "bleequp" in make or (info["width"], info["height"]) in [
+                    (2880, 1620), (1620, 2880), (3200, 1800), (1800, 3200), (1920, 1080), (1080, 1920)
+                ]:
                     info["source_device"] = "BleeqUP_Ranger_AI"
 
                 ctime = tags.get("com.apple.quicktime.creationdate") or tags.get("creation_time")
@@ -361,6 +410,11 @@ def probe_media_file(filepath: Path, proxy_dir: Path):
     if not info["creation_time_utc"]:
         mtime = dt.datetime.fromtimestamp(filepath.stat().st_mtime, tz=dt.timezone.utc)
         info["creation_time_utc"] = mtime.isoformat()
+
+    # Flag clock-sync calibration photos (e.g. bigclock.app reference shots) so they are never placed in video cuts
+    if filepath.name in ("IMG_1794306860718.JPG",) or "bigclock" in filepath.name.lower():
+        info["calibration_clock_only"] = True
+        info["exclude_from_timeline"] = True
 
     return info
 
@@ -599,6 +653,11 @@ def compute_editorial_guidance(item_info, genre: str, gpx_points: list):
         }
 
     media_dt = parse_media_utc(item_info, gpx_points)
+    in_gpx_ride_window = bool(
+        gpx_points[0]["time"] - dt.timedelta(seconds=120)
+        <= media_dt
+        <= gpx_points[-1]["time"] + dt.timedelta(seconds=120)
+    )
     nearest = min(gpx_points, key=lambda p: abs((p["time"] - media_dt).total_seconds()))
     # If time is outside GPX window (>30 min) but clip has QuickTime GPS, match spatially
     if abs((nearest["time"] - media_dt).total_seconds()) > 1800 and item_info.get("qt_lat") and item_info.get("qt_lon"):
@@ -606,6 +665,16 @@ def compute_editorial_guidance(item_info, genre: str, gpx_points: list):
             gpx_points,
             key=lambda p: haversine_m(item_info["qt_lat"], item_info["qt_lon"], p["lat"], p["lon"]),
         )
+    gpx_spatial_error_m = None
+    if in_gpx_ride_window and item_info.get("qt_lat") is not None and item_info.get("qt_lon") is not None:
+        gpx_spatial_error_m = round(
+            haversine_m(item_info["qt_lat"], item_info["qt_lon"], nearest["lat"], nearest["lon"]), 1
+        )
+        if gpx_spatial_error_m > 350.0:
+            print(
+                f"[!] GPX SPATIAL-TEMPORAL MISMATCH: {item_info.get('filename')} GPS is "
+                f"{gpx_spatial_error_m:.0f}m away from GPX trackpoint at {media_dt.isoformat()}!"
+            )
 
     # Also compute window peak metrics over the duration of a video clip
     dur_s = float(item_info.get("duration_s") or 0.0)
@@ -669,6 +738,8 @@ def compute_editorial_guidance(item_info, genre: str, gpx_points: list):
         "phase": phase,
         "music_folder_hint": music_folder_hint,
         "matched_gpx_utc": nearest["time"].isoformat(),
+        "in_gpx_ride_window": in_gpx_ride_window,
+        "gpx_spatial_error_m": gpx_spatial_error_m,
         "distance_mi": dist_mi,
         "elevation_ft": int(ele_ft),
         "speed_mph": spd_mph,
@@ -805,26 +876,55 @@ def main():
     if gpx_files:
         gpx_points, total_km, total_elev_m = parse_gpx(gpx_files[0])
 
+    def _is_raw_capture(f: Path) -> bool:
+        if not f.is_file() or f.name.startswith("."):
+            return False
+        if f.suffix.lower() not in (".mp4", ".mov", ".jpg", ".jpeg", ".tif", ".tiff", ".png"):
+            return False
+        if f.name.startswith(("bookend_intro_", "bookend_outro_")) or "_spotlight_4K" in f.name:
+            return False
+        return True
+
     # Avoid duplicating .HEIC files that were just converted to .jpg
     media_items = []
     for f in sorted(project_dir.iterdir()):
-        if f.is_file() and f.suffix.lower() in (".mp4", ".mov", ".jpg", ".jpeg", ".tif", ".tiff", ".png") and not f.name.startswith("."):
+        if _is_raw_capture(f):
             media_items.append(probe_media_file(f, proxy_dir))
 
     if not args.skip_bleequp_sync and verify_and_refine_bleequp_stop_sync(project_dir, gpx_points, media_items, proxy_dir):
         media_items = []
         for f in sorted(project_dir.iterdir()):
-            if f.is_file() and f.suffix.lower() in (".mp4", ".mov", ".jpg", ".jpeg", ".tif", ".tiff", ".png") and not f.name.startswith("."):
+            if _is_raw_capture(f):
                 media_items.append(probe_media_file(f, proxy_dir))
 
     genre = detect_genre(args.genre, gpx_points, media_items)
     for item in media_items:
         item["editorial"] = compute_editorial_guidance(item, genre, gpx_points)
 
+    # Sort media_inventory strictly chronologically by true capture time (never alphabetically by filename!)
+    media_items.sort(key=lambda m: (parse_media_utc(m, gpx_points).timestamp(), m.get("filename", "")))
+
     year_match = re.match(r"^(20\d{2}|19\d{2})", project_dir.name)
     year_folder = year_match.group(1) if year_match else str(dt.date.today().year)
     catalog_dir = studio_root / "04_Project_Catalog" / year_folder / project_dir.name
     catalog_dir.mkdir(parents=True, exist_ok=True)
+
+    cat_manifest_path = catalog_dir / "project_manifest.json"
+    if cat_manifest_path.exists():
+        try:
+            old_manifest = json.loads(cat_manifest_path.read_text(encoding="utf-8"))
+            old_by_name = {
+                m.get("filename", "").lower(): m
+                for m in (old_manifest.get("media_inventory") or [])
+            }
+            for item in media_items:
+                prev = old_by_name.get(item.get("filename", "").lower())
+                if prev:
+                    for preserve_key in ("subclips", "landmarks", "visual_summary", "subclip_indexed_at", "exclude_from_timeline", "calibration_clock_only"):
+                        if preserve_key in prev and preserve_key not in item:
+                            item[preserve_key] = prev[preserve_key]
+        except Exception:
+            pass
 
     storyboard_file, storyboard_status = ensure_or_migrate_storyboard(project_dir, catalog_dir, genre, media_items)
 

@@ -11,6 +11,7 @@ import base64
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
@@ -136,7 +137,7 @@ def synthesize_narration(text: str, out_wav: Path, voice_id: str, client, lang: 
     for attempt in range(3):
         try:
             interaction = client.interactions.create(
-                model="gemini-3.8-flash-tts",
+                model="gemini-3.8-flash-lite-tts",
                 input=[
                     {
                         "type": "user_input",
@@ -156,13 +157,16 @@ def synthesize_narration(text: str, out_wav: Path, voice_id: str, client, lang: 
                 ],
                 response_format={"type": "audio"},
                 generation_config={"speech_config": [{"voice": voice_id}]},
+                timeout=30.0,
+                automatic_continuation=False,
+                store=False,
             )
             raw_wav.write_bytes(base64.b64decode(interaction.output_audio.data))
             last_err = None
             break
         except Exception as e:
             last_err = e
-            print(f"  [Attempt {attempt + 1}/3] Gemini TTS retry ({e})...")
+            print(f"  [Attempt {attempt + 1}/3] Gemini TTS retry ({e})...", flush=True)
             time.sleep(2.0 * (attempt + 1))
 
     if last_err is not None:
@@ -189,7 +193,7 @@ def synthesize_narration(text: str, out_wav: Path, voice_id: str, client, lang: 
         capture_output=True,
     )
     raw_wav.unlink(missing_ok=True)
-    print(f"Synthesized voice-over -> {out_wav} ({out_wav.stat().st_size // 1024} KB)")
+    print(f"Synthesized voice-over -> {out_wav} ({out_wav.stat().st_size // 1024} KB)", flush=True)
 
 
 def main():
@@ -201,6 +205,7 @@ def main():
     p.add_argument("--voice-id", help="Optional explicit Gemini `voice_...` ID")
     p.add_argument("--recreate-voice", action="store_true", help="Recreate custom voice persona with natural pace")
     p.add_argument("--only", help="Optional comma-separated lang:part filter, e.g. ua:part2,ru:part2")
+    p.add_argument("--skip-existing", action="store_true", help="Skip stems that already exist on disk")
     args = p.parse_args()
 
     if args.recreate_voice and VOICE_ID_FILE.exists():
@@ -213,12 +218,18 @@ def main():
     if not scripts_path.exists():
         raise FileNotFoundError(f"narration_scripts.json not found in {proj_dir}. Run generate_youtube_metadata.py first.")
 
+    from google.genai.types import HttpRetryOptions
     scripts = json.loads(scripts_path.read_text(encoding="utf-8"))
-    # Always use v1beta so gemini-3.8-flash-tts and custom voice_id are available across google-genai versions
-    client = genai.Client(http_options={"api_version": "v1beta"})
+    # Always use v1beta with explicit client timeout and attempts=1 to prevent tenacity from sleeping on 13h retry-after headers
+    client = genai.Client(
+        http_options={
+            "api_version": "v1beta",
+            "client_args": {"timeout": 45.0},
+            "retry_options": HttpRetryOptions(attempts=1),
+        }
+    )
     voice_id = args.voice_id or ensure_custom_voice(client)
 
-    from concurrent.futures import ThreadPoolExecutor, as_completed
     tasks = []
     for lang, val in scripts.items():
         if isinstance(val, dict):
@@ -233,10 +244,15 @@ def main():
             out_wav = proj_dir / f"voiceover_{lang}.wav"
             tasks.append((val, out_wav, lang))
 
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        futs = [pool.submit(synthesize_narration, t_txt, t_wav, voice_id, client, t_lang) for t_txt, t_wav, t_lang in tasks]
-        for fut in as_completed(futs):
-            fut.result()
+    print(f"Synthesizing narration using replicated voice persona ({len(tasks)} stems queued)...", flush=True)
+    for idx, (t_txt, t_wav, t_lang) in enumerate(tasks, 1):
+        if args.skip_existing and t_wav.exists() and t_wav.stat().st_size > 10000:
+            print(f"[{idx}/{len(tasks)}] Skipping existing {t_lang.upper()} -> {t_wav.name} ({t_wav.stat().st_size // 1024} KB)", flush=True)
+            continue
+        print(f"[{idx}/{len(tasks)}] Synthesizing {t_lang.upper()} -> {t_wav.name}...", flush=True)
+        synthesize_narration(t_txt, t_wav, voice_id, client, t_lang)
+        time.sleep(6.0)
+    print("✅ All voice-over stems synthesized successfully with Studio-Dry Anti-Reverb.", flush=True)
 
 
 if __name__ == "__main__":

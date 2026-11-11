@@ -21,7 +21,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 TICKS_PER_SEC = 254016000000
 
@@ -35,7 +35,12 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from assemble_engine import calculate_bgm_gains, measure_mean_volume_db, verify_music_non_reuse
+from assemble_engine import (
+    calculate_bgm_gains,
+    make_motion_ken_burns,
+    measure_mean_volume_db,
+    verify_music_non_reuse,
+)
 from gpx_widgets import render_declarative_overlays
 
 
@@ -49,9 +54,30 @@ def get_duration(p: Path) -> float:
 
 
 def probe_media_dimensions(p: Path, is_still: bool) -> tuple[int, int]:
-    """Dynamically probes width & height of any image or video file without hardcoded filename checks."""
+    """Dynamically probes width & height of any image or video file and enforces upright JPEG pixel orientation."""
     if is_still:
         try:
+            if p.suffix.lower() in (".jpg", ".jpeg") and not p.is_symlink():
+                with Image.open(p) as im:
+                    ori = im.getexif().get(274, 1)
+                    if ori != 1:
+                        st = p.stat()
+                        upright = ImageOps.exif_transpose(im)
+                        exif_bytes = upright.info.get("exif")
+                        save_kw = {"quality": 95, "subsampling": 0}
+                        if exif_bytes:
+                            save_kw["exif"] = exif_bytes
+                        upright.save(p, "JPEG", **save_kw)
+                        exiftool_bin = shutil.which("exiftool") or "/opt/homebrew/bin/exiftool"
+                        if Path(exiftool_bin).is_file():
+                            subprocess.run(
+                                [exiftool_bin, "-overwrite_original", "-Orientation=1", "-n", str(p)],
+                                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                            )
+                        os.utime(p, (st.st_atime, st.st_mtime))
+                        print(f"[Pre-Flight Orientation Guard] Baked upright pixel orientation on {p.name} (was EXIF Orientation={ori})")
+                        return upright.size
+                    return im.size
             with Image.open(p) as im:
                 return im.size
         except Exception:
@@ -68,6 +94,61 @@ def probe_media_dimensions(p: Path, is_still: bool) -> tuple[int, int]:
     except Exception:
         pass
     return (3840, 2160)
+
+
+def ensure_blur_pillarbox_still(src_path: Path, overlays_dir: Path, seq_w: int = 3840, seq_h: int = 2160) -> Path:
+    """
+    Implements Editing Constitution Article IV: renders a non-destructive 4K (3840x2160) composite in overlays/
+    with a softly blurred ambient backdrop and the 100% uncropped 4:3 or portrait photograph centered with a subtle
+    ivory border & drop shadow, guaranteeing zero head/table/edge clipping while preserving raw source files untouched.
+    """
+    overlays_dir.mkdir(parents=True, exist_ok=True)
+    out_p = overlays_dir / f"pillarbox_{src_path.stem}.jpg"
+    if out_p.exists() and out_p.stat().st_size > 50_000:
+        return out_p
+
+    with Image.open(src_path) as raw_im:
+        im = ImageOps.exif_transpose(raw_im).convert("RGB")
+
+    iw, ih = im.size
+    # 1. Softly blurred, slightly darkened 16:9 cover backdrop (fast 960x540 blur -> smooth 4K upscale)
+    low_w, low_h = 960, 540
+    cover_scale = max(low_w / max(1, iw), low_h / max(1, ih))
+    cw, ch = max(low_w, int(round(iw * cover_scale))), max(low_h, int(round(ih * cover_scale)))
+    bg_low = im.resize((cw, ch), Image.Resampling.BILINEAR)
+    left = (cw - low_w) // 2
+    top = (ch - low_h) // 2
+    bg_low = bg_low.crop((left, top, left + low_w, top + low_h))
+    bg_low = bg_low.filter(ImageFilter.GaussianBlur(radius=22))
+    bg_low = ImageEnhance.Brightness(bg_low).enhance(0.62)
+    canvas = bg_low.resize((seq_w, seq_h), Image.Resampling.BICUBIC).convert("RGBA")
+
+    # 2. 100% uncropped foreground fit with 32px vertical margin for gentle Ken Burns breathing room
+    margin_y = 32
+    margin_x = 64
+    fit_scale = min((seq_w - 2 * margin_x) / max(1, iw), (seq_h - 2 * margin_y) / max(1, ih))
+    fw = int(round(iw * fit_scale))
+    fh = int(round(ih * fit_scale))
+    fx = (seq_w - fw) // 2
+    fy = (seq_h - fh) // 2
+    fg = im.resize((fw, fh), Image.Resampling.LANCZOS)
+
+    # 3. Drop shadow + crisp 4px warm ivory border (#FAF6EE)
+    pad = 44
+    sh = Image.new("RGBA", (fw + 2 * pad, fh + 2 * pad), (0, 0, 0, 0))
+    from PIL import ImageDraw
+    sd = ImageDraw.Draw(sh)
+    sd.rectangle([pad - 4, pad - 4, pad + fw + 4, pad + fh + 4], fill=(15, 12, 10, 125))
+    sh = sh.filter(ImageFilter.GaussianBlur(radius=18))
+    canvas.alpha_composite(sh, (fx - pad + 4, fy - pad + 8))
+
+    framed = Image.new("RGBA", (fw + 8, fh + 8), (250, 246, 238, 255))
+    framed.paste(fg.convert("RGBA"), (4, 4))
+    canvas.alpha_composite(framed, (fx - 4, fy - 4))
+
+    canvas.convert("RGB").save(out_p, "JPEG", quality=95, subsampling=0)
+    print(f"[✓] Rendered uncropped 4K blur-pillarbox showcase still: {out_p.name} ({iw}x{ih} -> {fw}x{fh} inside {seq_w}x{seq_h})")
+    return out_p
 
 
 def fmt_srt_tc(sec: float) -> str:
@@ -132,11 +213,59 @@ def check_landmark_synchronization_preflight(proj_dir: Path, cuts: list[dict], o
     except Exception:
         return
 
-    items_by_name = {m.get("filename"): m for m in (manifest.get("media_inventory") or [])}
+    items_by_name = {m.get("filename", "").lower(): m for m in (manifest.get("media_inventory") or [])}
+    inv_order = {m.get("filename", "").lower(): idx for idx, m in enumerate(manifest.get("media_inventory") or [])}
 
+    last_ride_idx = -1
+    last_ride_src = ""
+    last_gpx_km = -1.0
+    last_gpx_mi = -1.0
+    last_gpx_src = ""
     for c in cuts:
-        src = c.get("source")
-        item = items_by_name.get(src)
+        src = c.get("source", "")
+        item = items_by_name.get(src.lower())
+        if item and (item.get("exclude_from_timeline") or item.get("calibration_clock_only")):
+            raise ValueError(
+                f"\n🚨 FATAL PRE-FLIGHT ERROR: Calibration / Excluded Media in Timeline!\n"
+                f"  Cut {c.get('cut_num')} references '{src}', which is flagged "
+                f"calibration_clock_only/exclude_from_timeline in project_manifest.json."
+            )
+
+        is_flashback_or_exempt = bool(c.get("allow_out_of_order") or "flashback" in c.get("desc", "").lower())
+
+        # GPX Route Sequence & Milepost Monotonicity Guard (checks both stills and videos along GPX track)
+        ed = (item or {}).get("editorial") or {}
+        if item and not is_flashback_or_exempt and ed.get("in_gpx_ride_window") and ed.get("distance_km") is not None:
+            curr_km = float(ed["distance_km"])
+            curr_mi = float(ed.get("distance_mi", round(curr_km * 0.621371, 2)))
+            # Allow 0.15 km (150m) tolerance for stationary stop / parking-lot turnarounds
+            if last_gpx_km >= 0.0 and curr_km < last_gpx_km - 0.15:
+                raise ValueError(
+                    f"\n🚨 FATAL PRE-FLIGHT ERROR: GPX Route Sequence Violation!\n"
+                    f"  Cut {c.get('cut_num')} ({src} at GPX mile {curr_mi:.2f} / {curr_km:.2f} km) depicts a place "
+                    f"visited EARLIER along the GPX route than previous Cut '{last_gpx_src}' "
+                    f"(GPX mile {last_gpx_mi:.2f} / {last_gpx_km:.2f} km)!\n"
+                    f"  Fix cut ordering in timeline_spec.json or verify camera clock sync against GPX."
+                )
+            if curr_km > last_gpx_km:
+                last_gpx_km = curr_km
+                last_gpx_mi = curr_mi
+                last_gpx_src = src
+
+        # Chronological Ride Continuity Guard: verify BleeqUP/iPhone ride videos don't jump backward in time
+        if item and item.get("media_type") == "video" and not is_flashback_or_exempt:
+            curr_idx = inv_order.get(src.lower(), -1)
+            if curr_idx >= 0 and curr_idx < last_ride_idx:
+                raise ValueError(
+                    f"\n🚨 FATAL PRE-FLIGHT ERROR: Out-of-Order Chronological Cut Detected!\n"
+                    f"  Cut {c.get('cut_num')} ({src}, manifest idx #{curr_idx}, time={item.get('creation_time_utc')}) "
+                    f"is earlier than previous video '{last_ride_src}' (manifest idx #{last_ride_idx}).\n"
+                    f"  Fix cut ordering in timeline_spec.json or verify camera clock sync."
+                )
+            if curr_idx >= 0:
+                last_ride_idx = curr_idx
+                last_ride_src = src
+
         if not item or not item.get("landmarks"):
             continue
 
@@ -210,8 +339,6 @@ def prepare_paced_voiceovers(proj_dir: Path, raw_dir: Path, vo_cues: list[dict])
                 tmp_wav.replace(paced_wav)
                 final_dur = dur
                 print(f"  [{lang}] {cue_key}: {dur:.2f}s (1.00x natural, window={start_s:.1f}s..{start_s+dur:.1f}s)")
-            if raw_dir.exists():
-                shutil.copy2(paced_wav, raw_dir / paced_wav.name)
 
         # Pre-Flight Voiceover Non-Overlap Guard for this language
         for idx in range(len(vo_cues) - 1):
@@ -283,8 +410,6 @@ def prepare_boosted_dialog_stems(proj_dir: Path, raw_dir: Path, boosted_dialogs:
             ],
             check=True, capture_output=True,
         )
-        if raw_dir.exists():
-            shutil.copy2(dst, raw_dir / dst.name)
         print(f"  Generated -> {dst.name}")
 
 
@@ -644,22 +769,25 @@ def build_fcproj_from_spec(
 
     cuts_media_ids = {}
     cuts_dims = {}
+    cuts_resolved_names = {}
     for cut in cuts_spec:
         cnum = int(cut["cut_num"])
         src = cut["source"]
-        if edition == "ru":
-            if src == "bookend_intro_4K.mp4" and (overlays_dir / "bookend_intro_4K_RU.mp4").exists():
-                src = "bookend_intro_4K_RU.mp4"
-            elif src == "bookend_outro_4K.mp4" and (overlays_dir / "bookend_outro_4K_RU.mp4").exists():
-                src = "bookend_outro_4K_RU.mp4"
-            elif src == "pollentia_spotlight_4K.mp4" and (overlays_dir / "pollentia_spotlight_4K_RU.mp4").exists():
-                src = "pollentia_spotlight_4K_RU.mp4"
+        if edition == "ru" and src.endswith("_4K.mp4"):
+            ru_src = src[:-7] + "_4K_RU.mp4"
+            if (overlays_dir / ru_src).exists() or (raw_dir / ru_src).exists():
+                src = ru_src
         is_still = bool(cut.get("is_still", False))
         dur = float(cut["dur"])
         src_in = float(cut.get("src_in", 0.0))
         p = overlays_dir / src if (overlays_dir / src).exists() else raw_dir / src
+        if is_still and cut.get("framing") == "blur_pillarbox":
+            probe_media_dimensions(p, is_still)
+            p = ensure_blur_pillarbox_still(p, overlays_dir)
+            src = p.name
         w, h = probe_media_dimensions(p, is_still)
         cuts_dims[cnum] = (w, h)
+        cuts_resolved_names[cnum] = src
         if is_still:
             cuts_media_ids[cnum] = register_media(p, "Still", width=w, height=h, dur_s=dur)
         else:
@@ -671,14 +799,7 @@ def build_fcproj_from_spec(
     curr_frame = 0
     for cut in cuts_spec:
         cnum = int(cut["cut_num"])
-        src = cut["source"]
-        if edition == "ru":
-            if src == "bookend_intro_4K.mp4" and (overlays_dir / "bookend_intro_4K_RU.mp4").exists():
-                src = "bookend_intro_4K_RU.mp4"
-            elif src == "bookend_outro_4K.mp4" and (overlays_dir / "bookend_outro_4K_RU.mp4").exists():
-                src = "bookend_outro_4K_RU.mp4"
-            elif src == "pollentia_spotlight_4K.mp4" and (overlays_dir / "pollentia_spotlight_4K_RU.mp4").exists():
-                src = "pollentia_spotlight_4K_RU.mp4"
+        src = cuts_resolved_names[cnum]
         is_still = bool(cut.get("is_still", False))
         src_in = float(cut.get("src_in", 0.0))
         dur = float(cut["dur"])
@@ -690,6 +811,31 @@ def build_fcproj_from_spec(
         in_ticks = int(round(src_in * 30)) * ticks_per_frame
         mid = cuts_media_ids[cnum]
         w, h = cuts_dims[cnum]
+
+        if is_still and (cut.get("ken_burns") or cut.get("framing") == "blur_pillarbox"):
+            kb = cut.get("ken_burns") or {
+                "start_scale": 100.0,
+                "end_scale": 103.2,
+                "start_pos": [1920.0, 1080.0],
+                "end_pos": [1920.0, 1080.0],
+            }
+            clip_effects = [
+                make_motion_ken_burns(
+                    dur,
+                    w,
+                    h,
+                    3840,
+                    2160,
+                    start_pos=kb.get("start_pos"),
+                    end_pos=kb.get("end_pos"),
+                    start_scale=kb.get("start_scale"),
+                    end_scale=kb.get("end_scale"),
+                )
+            ]
+            clip_scale_to_frame = False
+        else:
+            clip_effects = [make_static_motion(w, h)]
+            clip_scale_to_frame = True
 
         v1_items.append({
             "id": next_id,
@@ -704,12 +850,12 @@ def build_fcproj_from_spec(
             "enabled": True,
             "link": None,
             "group": None,
-            "effects": [make_static_motion(w, h)],
+            "effects": clip_effects,
             "markers": [],
             "gain_db": 0.0,
             "essential_sound": None,
             "frame_hold": None,
-            "scale_to_frame": True,
+            "scale_to_frame": clip_scale_to_frame,
         })
         next_id += 1
 
@@ -1095,7 +1241,7 @@ def remux_editions(proj_dir: Path, master_mp4: Path, ru_edition_mp4: Path):
         temp_en.replace(master_mp4)
 
     if ru_edition_mp4.exists():
-        print("Losslessly remuxing Russian-voiced 4K Edition (_RU.mp4)...")
+        print("Losslessly remuxing Russian-voiced 1080p HD Edition (_RU.mp4)...")
         temp_ru = ru_edition_mp4.with_suffix(".tmp_ru.mp4")
         subprocess.run(
             [
@@ -1161,9 +1307,21 @@ def main():
     if not args.mux_audio_only:
         bookends_cfg = spec.get("bookends", {})
         if bookends_cfg.get("enabled", True):
-            intro_mp4 = raw_dir / "bookend_intro_4K.mp4"
-            outro_mp4 = raw_dir / "bookend_outro_4K.mp4"
-            if not (intro_mp4.exists() and outro_mp4.exists() and intro_mp4.stat().st_size > 100_000 and outro_mp4.stat().st_size > 100_000):
+            overlays_dir.mkdir(parents=True, exist_ok=True)
+            bookends_hash = hashlib.sha256(json.dumps(bookends_cfg, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+            bookends_hash_file = overlays_dir / ".bookends_hash"
+            prev_hash = bookends_hash_file.read_text(encoding="utf-8").strip() if bookends_hash_file.exists() else ""
+            intro_mp4 = overlays_dir / "bookend_intro_4K.mp4" if (overlays_dir / "bookend_intro_4K.mp4").exists() else raw_dir / "bookend_intro_4K.mp4"
+            outro_mp4 = overlays_dir / "bookend_outro_4K.mp4" if (overlays_dir / "bookend_outro_4K.mp4").exists() else raw_dir / "bookend_outro_4K.mp4"
+            intro_ru_mp4 = overlays_dir / "bookend_intro_4K_RU.mp4"
+            outro_ru_mp4 = overlays_dir / "bookend_outro_4K_RU.mp4"
+            all_bookends_valid = (
+                prev_hash == bookends_hash
+                and intro_mp4.exists() and outro_mp4.exists()
+                and intro_ru_mp4.exists() and outro_ru_mp4.exists()
+                and intro_mp4.stat().st_size > 100_000 and outro_mp4.stat().st_size > 100_000
+            )
+            if not all_bookends_valid:
                 bookends_script = SCRIPTS_DIR / "agvs_bookends.py"
                 subprocess.run([
                     sys.executable, str(bookends_script),
@@ -1171,6 +1329,7 @@ def main():
                     "--first-clip", str(raw_dir / bookends_cfg["first_clip"]),
                     "--last-clip", str(raw_dir / bookends_cfg["last_clip"]),
                 ], check=True)
+                bookends_hash_file.write_text(bookends_hash, encoding="utf-8")
         print("Rendering declarative Warm Vintage Parchment overlays & 1Hz Live Telemetry HUDs...")
     expanded_overlays_map = render_declarative_overlays(
         overlays_spec,
@@ -1234,10 +1393,13 @@ def main():
             ], check=True)
         if render_ru:
             exports_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Rendering 4K UHD Russian Edition (RU, Metric HUD) via filmcraft-cli -> {ru_edition_mp4}")
+            # Flickr caps video uploads at 1 GB (980 MB safe ceiling) and serves max 1080p playback.
+            # Render _RU.mp4 directly at 1080p HD (16-20 Mbps, ~800 MB for 6.7m) so we never double-render or re-encode!
+            ru_preset = "YouTube 1080p Full HD" if total_dur > 360 else "High Quality 1080p HD"
+            print(f"Rendering 1080p HD Russian Edition (RU, Metric HUD, <1GB Flickr-ready) via filmcraft-cli [{ru_preset}] -> {ru_edition_mp4}")
             subprocess.run([
                 "filmcraft-cli", "--project", str(fcproj_ru_path), "export", str(ru_edition_mp4),
-                "--preset", "Match Source – Adaptive High Bitrate",
+                "--preset", ru_preset,
                 "--settings", '{"burnCaptions": false}',
             ], check=True)
         if render_en or render_ru:

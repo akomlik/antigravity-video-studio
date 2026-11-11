@@ -865,7 +865,8 @@ def render_declarative_overlays(
 
     # Auto-detect project GPX file in raw_dir when cuts_spec is provided
     auto_gpx_pts: list[dict] = []
-    if raw_dir and raw_dir.exists() and cuts_spec and (hud_mode or "auto").lower() != "off":
+    any_cut_hud_override = any(c.get("hud") is True for c in (cuts_spec or []))
+    if raw_dir and raw_dir.exists() and cuts_spec and ((hud_mode or "auto").lower() != "off" or any_cut_hud_override):
         gpx_files = sorted(raw_dir.glob("*.gpx"))
         if gpx_files:
             auto_gpx_pts = get_gpx(gpx_files[0].name)
@@ -888,11 +889,12 @@ def render_declarative_overlays(
             tl_cursor = round(tl_cursor + dur_s, 2)
 
             src = str(cut.get("source", ""))
+            eff_hud_mode = "auto" if cut.get("hud") is True else hud_mode
             if (
                 cut.get("is_still")
                 or cut.get("hud") is False
-                or src.startswith(("bookend_", "ai_", "pollentia_spotlight"))
-                or not should_show_telemetry_hud(src, rolling_speed_mph=99.0, mode=hud_mode)
+                or src.startswith(("bookend_", "ai_", "pollentia_spotlight", "foguero_palace_spotlight"))
+                or not should_show_telemetry_hud(src, rolling_speed_mph=99.0, mode=eff_hud_mode)
             ):
                 continue
 
@@ -939,7 +941,7 @@ def render_declarative_overlays(
 
                 if best_pt is None or best_diff > 3.0:
                     continue
-                if not should_show_telemetry_hud(src, rolling_speed_mph=best_pt["spd_mph"], mode=hud_mode):
+                if not should_show_telemetry_hud(src, rolling_speed_mph=best_pt["spd_mph"], mode=eff_hud_mode):
                     continue
 
                 pt = dict(best_pt)
@@ -1140,6 +1142,47 @@ def render_declarative_overlays(
                         "fade_out_s": fade_out,
                         "desc": s_item.get("desc", f"EN Translation Subtitle: {trans_en[:30]}"),
                     })
+
+                # Third language (e.g., Spanish "es"): BOTH EN and RU audiences get localized cards!
+                else:
+                    trans_en = s_item.get("english") or s_item.get("translation", "")
+                    trans_ru = s_item.get("russian") or s_item.get("translation_ru") or trans_en
+                    if trans_en:
+                        fname_en = f"{base_name}_en.png" if not base_name.endswith("_en") else f"{base_name}.png"
+                        if not skip_render:
+                            render_translation_subtitle_card(
+                                translation_text=trans_en,
+                                out_png=overlays_dir / fname_en,
+                                single_language=True,
+                                target_lang="en",
+                            )
+                        expanded_items_en.append({
+                            "file": fname_en,
+                            "start_s": start_s,
+                            "dur_s": dur_s,
+                            "track": s_item.get("track", ov.get("track", "V3")),
+                            "fade_in_s": fade_in,
+                            "fade_out_s": fade_out,
+                            "desc": s_item.get("desc", f"EN Translation Subtitle: {trans_en[:30]}"),
+                        })
+                    if trans_ru:
+                        fname_ru = f"{base_name}_ru.png" if not base_name.endswith("_ru") else f"{base_name}.png"
+                        if not skip_render:
+                            render_translation_subtitle_card(
+                                translation_text=trans_ru,
+                                out_png=overlays_dir / fname_ru,
+                                single_language=True,
+                                target_lang="ru",
+                            )
+                        expanded_items_ru.append({
+                            "file": fname_ru,
+                            "start_s": start_s,
+                            "dur_s": dur_s,
+                            "track": s_item.get("track", ov.get("track", "V3")),
+                            "fade_in_s": fade_in,
+                            "fade_out_s": fade_out,
+                            "desc": s_item.get("desc", f"RU Translation Subtitle: {trans_ru[:30]}"),
+                        })
             continue
 
         file_en = ov["file"]

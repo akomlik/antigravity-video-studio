@@ -127,11 +127,11 @@ When `Storyboard.md` defines explicit scenes (like `Scene 00` through `Scene 12`
     - **Hearing Accessibility Preservation:** Full word-for-word multilingual closed captions across all languages (`captions.en.srt`, `captions.ua.srt`, `captions.ru.srt`) remain multiplexed as soft subtitle streams into the MP4 container for viewers who enable CC.
 - **Color & Monochrome Integrity:** Conform iPhone 15 Pro `BT.2020` HDR clips to `Rec.709` linear light. Never apply color LUTs or saturation adjustments to 1977+ black-and-white film scans.
 
-### ARTICLE VII: DIRECT TIMELINE ASSEMBLY & FILMCRAFT PLAYBACK REVIEW
+### ARTICLE VII: DIRECT TIMELINE ASSEMBLY & MANDATORY PRE-RENDER FILMCRAFT GATE
 
-No human editor wants to proofread hundreds of rows of numerical timecodes in a spreadsheet (`cut_table.md`) to imagine how a video feels. All timeline assembly is executed directly from `Storyboard.md` via FilmCraft MCP:
-1. **Live Assembly & Verification:** As clips and audio tracks are assembled in FilmCraft, visual review happens directly where it belongs: in the open FilmCraft GUI playback window or the rendered 4K `.mp4` export.
-2. **Conversational Adjustments:** Any pacing, trim, or audio adjustments are requested directly in chat (*"shorten the market scene by 2 seconds"*, *"boost Nina's voice"*, *"swap music track"*). The agent applies the edits instantly via FilmCraft MCP socket calls.
+No human editor wants to proofread hundreds of rows of numerical timecodes in a spreadsheet (`cut_table.md`) to imagine how a video feels. All timeline assembly is executed directly from `Storyboard.md` via FilmCraft:
+1. **🛑 Mandatory Pre-Render Sanity Gate (NEVER Render MP4 Before FilmCraft Approval):** Always build `.fcproj` first (`build_timeline.py --project-dir ...` **without** `--render-export`), open it live in the FilmCraft GUI (`file.open` / port `9876`), and **STOP to let Alexander scrub and confirm timeline sanity** before ever running `filmcraft-cli export` / `--render-export`. Never burn GPU render time on an unreviewed cut!
+2. **Conversational Adjustments:** Any pacing, trim, or audio adjustments are requested directly in chat (*"shorten the market scene by 2 seconds"*, *"boost Nina's voice"*, *"swap music track"*). The agent updates `timeline_spec.json`, rebuilds `.fcproj`, reloads it in FilmCraft, and only exports 4K MP4s once Alexander gives explicit sign-off.
 3. **Cut Table Deprecated:** The intermediate `cut_table.md` file is fully deprecated in favor of direct timeline execution and real-time visual feedback.
 
 ### ARTICLE VIII: IMPERIAL UNITS DEFAULT, GPX WIDGETS, LOW-RES B-ROLL FRAMING & BROADCAST AUDIO MIX
@@ -309,4 +309,16 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
         4. If the landmark is set against complex scenery, accompany it with an unmistakable directional overlay badge (top-left or bottom-left) explicitly identifying its name, founding year/era, and significance.
 - **Pre-Flight Timeline Synchronization Guard (`build_timeline.py`):**
     - `build_timeline.py` performs a mandatory pre-flight inspection comparing cut durations and voiceover cues against the landmark index in `project_manifest.json`. If a cut claims to showcase a landmark but terminates prior to its appearance, the build raises an immediate pre-flight desync warning.
+
+### ARTICLE XIV: GPX ROUTE MONOTONICITY, BLEEQUP PHYSICAL CONTINUITY & CALIBRATION EXCLUSION LAW
+
+- **GPX Route Milepost Monotonicity (`build_timeline.py` Pre-Flight):**
+    - A ride's `.gpx` file defines the ground-truth spatial and chronological sequence of places visited (`distance_mi` / `distance_km` from `0.0` to finish).
+    - Every non-flashback timeline cut captured within the GPX ride window (`editorial.in_gpx_ride_window == True`) **MUST progress monotonically forward along the GPX route** (within a `0.15 km` / `150m` stationary-stop turnaround tolerance) and in monotonically non-decreasing manifest capture order. Any out-of-order place or backward GPX jump immediately halts `build_timeline.py` with a `GPX Route Sequence Violation` error.
+- **BleeqUP Physical Overlap Assertion & Low-Battery Offload Rule (`ranger-sync` + `ingest_and_sync_media.py`):**
+    - `ranger-sync` enforces `ts[i+1] - ts[i] >= clip_duration[i]` across all BleeqUP captures. If two clips overlap or start milliseconds apart (e.g., `91ms` app batch-remux or depleted-battery Camera SoC RTC brownout), `ranger-sync apply` aborts with exit code `2` (`CRITICAL: Non-physical BleeqUP timestamp overlap detected`), and `ingest_and_sync_media.py` halts immediately rather than writing a poisoned manifest.
+    - **Field Rule:** Whenever the glasses drop near empty on a ride, plug them into external USB power before opening the BleeqUP iOS app, and never install a firmware update until all clips are offloaded and verified on Mac.
+- **Calibration Clock Photo Exclusion (`bigclock.app`):**
+    - Reference calibration photos shot solely to verify camera clock drift (e.g., `bigclock.app`, Garmin clock screen, `calibration_clock_only: true`) are automatically flagged `"exclude_from_timeline": true` during ingest and strictly blocked from appearing as timeline cuts in `build_timeline.py`.
+
 

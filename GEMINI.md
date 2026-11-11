@@ -2,11 +2,10 @@
 
 Welcome to **Alexander Komlik's (`@akomlik`) Universal AI Video Studio**. Whenever a conversation starts in this workspace, follow these architectural rules and file paths automatically.
 
-> **💡 2-PASS STORYBOARD & MODEL SPLIT WORKFLOW (GOOGLE AI PRO PLAN):**
-> - **Pass 1: Ingest & Structural Scaffold (Gemini 3.8 Flash):** Run `/ingest-media` or the initial `/storyboard` pass on **Flash**. Flash handles all shell commands, HEIC $\rightarrow$ JPG conversion, proxy extraction (`.proxies/`), GPX telemetry calculation, and audio dB level analysis at 0% Argon cost.
-> - **Pass 2: Creative Polish & Memory Weaving (Gemini 4 Argon):** Once proxies and the draft `Storyboard.md` are on disk, switch the model dropdown to **Gemini 4 Argon** (Thinking: Low or Medium) for the creative pass. Argon acts purely as the Creative Director—weaving emotional flashbacks from `my_digital_brain.md`, sharpening the narrative arc, scripting trilingual voiceover, and designing the composite thumbnail without wasting quota on shell execution!
-> - **Assembly & Publishing (Gemini 3.8 Flash):** Switch back to **Flash** for `/build-timeline` and `/publish-youtube`.
-> - **Russian Edition (`_RU.mp4`) & Flickr Publishing Standard:** Because YouTube is heavily throttled/blocked in Russia and occupied Crimea, family (Nina's brother, Alexander's sister in Sevastopol) and Institute classmates on WhatsApp rely on Alexander's **Flickr feed (`apkom`)** and WhatsApp channels. Always losslessly remux `<project>_RU.mp4` (`0.2s` `ffmpeg -c:v copy`) by default alongside the primary master, and generate copy-ready Flickr metadata (Date-prefixed Russian title, description, tags, and album).
+> **💡 UNIFIED FRONTIER WORKFLOW (GOOGLE AI ULTRA PLAN):**
+> - **Single Frontier Engine Across All Stages:** With Google AI Ultra (`20x` continuous headroom), run **Gemini 4 Carbon / Argon** end-to-end across `/ingest-media`, `/storyboard`, `/build-timeline`, `/publish-youtube`, and `/publish-flickr`—no manual model toggling between Flash and Argon needed.
+> - **Chronological & GPX Route Integrity Law:** Every ride project enforces `ranger-sync` physical continuity (`ts[i+1] - ts[i] >= clip_duration[i]`) at ingest and monotonic GPX route mileposts (`distance_mi` / `distance_km`) + calibration-photo exclusion (`calibration_clock_only`) at timeline build pre-flight.
+> - **Russian Edition (`_RU.mp4`) & Flickr Publishing Standard:** Because YouTube is heavily throttled/blocked in Russia and occupied Crimea, family (Nina's brother, Alexander's sister in Sevastopol) and Institute classmates on WhatsApp rely on Alexander's **Flickr feed (`apkom`)** and WhatsApp channels. Always render/remux `<project>_RU.mp4` alongside the primary master, and generate copy-ready Flickr metadata (Date-prefixed Russian title, description, tags, and album).
 
 ---
 
@@ -46,7 +45,7 @@ Welcome to **Alexander Komlik's (`@akomlik`) Universal AI Video Studio**. Whenev
 - **`/publish-flickr <folder>`** — **Family & Classmates Release (Censorship Bypass):** Uploads the 4K Russian-voiced video (`_RU.mp4`) or English master to Flickr via API, sets date-prefixed title with miles/km, description, and GPS coordinates, adds to Flickr album, and outputs copy-ready WhatsApp sharing snippet.
 - **`/swap-music`** — Instantly swaps the background music track on audio lane `A2` from `03_Audio_Library/01_Curated_BGM/` without rebuilding the whole timeline.
 - **`/find-music`** — Connects to Alexander's open **YouTube Audio Library** and **`creatormix.com`** browser tabs (or checks `03_Audio_Library/01_Curated_BGM/`), filters for `< 3:00` duration + matching mood/BPM, and runs `save_music_track.py` to auto-rename downloaded tracks to `[BPM]_[Mood]_[TrackName]_[Artist].mp3`.
-- **`/interview-brain`** — Interactive Q&A session (run on Flash) to enrich `my_digital_brain.md` across life eras.
+- **`/interview-brain`** — Interactive Q&A session to enrich `my_digital_brain.md` across life eras.
 - **`/ingest-media <folder>`** — Runs `ingest_and_sync_media.py` to generate `.proxies/` and `project_manifest.json`.
 - **`/relink-archive`** — Runs `relink_project_media.py` when moving folders between `~/Movies/` and `/Volumes/Crucial-4T/Movies/`.
 

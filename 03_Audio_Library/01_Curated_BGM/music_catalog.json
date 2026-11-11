@@ -289,6 +289,36 @@
       "source_site": "CreatorMix",
       "duration_s": 183,
       "notes": "Auto-fetched from CreatorMix (Album: Neon Sunsets)"
+    },
+    {
+      "filename": "085bpm_WarmChillhop_Indigo_Creatormix.mp3",
+      "path": "03_Audio_Library/01_Curated_BGM/04_Warm_Social_And_Retro/085bpm_WarmChillhop_Indigo_Creatormix.mp3",
+      "relpath": "04_Warm_Social_And_Retro/085bpm_WarmChillhop_Indigo_Creatormix.mp3",
+      "category": "04_Warm_Social_And_Retro",
+      "bpm": 85,
+      "beat_interval_s": 0.706,
+      "mood": "WarmChillhop",
+      "title": "Indigo",
+      "artist": "CreatorMix",
+      "album": "Indigo",
+      "source_site": "CreatorMix",
+      "duration_s": 159,
+      "notes": "Auto-fetched from CreatorMix (Album: Indigo)"
+    },
+    {
+      "filename": "084bpm_RelaxedLofi_Breeze_Creatormix.mp3",
+      "path": "03_Audio_Library/01_Curated_BGM/04_Warm_Social_And_Retro/084bpm_RelaxedLofi_Breeze_Creatormix.mp3",
+      "relpath": "04_Warm_Social_And_Retro/084bpm_RelaxedLofi_Breeze_Creatormix.mp3",
+      "category": "04_Warm_Social_And_Retro",
+      "bpm": 84,
+      "beat_interval_s": 0.714,
+      "mood": "RelaxedLofi",
+      "title": "Breeze",
+      "artist": "CreatorMix",
+      "album": "The Honey Trap",
+      "source_site": "CreatorMix",
+      "duration_s": 148,
+      "notes": "Auto-fetched from CreatorMix (Album: The Honey Trap)"
     }
   ]
 }

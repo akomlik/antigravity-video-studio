@@ -8,7 +8,7 @@ Google Gemini 3.8 Flash TTS (`gemini-3.8-flash-tts`) allows you to narrate your 
 
 > [!CAUTION]
 > **Biometric Voice ID Security Law (Zero Git Leaks):**
-> Your custom replicated voice identifier (`voice_...`) is a **biometric credential** that allows synthetic speech generation in your exact voice. **It MUST NEVER be checked into the Git repository or hardcoded into tracked files!** Store it strictly in **1Password** under `envvar:GEMINI_VOICE_ID` (or local git-ignored `.env`) and resolve it dynamically via `$GEMINI_VOICE_ID` and `studio_config.get_gemini_voice_id()`.
+> Your custom replicated voice identifier (`voice_...`) is a **biometric credential** that allows synthetic speech generation in your exact voice. **It MUST NEVER be checked into the Git repository or hardcoded into tracked files!** Set it as an environment variable (`export GEMINI_VOICE_ID="..."` via your shell profile, `direnv`, or local git-ignored `.env` file) and resolve it dynamically via `$GEMINI_VOICE_ID`.
 
 ---
 
@@ -34,27 +34,18 @@ The dedicated interface is the **Speech Playground** in Google AI Studio:
 4. Read and record the mandatory consent phrase into your microphone when prompted:
    > *"I am the owner of this voice and I consent to Google using this voice to create a synthetic voice model."*
 5. Once verified, AI Studio will generate your persistent voice identifier (e.g., `voice_abcdef123456`).
-6. **Save into Variable (Zero Git Leaks):**
-   
-   #### Path A: 1Password (Recommended — Alexander's Convention)
-   Add or update the item in your `Private` vault:
-   ```bash
-   op item edit "envvar:GEMINI_VOICE_ID" "credential[concealed]=PASTE_YOUR_VOICE_ID_HERE" --vault Private
-   # Or create if it does not yet exist:
-   op item create --category API_CREDENTIAL --vault Private --title "envvar:GEMINI_VOICE_ID" "credential[concealed]=PASTE_YOUR_VOICE_ID_HERE"
-   ```
-
-   #### Path B: Local Git-Ignored `.env` (Quick Fallback)
-   Add it to your studio `.env` file:
-   ```bash
-   echo "GEMINI_VOICE_ID=PASTE_YOUR_VOICE_ID_HERE" >> .env
-   ```
-
-   #### Path C: Prompt Antigravity in Chat
-   ```text
-   I created my custom voice ID in Google AI Studio: [PASTE_YOUR_VOICE_ID_HERE].
-   Please save it to my 1Password vault Private (envvar:GEMINI_VOICE_ID) and local .env with zero git leaks, and re-render the narration tracks with my authentic voice.
-   ```
+6. **Export as Environment Variable:**
+   Export your voice ID as `GEMINI_VOICE_ID` using your preferred environment setup before launching Antigravity:
+   - In your shell configuration (`~/.zshrc`, `~/.bashrc`):
+     ```bash
+     export GEMINI_VOICE_ID="voice_abcdef123456"
+     ```
+   - In your environment manager (e.g. `direnv` / `.envrc`).
+   - Or in a local git-ignored `.env` file in the studio root:
+     ```bash
+     echo "GEMINI_VOICE_ID=voice_abcdef123456" >> .env
+     ```
+   All this project requires is that `GEMINI_VOICE_ID` (and `GEMINI_API_KEY`) are inherited into the environment when Antigravity is launched.
 
 ---
 
@@ -89,16 +80,15 @@ If you prefer to register the voice without using the browser UI, Antigravity pr
    #### Or Prompt Antigravity:
    ```text
    Please register my replicated voice from 03_Audio_Library/00_Voice_Cloning/my_voice_sample.wav and voice_consent.wav. 
-   Save the resulting voice ID securely to 1Password (Private / envvar:GEMINI_VOICE_ID) and .env with zero git leaks, then re-render the voiceovers.
+   Save the resulting voice ID to my environment / .env with zero git leaks, then re-render the voiceovers.
    ```
 
 ### What the Script Automatically Does:
 1. Converts audio inputs to 24 kHz mono PCM WAV format required by Gemini.
 2. Calls `client.voices.create(store=True, type_="replicated", ...)` via `google-genai` `v1beta`.
 3. Verifies voice creation and receives the persistent `voice_...` ID.
-4. Stores the ID in **1Password** under `envvar:GEMINI_VOICE_ID` (vault `Private`).
-5. Updates local git-ignored `.env` and `03_Audio_Library/03_Voice_Profile/voice_id.json`.
-6. **Enforces Zero Git Leaks:** Guarantees zero raw voice IDs are ever written to git-tracked files!
+4. Stores the ID in local git-ignored `.env` and `03_Audio_Library/03_Voice_Profile/voice_id.json`.
+5. **Enforces Zero Git Leaks:** Guarantees zero raw voice IDs are ever written to git-tracked files!
 7. Triggers re-synthesis of narration stems through the **Studio-Dry Anti-Reverb Chain** and rebuilds the FilmCraft timeline.
 
 ---

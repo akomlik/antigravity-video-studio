@@ -157,8 +157,10 @@ def make_motion_ken_burns(duration_s, src_w, src_h, seq_w=3840, seq_h=2160, zoom
     min_cover_scale = max(seq_w / max(1, src_w), seq_h / max(1, src_h)) * 100.0
 
     if start_scale is None or end_scale is None:
-        base_s = max(108.0, round(min_cover_scale + 4.0, 1))
-        zoom_s = round(base_s + 12.0, 1)
+        # Proportional to min_cover_scale so 48MP (8064x6048, min_cover=47.6%) and 12MP (4032x3024, min_cover=95.2%)
+        # photos are NEVER over-zoomed to 108%-120% (which chopped off heads/tables on high-MP iPhone stills!)
+        base_s = round(min_cover_scale * 1.03, 2)
+        zoom_s = round(min_cover_scale * 1.11, 2)
         start_scale = base_s if zoom_in else zoom_s
         end_scale = zoom_s if zoom_in else base_s
 
@@ -570,11 +572,18 @@ def polish_and_render_project(fcproj_path: Path, output_mp4: Path = None, burn_c
             if name.lower().endswith((".jpg", ".jpeg", ".png", ".heic")) and not is_static_graphic:
                 it["scale_to_frame"] = False
                 effects = it.get("effects", [])
-                effects = [e for e in effects if e.get("effect") != "motion"]
-                effects.insert(0, make_motion_ken_burns(dur_s, src_w, src_h, seq_w, seq_h, zoom_in=still_zoom_toggle))
-                still_zoom_toggle = not still_zoom_toggle
-                it["effects"] = effects
-                print(f"Applied full-bleed 2-axis Ken Burns motion to {name} ({src_w}x{src_h} -> {seq_w}x{seq_h}, {dur_s:.1f}s)")
+                has_custom_kb = any(
+                    e.get("effect") == "motion" and "keyframes" in e.get("params", {}).get("scale", {})
+                    for e in effects
+                )
+                if has_custom_kb:
+                    print(f"Preserved custom keyframed Ken Burns motion on {name} ({src_w}x{src_h} -> {seq_w}x{seq_h}, {dur_s:.1f}s)")
+                else:
+                    effects = [e for e in effects if e.get("effect") != "motion"]
+                    effects.insert(0, make_motion_ken_burns(dur_s, src_w, src_h, seq_w, seq_h, zoom_in=still_zoom_toggle))
+                    still_zoom_toggle = not still_zoom_toggle
+                    it["effects"] = effects
+                    print(f"Applied full-bleed 2-axis Ken Burns motion to {name} ({src_w}x{src_h} -> {seq_w}x{seq_h}, {dur_s:.1f}s)")
             elif is_static_graphic:
                 it["scale_to_frame"] = True
                 effects = it.get("effects", [])

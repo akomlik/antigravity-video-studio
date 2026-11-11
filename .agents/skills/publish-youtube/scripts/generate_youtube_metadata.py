@@ -455,24 +455,44 @@ def main():
             json.dumps(narration_scripts, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
+    # Parse Section 5 thumbnail spec from Storyboard.md if present
+    sb_thumb_cfg = {}
+    if storyboard_path.exists():
+        try:
+            m_th = re.search(r"thumbnail:\s*\n((?:\s{2,}.*\n?)+)", storyboard_text)
+            if m_th:
+                for line in m_th.group(1).splitlines():
+                    if ":" in line:
+                        k, v = line.split(":", 1)
+                        sb_thumb_cfg[k.strip()] = v.strip().strip("\"'")
+        except Exception:
+            pass
+
+    thumb_headline = args.thumb_text or sb_thumb_cfg.get("headline_text", "THE 140 BPM RULE")
+    thumb_headline_ua = args.thumb_text_ua or sb_thumb_cfg.get("headline_text_ua", "ПРАВИЛО 140 УДАРІВ")
+    thumb_headline_ru = args.thumb_text_ru or sb_thumb_cfg.get("headline_text_ru", "ПРАВИЛО 140 УДАРОВ")
+
     thumb_path = proj_dir / "thumbnail.jpg"
+    thumb_ok = False
     if args.thumb_mode == "preserve" and thumb_path.exists():
         thumb_ok = True
-    elif args.thumb_mode == "composite_ai":
+    elif args.thumb_mode in ("composite_ai", "preserve"):
         hero_p = Path(args.thumb_hero).expanduser() if args.thumb_hero else None
         prop_p = Path(args.thumb_prop).expanduser() if args.thumb_prop else None
-        thumb_ok = generate_composite_thumbnail(thumb_path, args.thumb_text, hero_p, prop_p)
-        if not thumb_ok:
+        if not hero_p and (proj_dir / "thumb_candidates" / "alexander_selfie.jpg").exists():
+            hero_p = proj_dir / "thumb_candidates" / "alexander_selfie.jpg"
+        thumb_ok = generate_composite_thumbnail(thumb_path, thumb_headline, hero_p, prop_p)
+        if not thumb_ok and not thumb_path.exists():
             thumb_ok = extract_thumbnail(mp4_path, thumb_path, args.thumb_sec)
     else:
         thumb_ok = extract_thumbnail(mp4_path, thumb_path, args.thumb_sec)
 
     thumb_ua_path = proj_dir / "thumbnail_ua.jpg"
     thumb_ru_path = proj_dir / "thumbnail_ru.jpg"
-    if thumb_ok and not thumb_ua_path.exists() and args.thumb_text_ua:
-        localize_existing_thumbnail(thumb_path, thumb_ua_path, "Ukrainian", args.thumb_text, args.thumb_text_ua)
-    if thumb_ok and not thumb_ru_path.exists() and args.thumb_text_ru:
-        localize_existing_thumbnail(thumb_path, thumb_ru_path, "Russian", args.thumb_text, args.thumb_text_ru)
+    if thumb_ok and not thumb_ua_path.exists() and thumb_headline_ua:
+        localize_existing_thumbnail(thumb_path, thumb_ua_path, "Ukrainian", thumb_headline, thumb_headline_ua)
+    if thumb_ok and not thumb_ru_path.exists() and thumb_headline_ru:
+        localize_existing_thumbnail(thumb_path, thumb_ru_path, "Russian", thumb_headline, thumb_headline_ru)
 
     m_date = re.search(r"(\d{4}-\d{2}-\d{2})", project_name)
     recording_date_iso = f"{m_date.group(1)}T00:00:00.000Z" if m_date else None

@@ -108,11 +108,10 @@ def get_youtube_service():
         flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
         creds = flow.run_local_server(port=0)
 
-        # Cache locally on disk only if not injected via 1Password env var
-        if not refresh_token:
-            OAUTH_DIR.mkdir(parents=True, exist_ok=True)
-            TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
-            os.chmod(TOKEN_FILE, 0o600)
+        # Cache locally on disk whenever interactive OAuth had to run (including when env refresh_token expired)
+        OAUTH_DIR.mkdir(parents=True, exist_ok=True)
+        TOKEN_FILE.write_text(creds.to_json(), encoding="utf-8")
+        os.chmod(TOKEN_FILE, 0o600)
 
     return build("youtube", "v3", credentials=creds)
 

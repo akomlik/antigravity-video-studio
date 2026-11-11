@@ -231,6 +231,8 @@ def fetch_and_render_vintage_basemap(
     map_h: int = 1390,
     margin: float = 0.22,
     cache_dir: Path | None = None,
+    target_latlon: tuple[float, float] | None = None,
+    use_farthest: bool = False,
 ) -> tuple[Image.Image, list[tuple[float, float]], tuple[float, float], tuple[float, float]]:
     """
     Fetches and stitches CartoDB Voyager basemap tiles covering GPX bounding box + margin.
@@ -246,12 +248,18 @@ def fetch_and_render_vintage_basemap(
         lons = [p[1] for p in pts]
         min_lat, max_lat = min(lats), max(lats)
         min_lon, max_lon = min(lons), max(lons)
-        summit_pt = max(pts, key=lambda p: p[2])
+        if target_latlon is not None:
+            summit_pt = (float(target_latlon[0]), float(target_latlon[1]), 0.0)
+        elif use_farthest:
+            p0 = pts[0]
+            summit_pt = max(pts, key=lambda p: (p[0] - p0[0]) ** 2 + ((p[1] - p0[1]) * 0.77) ** 2)
+        else:
+            summit_pt = max(pts, key=lambda p: p[2])
     else:
-        # Fallback to Pollença / Tramuntana box
+        # Fallback to Pollença / Alcúdia box
         min_lat, max_lat = 39.75, 39.95
         min_lon, max_lon = 2.80, 3.15
-        summit_pt = (39.866, 2.936, 503)
+        summit_pt = (float(target_latlon[0]), float(target_latlon[1]), 0.0) if target_latlon else (39.852, 3.122, 20.0)
 
     lat_span = max(max_lat - min_lat, 0.04)
     lon_span = max(max_lon - min_lon, 0.04)
@@ -443,29 +451,43 @@ def draw_postmark_watermark(draw: ImageDraw.ImageDraw, cx: int, cy: int):
 # Project Storyboard Metadata Extraction
 # ---------------------------------------------------------------------------
 def extract_project_bookends_spec(project_dir: Path) -> dict:
-    """Extracts all required metadata and tuning knobs from Storyboard.md."""
+    """Extracts all required metadata and tuning knobs from Storyboard.md and timeline_spec.json."""
     spec = {
         "enabled": True,
         "intro_duration_s": 3.5,
         "outro_duration_s": 4.5,
-        "studio_motto": "Gravity Reduction Module: FAILED (Climbing Anyway)",
-        "location_badge": "MALLORCA // BONAIRE ➔ COLL DE FEMENIA & MORTITX",
+        "studio_motto": "Discipline · Data · Gratitude",
+        "studio_motto_ru": "Дисциплина · Данные · Благодарность",
+        "location_badge": "MALLORCA // BONAIRE ➔ BAY OF POLLENÇA & ALCÚDIA",
         "place_name": "MALLORCA",
-        "route_subtitle": "BONAIRE  ➔  COLL DE FEMENIA & MORTITX",
+        "place_name_ru": "МАЙОРКА",
+        "route_subtitle": "BONAIRE  ➔  BAY OF POLLENÇA & ALCÚDIA",
+        "route_subtitle_ru": "БОНАЙРЕ  ➔  ЗАЛИВ ПОЙЕНСА И АЛЬКУДИЯ",
+        "start_label": "START: BONAIRE",
+        "start_label_ru": "СТАРТ: БОНАЙРЕ",
+        "turnaround_label": "TURNAROUND",
+        "turnaround_label_ru": "РАЗВОРОТ",
+        "turnaround_lat": None,
+        "turnaround_lon": None,
         "cast_credits": [
-            "Mark — Mecánico Campeón & 60th Birthday Honoree",
-            "Bruce & Lisa — Thursday Ride Ghosts (Plan B Instigators)",
-            "Uphill Trail Runners — The 146 bpm Sprint Catalysts",
-            "Nina — Bodega del Sol First-Night Dinner Partner",
+            "Nina Komlik — Co-Producer & Adventure Partner",
+            "Mallorca Peloton & Friends — Island Crew",
         ],
-        "steed_credit": 'Mint Trek Madone 7 (Personal build on 2016 Craigslist frame · Stationed on island as "Mallorca Bike" since June 2022)',
+        "cast_credits_ru": [
+            "Нина Комлик — Главный вдохновитель и спутница",
+            "Друзья на Майорке — Островная команда",
+        ],
+        "steed_credit": 'Trek Madone 7 (Personal build on 2016 Craigslist frame · Stationed on island since June 2022)',
+        "steed_credit_ru": "Trek Madone 7 (Сборка на раме с Craigslist 2016 · На острове с июня 2022)",
         "main_hero": "Antigravity Video Studio (AGVS v2.0)",
         "github_repo": "github.com/akomlik/antigravity-video-studio",
-        "fuel_sponsors": "Pro Cycle Cafe VIP Card • Antonio's Bodega del Sol • 0x Alcohol",
-        "date_str": "2026-11-05",
-        "short_title": "SOLO COLL DE FEMENIA ON ZERO-T",
-        "distance_mi": 35.2,
-        "elevation_ft": 1650,
+        "fuel_sponsors": "Mallorca Espresso & Mediterranean Sunshine",
+        "fuel_sponsors_ru": "Майоркинский эспрессо и средиземноморское солнце",
+        "date_str": "2026-11-10",
+        "short_title": "MALLORCA RIDE & MEMORIES",
+        "short_title_ru": "МАЙОРКА: ЗАЕЗД И ВОСПОМИНАНИЯ",
+        "distance_mi": 32.6,
+        "elevation_ft": 640,
         "gpx_file": None,
     }
 
@@ -575,6 +597,30 @@ def extract_project_bookends_spec(project_dir: Path) -> dict:
             spec["place_name"] = subparts[0].strip()
             spec["route_subtitle"] = f"{subparts[1].strip()}  ➔  {parts[1].strip()}"
 
+    # Declarative timeline_spec.json["bookends"] overrides (highest priority, prevents cross-ride leakage!)
+    tspec_path = project_dir / "timeline_spec.json"
+    if tspec_path.exists():
+        try:
+            tspec = json.loads(tspec_path.read_text(encoding="utf-8"))
+            bcfg = tspec.get("bookends", {})
+            for k in (
+                "place_name", "place_name_ru",
+                "route_subtitle", "route_subtitle_ru",
+                "start_label", "start_label_ru",
+                "turnaround_label", "turnaround_label_ru",
+                "turnaround_lat", "turnaround_lon",
+                "short_title", "short_title_ru",
+                "studio_motto", "studio_motto_ru",
+                "distance_mi", "elevation_ft",
+                "cast_credits", "cast_credits_ru",
+                "steed_credit", "steed_credit_ru",
+                "fuel_sponsors", "fuel_sponsors_ru",
+            ):
+                if k in bcfg and bcfg[k] is not None:
+                    spec[k] = bcfg[k]
+        except Exception as e:
+            print(f"Note parsing timeline_spec.json bookends: {e}")
+
     return spec
 
 
@@ -637,7 +683,7 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
 
     # 3. Left Zone: iMovie-Style Location Headline (X: 130, Y: 250)
     place_name = spec.get("place_name", "MALLORCA").upper()
-    route_sub = spec.get("route_subtitle", "BONAIRE -> COLL DE FEMENIA & MORTITX").upper()
+    route_sub = spec.get("route_subtitle", "BONAIRE -> BAY OF POLLENÇA & ALCÚDIA").upper()
     f_hero = load_apple_font("hero_title", 96, text=place_name)
     f_sub = load_apple_font("section_header", 34, text=route_sub)
 
@@ -673,7 +719,13 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
 
     gpx_path = spec.get("gpx_file")
     pts = parse_gpx_points(gpx_path) if gpx_path else []
-    basemap_img, projected_pts, start_px, summit_px = fetch_and_render_vintage_basemap(pts, map_w, map_h)
+    t_lat = spec.get("turnaround_lat")
+    t_lon = spec.get("turnaround_lon")
+    t_latlon = (float(t_lat), float(t_lon)) if (t_lat is not None and t_lon is not None) else None
+    use_farthest = bool(spec.get("elevation_ft", 1000) < 1000)
+    basemap_img, projected_pts, start_px, summit_px = fetch_and_render_vintage_basemap(
+        pts, map_w, map_h, target_latlon=t_latlon, use_farthest=use_farthest
+    )
 
     # Draw GPX route trace on basemap image
     b_draw = ImageDraw.Draw(basemap_img)
@@ -688,7 +740,7 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     b_draw.ellipse([spx - 20, spy - 20, spx + 20, spy + 20], fill=COLOR_FOREST_GREEN, outline=(252, 249, 242, 255), width=4)
     b_draw.ellipse([spx - 7, spy - 7, spx + 7, spy + 7], fill=(252, 249, 242, 255))
     # Start pill label (48pt Avenir Next Bold)
-    st_label = "СТАРТ: БОНАЙРЕ" if spec.get("lang") == "ru" else "START: BONAIRE"
+    st_label = spec.get("start_label_ru", "СТАРТ: БОНАЙРЕ") if spec.get("lang") == "ru" else spec.get("start_label", "START: BONAIRE")
     f_pill = load_apple_font("section_header", 48, text=st_label)
     s_bbox = b_draw.textbbox((0, 0), st_label, font=f_pill)
     sw = s_bbox[2] - s_bbox[0] + 36
@@ -696,14 +748,14 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     slx = min(map_w - sw - 20, max(20, spx - sw // 2))
     sly = min(map_h - sh - 20, max(20, spy - 48 - sh))
     b_draw.rounded_rectangle([slx, sly, slx + sw, sly + sh], radius=12, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
-    b_draw.text((slx + 18, sly + 12), st_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
+    b_draw.text((slx + 18 - s_bbox[0], sly + 12 - s_bbox[1]), st_label, font=f_pill, fill=COLOR_ESPRESSO_INK)
 
-    # Summit Pin (Postmark Crimson with 20px radius)
+    # Turnaround / Summit Pin (Postmark Crimson with 20px radius)
     sum_px = int(summit_px[0]), int(summit_px[1])
     b_draw.ellipse([sum_px[0] - 20, sum_px[1] - 20, sum_px[0] + 20, sum_px[1] + 20], fill=COLOR_POSTMARK_CRIMSON, outline=(252, 249, 242, 255), width=4)
     b_draw.ellipse([sum_px[0] - 7, sum_px[1] - 7, sum_px[0] + 7, sum_px[1] + 7], fill=(252, 249, 242, 255))
-    # Summit pill label (48pt Avenir Next Bold)
-    sum_label = "РАЗВОРОТ: МОРТИЧ" if spec.get("lang") == "ru" else "TURNAROUND: MORTITX"
+    # Turnaround / Summit pill label (48pt Avenir Next Bold)
+    sum_label = spec.get("turnaround_label_ru", "РАЗВОРОТ") if spec.get("lang") == "ru" else spec.get("turnaround_label", "TURNAROUND")
     f_pill_sum = load_apple_font("section_header", 48, text=sum_label)
     sm_bbox = b_draw.textbbox((0, 0), sum_label, font=f_pill_sum)
     smw = sm_bbox[2] - sm_bbox[0] + 36
@@ -711,7 +763,7 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     smlx = min(map_w - smw - 20, max(20, sum_px[0] - smw // 2))
     smly = min(map_h - smh - 20, max(20, sum_px[1] + 32))
     b_draw.rounded_rectangle([smlx, smly, smlx + smw, smly + smh], radius=12, fill=COLOR_POLAROID_PAPER, outline=COLOR_POSTMARK_CRIMSON, width=3)
-    b_draw.text((smlx + 18, smly + 12), sum_label, font=f_pill_sum, fill=COLOR_ESPRESSO_INK)
+    b_draw.text((smlx + 18 - sm_bbox[0], smly + 12 - sm_bbox[1]), sum_label, font=f_pill_sum, fill=COLOR_ESPRESSO_INK)
 
     # Compass rose in top-right of map box
     draw_compass_rose(b_draw, cx=map_w - 75, cy=85, r=42)
@@ -735,13 +787,13 @@ def render_intro_canvas_4k(spec: dict, out_png: Path) -> Path:
     draw.line([(tx0, ty1), (tx1, ty1)], fill=COLOR_UMBER_INK, width=3)
 
     if spec.get("lang") == "ru":
-        dist_km = round(spec.get('distance_mi', 35.2) * 1.60934, 1)
-        ele_m = int(round(spec.get('elevation_ft', 1650) * 0.3048))
-        ticket_str = f"ДАТА: {spec.get('date_str', '2026-11-05')}     •     {spec.get('short_title', 'ОДИНОЧНЫЙ КОЛЬ ДЕ ФЕМЕНИЯ НА ZERO-T')}     •     {dist_km} КМ  |  {ele_m} М ПОДЪЕМ"
+        dist_km = round(spec.get('distance_mi', 32.6) * 1.60934, 1)
+        ele_m = int(round(spec.get('elevation_ft', 640) * 0.3048))
+        ticket_str = f"ДАТА: {spec.get('date_str', '2026-11-10')}     •     {spec.get('short_title', 'МАЙОРКА: ЗАЕЗД И ВОСПОМИНАНИЯ')}     •     {dist_km} КМ  |  {ele_m} М ПОДЪЕМ"
     else:
-        dist_val = f"{spec.get('distance_mi', 35.2):.1f}"
-        ele_val = f"{spec.get('elevation_ft', 1650):,}"
-        ticket_str = f"DATE: {spec.get('date_str', '2026-11-05')}     •     {spec.get('short_title', 'SOLO COLL DE FEMENIA ON ZERO-T')}     •     {dist_val} MI  |  {ele_val} FT CLIMBING"
+        dist_val = f"{spec.get('distance_mi', 32.6):.1f}"
+        ele_val = f"{spec.get('elevation_ft', 640):,}"
+        ticket_str = f"DATE: {spec.get('date_str', '2026-11-10')}     •     {spec.get('short_title', 'MALLORCA RIDE & MEMORIES')}     •     {dist_val} MI  |  {ele_val} FT CLIMBING"
 
     f_ticket = load_apple_font("stamp_typewriter", 46, text=ticket_str)
     t_bbox = draw.textbbox((0, 0), ticket_str, font=f_ticket)
@@ -1161,17 +1213,15 @@ def generate_project_bookends(
     spec_ru = dict(spec)
     spec_ru["lang"] = "ru"
     spec_ru["place_name"] = spec.get("place_name_ru", "МАЙОРКА")
-    spec_ru["route_subtitle"] = spec.get("route_subtitle_ru", "БОНАЙРЕ ➔ КОЛЬ-ДЕ-ФЕМЕНИА И МОРТИТШ")
-    spec_ru["studio_motto"] = spec.get("studio_motto_ru", "МОДУЛЬ СНИЖЕНИЯ ГРАВИТАЦИИ: ОТКАЗ (ВСЁ РАВНО ЕДЕМ)")
-    spec_ru["short_title"] = spec.get("short_title_ru", "ОДИНОЧНЫЙ КОЛЬ ДЕ ФЕМЕНИЯ НА ZERO-T")
+    spec_ru["route_subtitle"] = spec.get("route_subtitle_ru", "БОНАЙРЕ  ➔  ЗАЛИВ ПОЙЕНСА И АЛЬКУДИЯ")
+    spec_ru["studio_motto"] = spec.get("studio_motto_ru", "ДИСЦИПЛИНА · ДАННЫЕ · БЛАГОДАРНОСТЬ")
+    spec_ru["short_title"] = spec.get("short_title_ru", "МАЙОРКА: ЗАЕЗД И ВОСПОМИНАНИЯ")
     spec_ru["cast_credits"] = spec.get("cast_credits_ru", [
-        "Марк — Mecánico Campeón и легенда мастерской PCH",
-        "Брюс и Лиза — Призраки четверга (вдохновители плана Б)",
-        "Бегуны в гору — Катализаторы пульса 146 уд/мин",
-        "Нина — Партнер по ужину в Bodega del Sol",
+        "Нина Комлик — Главный вдохновитель и спутница",
+        "Друзья на Майорке — Островная команда",
     ])
     spec_ru["steed_credit"] = spec.get("steed_credit_ru", "Trek Madone 7 (Сборка на раме с Craigslist 2016 · На острове с июня 2022)")
-    spec_ru["fuel_sponsors"] = spec.get("fuel_sponsors_ru", "Вода с солями из Pollença • Bodega del Sol • 0x Алкоголь")
+    spec_ru["fuel_sponsors"] = spec.get("fuel_sponsors_ru", "Майоркинский эспрессо и средиземноморское солнце")
     intro_canvas_ru = out_dir / "bookend_intro_canvas_4K_RU.png"
     outro_canvas_ru = out_dir / "bookend_outro_canvas_4K_RU.png"
     render_intro_canvas_4k(spec_ru, intro_canvas_ru)

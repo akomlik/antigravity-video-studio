@@ -238,17 +238,12 @@ def get_gemini_voice_id() -> Optional[str]:
     """
     Resolves Alexander's Gemini TTS Voice ID securely without checking secrets into Git.
     Precedence:
-    1. os.environ.get("GEMINI_VOICE_ID") (direnv / shell)
-    2. Local .env file (git-ignored)
-    3. 03_Audio_Library/03_Voice_Profile/voice_id.json (git-ignored)
+    1. Local .env file (git-ignored, allows instant local override)
+    2. Local git-ignored voice profile JSON (03_Audio_Library/03_Voice_Profile/voice_id.json)
+    3. os.environ.get("GEMINI_VOICE_ID") (direnv / shell)
     4. 1Password CLI: `op item get "envvar:GEMINI_VOICE_ID" --vault Private --fields credential --reveal`
     """
-    # 1. Environment variable
-    v = os.environ.get("GEMINI_VOICE_ID")
-    if v and v.strip():
-        return v.strip()
-
-    # 2. Local .env file
+    # 1. Local .env file
     env_file = STUDIO_ROOT / ".env"
     if env_file.exists():
         try:
@@ -262,7 +257,7 @@ def get_gemini_voice_id() -> Optional[str]:
         except Exception:
             pass
 
-    # 3. Local git-ignored voice profile JSON
+    # 2. Local git-ignored voice profile JSON
     voice_json = STUDIO_ROOT / "03_Audio_Library/03_Voice_Profile/voice_id.json"
     if voice_json.exists():
         try:
@@ -273,6 +268,11 @@ def get_gemini_voice_id() -> Optional[str]:
                 return val
         except Exception:
             pass
+
+    # 3. Environment variable
+    v = os.environ.get("GEMINI_VOICE_ID")
+    if v and v.strip():
+        return v.strip()
 
     # 4. 1Password CLI
     try:

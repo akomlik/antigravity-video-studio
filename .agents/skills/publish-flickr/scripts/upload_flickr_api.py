@@ -481,7 +481,7 @@ def register_in_flickr_index(entry: dict, flickr_url: str):
         "title": entry.get("title", ""),
         "flickr_url": flickr_url,
         "album": entry.get("album", ""),
-        "video_file": str(entry.get("video_file", "")),
+        "video_file": Path(entry.get("video_file", "")).name if entry.get("video_file") else "",
     }
     with open(FLICKR_INDEX_PATH, "a", encoding="utf-8") as f:
         f.write(json.dumps(rec, ensure_ascii=False) + "\n")
