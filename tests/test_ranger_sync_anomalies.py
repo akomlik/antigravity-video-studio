@@ -54,7 +54,6 @@ def test_oct29_and_oct31_sleep_oscillator_shifts_still_solve():
     assert_physical_continuity(items, use_raw=False)
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 4")
 def test_subsecond_photo_batch_collision_raises_physical_overlap():
     base_ms = 1762770000000
     items = [
@@ -65,7 +64,6 @@ def test_subsecond_photo_batch_collision_raises_physical_overlap():
         assert_physical_continuity(items, use_raw=True)
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 4")
 def test_backward_rtc_brownout_into_silent_cafe_pause_detected():
     # Ride starts 09:00..09:30, 60-min silent cafe stop 09:30..10:30, ride resumes 10:30..11:00.
     # Clip 3 was recorded at 10:45 (QuickTime internal atom = 10:45), but a -55m RTC brownout stamped
@@ -90,7 +88,6 @@ def test_backward_rtc_brownout_into_silent_cafe_pause_detected():
         assert_physical_continuity([c1, c2, c3_brownout], use_raw=True)
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 4")
 def test_ingest_epoch_1_8b_and_non_destructive_storyboard_sync(tmp_path: Path):
     from agvs_core.ingest_sync import has_bleequp_files, parse_media_utc, sync_storyboard_non_destructive
 

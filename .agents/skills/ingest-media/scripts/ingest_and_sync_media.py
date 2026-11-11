@@ -26,7 +26,19 @@ from pathlib import Path
 os.environ["PATH"] = f"/opt/homebrew/bin:/usr/local/bin:{Path.home() / '.local/bin'}:{os.environ.get('PATH', '')}"
 
 STUDIO_ROOT = Path(os.environ.get("ANTIGRAVITY_STUDIO_ROOT", Path(__file__).resolve().parents[4]))
+if str(STUDIO_ROOT) not in sys.path:
+    sys.path.insert(0, str(STUDIO_ROOT))
 BGM_ROOT = STUDIO_ROOT / "03_Audio_Library" / "01_Curated_BGM"
+
+from agvs_core.ingest_sync import (  # noqa: E402
+    classify_video_source_device,
+    has_bleequp_files,
+    is_bleequp_filename,
+    is_calibration_clock_filename,
+    parse_media_utc as _core_parse_media_utc,
+    probe_still_exif,
+    sync_storyboard_non_destructive,
+)
 
 
 def run_filmcraft_version_check(studio_root: Path):
@@ -125,11 +137,7 @@ def run_bleequp_ranger_sync_if_needed(project_dir: Path, skip_sync: bool, force_
     if marker.exists() and not force_resync:
         print("Detected .bleequp_synced marker; BleeqUP media already processed.")
         return
-    has_bleequp = any(
-        f.name.startswith(("VIDEO_", "IMG_17", "BleeqUp_"))
-        for f in project_dir.iterdir()
-        if f.is_file()
-    )
+    has_bleequp = has_bleequp_files(project_dir)
     if not has_bleequp:
         return
     sync_bin = shutil.which("ranger-sync") or shutil.which("bleequp-ranger-sync")
@@ -339,13 +347,7 @@ def probe_media_file(filepath: Path, proxy_dir: Path):
                             info["color_space"] = "BT.2020_HDR"
                         break
 
-                make = (tags.get("com.apple.quicktime.make", "") + tags.get("encoder", "")).lower()
-                if "apple" in make or filepath.suffix.lower() == ".mov":
-                    info["source_device"] = "iPhone_15_Pro"
-                elif "bleequp" in make or (info["width"], info["height"]) in [
-                    (2880, 1620), (1620, 2880), (3200, 1800), (1800, 3200), (1920, 1080), (1080, 1920)
-                ]:
-                    info["source_device"] = "BleeqUP_Ranger_AI"
+                info["source_device"] = classify_video_source_device(filepath, info["width"], info["height"], tags)
 
                 ctime = tags.get("com.apple.quicktime.creationdate") or tags.get("creation_time")
                 if ctime:
@@ -380,20 +382,16 @@ def probe_media_file(filepath: Path, proxy_dir: Path):
 
         info["proxy_thumb"] = generate_video_proxy_thumb(filepath, proxy_dir, info["duration_s"])
     else:
-        res = subprocess.run(
-            ["sips", "-g", "pixelWidth", "-g", "pixelHeight", "-g", "creation", str(filepath)],
-            capture_output=True, text=True, check=False
-        )
-        for line in res.stdout.splitlines():
-            if "pixelWidth:" in line:
-                info["width"] = int(line.split(":")[-1].strip())
-            elif "pixelHeight:" in line:
-                info["height"] = int(line.split(":")[-1].strip())
-            elif "creation:" in line and not info["creation_time_utc"]:
-                raw_c = line.split("creation:")[-1].strip()
-                if raw_c and raw_c != "<nil>":
-                    info["creation_time_utc"] = raw_c
-        if (info["width"], info["height"]) in [(4656, 3496), (3496, 4656)]:
+        still_meta = probe_still_exif(filepath)
+        info["width"] = still_meta["width"]
+        info["height"] = still_meta["height"]
+        info["creation_time_utc"] = still_meta["creation_time_utc"]
+        if still_meta.get("camera_tz_offset"):
+            info["camera_tz_offset"] = still_meta["camera_tz_offset"]
+        if still_meta.get("qt_lat") is not None:
+            info["qt_lat"] = still_meta["qt_lat"]
+            info["qt_lon"] = still_meta["qt_lon"]
+        if (info["width"], info["height"]) in [(4656, 3496), (3496, 4656)] or is_bleequp_filename(filepath.name):
             info["source_device"] = "BleeqUP_Ranger_AI"
         else:
             info["source_device"] = "Still_Camera_Or_Scan"
@@ -412,7 +410,7 @@ def probe_media_file(filepath: Path, proxy_dir: Path):
         info["creation_time_utc"] = mtime.isoformat()
 
     # Flag clock-sync calibration photos (e.g. bigclock.app reference shots) so they are never placed in video cuts
-    if filepath.name in ("IMG_1794306860718.JPG",) or "bigclock" in filepath.name.lower():
+    if is_calibration_clock_filename(filepath.name):
         info["calibration_clock_only"] = True
         info["exclude_from_timeline"] = True
 
@@ -420,41 +418,8 @@ def probe_media_file(filepath: Path, proxy_dir: Path):
 
 
 def ensure_or_migrate_storyboard(project_dir: Path, catalog_dir: Path, genre: str, media_items: list):
-    """
-    Step 0b: Ensures Storyboard.md exists.
-    - If missing, creates a chronological Storyboard.md skeleton from the probed media inventory
-      so the agent can immediately enrich it and ask the user for story refinements.
-    """
-    storyboard_path = project_dir / "Storyboard.md"
-    status = "existing"
-
-    if not storyboard_path.exists():
-        status = "created_skeleton_needs_refinement"
-        lines = [
-            f"# Storyboard: {project_dir.name}",
-            f"- **Detected Genre:** `{genre}`",
-            f"- **Total Media Files:** {len(media_items)} (`{sum(1 for m in media_items if m['media_type']=='video')}` videos, `{sum(1 for m in media_items if m['media_type']=='still')}` stills)",
-            "- **Status:** `DRAFT — Awaiting AI Visual Inspection & User Story Refinement`",
-            "",
-            "## 1. Story Premise & Highlights (Add a few lines or tell Gemini in chat)",
-            "- *[Who is in this story, what was the funniest/best moment, and are there any throwback photos or YouTube links to weave in?]*",
-            "",
-            "## 2. Scene-by-Scene Storyboard (`Scene 00` -> `Scene N`)",
-            "- **Scene 00 (Optional Flashback / Intro Hook):** *[Pending visual inspection]*",
-            "- **Scene 01 (Opening / Departure):** *[Pending visual inspection]*",
-            "",
-            "## 3. Chronological Media & GPS Log (Auto-Generated)",
-        ]
-        for m in media_items:
-            gps_str = f" (GPS: {m['qt_lat']}, {m['qt_lon']})" if m.get("qt_lat") else ""
-            dur_str = f" [{m['duration_s']}s]" if m["media_type"] == "video" else " [Still]"
-            lines.append(f"- `{m['filename']}` — `{m['creation_time_utc']}`{dur_str}{gps_str}")
-        storyboard_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        print(f"Created initial {storyboard_path.name} draft for AI visual inspection.")
-
-    # Always keep a synced copy inside 04_Project_Catalog/YEAR/<project_name>/Storyboard.md
-    shutil.copy2(storyboard_path, catalog_dir / "Storyboard.md")
-    return "Storyboard.md", status
+    """Non-destructively ensures and synchronizes Storyboard.md without clobbering catalog refinements."""
+    return sync_storyboard_non_destructive(project_dir, catalog_dir, genre=genre, media_items=media_items)
 
 
 def detect_genre(requested_genre: str, gpx_points: list, media_items: list):
@@ -788,7 +753,7 @@ def verify_and_refine_bleequp_stop_sync(project_dir: Path, gpx_points: list, med
     for m in media_items:
         if m.get("source_device") != "BleeqUP_Ranger_AI" or m.get("media_type") != "video":
             continue
-        ts_dt = parse_timestamp_utc(m.get("creation_time_utc"))
+        ts_dt = _core_parse_media_utc(m, gpx_points)
         if not ts_dt:
             continue
         ts = ts_dt.timestamp()
@@ -832,9 +797,9 @@ def verify_and_refine_bleequp_stop_sync(project_dir: Path, gpx_points: list, med
                 # Find all BleeqUP files before stop_end that preceded the first iPhone reference at the stop
                 pre_files = []
                 for m in media_items:
-                    if not m["filename"].startswith(("VIDEO_", "IMG_17")):
+                    if not is_bleequp_filename(m["filename"]):
                         continue
-                    t_dt = parse_timestamp_utc(m.get("creation_time_utc"))
+                    t_dt = _core_parse_media_utc(m, gpx_points)
                     if t_dt and t_dt.timestamp() <= stop_end - 300.0:
                         pre_files.append(m["filename"])
                 if pre_files:
@@ -860,6 +825,7 @@ def main():
     parser.add_argument("--genre", default="auto", choices=["auto", "cycling_ride", "hike_outdoor", "social_event", "archival_slideshow"])
     parser.add_argument("--skip-bleequp-sync", action="store_true", help="Skip running ranger-sync if already fixed")
     parser.add_argument("--force-resync", action="store_true", help="Force re-running ranger-sync even if .bleequp_synced exists")
+    parser.add_argument("--mark-calibration", nargs="*", default=[], help="Explicit calibration clock photo filenames to exclude from timeline")
     parser.add_argument("--studio-root", default=str(STUDIO_ROOT), help="Path to Google Drive Antigravity_Video_Studio root")
     args = parser.parse_args()
 
@@ -898,7 +864,11 @@ def main():
                 media_items.append(probe_media_file(f, proxy_dir))
 
     genre = detect_genre(args.genre, gpx_points, media_items)
+    calib_set = {Path(x).name.lower() for x in (args.mark_calibration or [])}
     for item in media_items:
+        if item["filename"].lower() in calib_set:
+            item["calibration_clock_only"] = True
+            item["exclude_from_timeline"] = True
         item["editorial"] = compute_editorial_guidance(item, genre, gpx_points)
 
     # Sort media_inventory strictly chronologically by true capture time (never alphabetically by filename!)
@@ -920,6 +890,8 @@ def main():
             for item in media_items:
                 prev = old_by_name.get(item.get("filename", "").lower())
                 if prev:
+                    if "sub_clips" in prev and "subclips" not in prev:
+                        prev["subclips"] = prev.pop("sub_clips")
                     for preserve_key in ("subclips", "landmarks", "visual_summary", "subclip_indexed_at", "exclude_from_timeline", "calibration_clock_only"):
                         if preserve_key in prev and preserve_key not in item:
                             item[preserve_key] = prev[preserve_key]

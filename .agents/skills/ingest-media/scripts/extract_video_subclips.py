@@ -140,16 +140,17 @@ def process_project_subclips(project_dir: Path, force: bool = False):
             continue
 
         cache_path = proxy_dir / f"{stem}_subclips.json"
-        if not force and cache_path.exists() and item.get("sub_clips"):
+        if not force and cache_path.exists() and (item.get("subclips") or item.get("sub_clips")):
             continue
 
         print(f"Analyzing {fname} ({dur:.1f}s) via contact strip...")
         res = analyze_clip_strip(strip_path, dur, client)
         if res:
-            item["sub_clips"] = res.get("sub_events", [])
+            item.pop("sub_clips", None)
+            item["subclips"] = res.get("sub_events", [])
             item["landmarks"] = res.get("landmarks", [])
             updated = True
-            print(f"  -> Found {len(item['sub_clips'])} sub-events, {len(item['landmarks'])} landmarks.")
+            print(f"  -> Found {len(item['subclips'])} sub-events, {len(item['landmarks'])} landmarks.")
 
     if updated:
         with open(manifest_path, "w", encoding="utf-8") as f:
