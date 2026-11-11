@@ -90,7 +90,6 @@ def test_storyboard_has_no_raw_voice_id_or_abs_path(femenia_dir: Path):
         agvs_config.ensure_relative_studio_path("/" + "Users/example/Movies/clip.mp4")
 
 
-@pytest.mark.xfail(strict=True, reason="Fixed in Commit 3")
 def test_golden_pydantic_schemas_validate_femenia_and_paradise(femenia_dir: Path, paradise_dir: Path):
     from agvs_core.schemas import (
         CalibrationMediaInTimelineError,
