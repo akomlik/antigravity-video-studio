@@ -60,6 +60,7 @@ Uploads the 4K **🇺🇦 Ukrainian Edition** (`_UA.mp4`, **Unlisted**, with `th
 When `upload_youtube_api.py` finishes, it automatically prints the copy-ready Facebook post box to the console and saves the full formatted package with the live YouTube URL to:
 `04_Project_Catalog/YEAR/<project_name>/facebook_promo.md`
 
-To share on Facebook:
+To share on Facebook & Strava:
 1. Open `facebook_promo.md`.
 2. Copy the **Option 1 Post Text** (or **Option 4** for the *Mallorca Cycling* group) and paste directly into Facebook **without attaching separate photo files** so Facebook renders the full-width clickable 16:9 `YOUTUBE.COM` preview card from your composite thumbnail.
+3. **Strava Sharing Convention (No Links in Comments!):** Strava strips/blocks URLs inside comments. Always put the live YouTube URL inside the **Strava Activity Description**, and if replying to a friend's comment (e.g. `@Joe`), post a link-free comment pointing them up to the activity description ("Added the 4K video link to the ride description above!").
