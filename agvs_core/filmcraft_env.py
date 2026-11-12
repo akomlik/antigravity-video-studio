@@ -81,6 +81,17 @@ def sync_filmcraft_cli(target_version: str, cli_path: Path | None = None) -> Pat
     asset_name = f"filmcraft-cli-{ver}-macos-universal.zip"
     dest_bin = cli_path.resolve() if cli_path and cli_path.exists() else Path("/opt/homebrew/bin/filmcraft-cli")
 
+    # Keep all installed filmcraft-cli entrypoints on the machine in sync (including ~/.local/bin & /opt/homebrew/bin target)
+    candidate_targets: list[Path] = [dest_bin]
+    for extra in (
+        Path("/opt/homebrew/bin/filmcraft-cli"),
+        Path("~/.local/bin/filmcraft-cli").expanduser(),
+    ):
+        if extra.exists() or extra.is_symlink():
+            resolved = extra.resolve()
+            if resolved not in candidate_targets:
+                candidate_targets.append(resolved)
+
     with tempfile.TemporaryDirectory(prefix="fc_cli_sync_") as tmpdir:
         tmp = Path(tmpdir)
         gh_bin = find_binary("gh")
@@ -97,11 +108,15 @@ def sync_filmcraft_cli(target_version: str, cli_path: Path | None = None) -> Pat
         extracted = list(tmp.rglob("filmcraft-cli"))
         if not extracted:
             raise FileNotFoundError(f"filmcraft-cli binary not found inside {asset_name}")
-        dest_bin.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(extracted[0], dest_bin)
-        dest_bin.chmod(0o755)
-        subprocess.run(["xattr", "-cr", str(dest_bin)], check=False)
-        subprocess.run(["codesign", "--force", "--sign", "-", str(dest_bin)], check=True, capture_output=True)
+        for target in candidate_targets:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            # Atomic rename onto target so any running mmap'd filmcraft-cli MCP process is never SIGKILL'd!
+            staged = target.with_name(f".{target.name}.new")
+            shutil.copy2(extracted[0], staged)
+            staged.chmod(0o755)
+            subprocess.run(["xattr", "-cr", str(staged)], check=False)
+            subprocess.run(["codesign", "--force", "--sign", "-", str(staged)], check=True, capture_output=True)
+            staged.replace(target)
     return dest_bin
 
 

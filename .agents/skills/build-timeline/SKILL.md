@@ -1,6 +1,6 @@
 ---
 name: build-timeline
-description: Interactive & one-command 4K timeline builder (AGVS v3 / agvs_core). Presents an in-chat clickable alignment card (Primary Language, Music Selection with 10s audio preview, Publishing Mode), writes choices to Storyboard.md automatically, downloads linked YouTube flashbacks, renders GPX corner maps & telemetry HUD, generates replicated voice-over (EN/UA/RU), builds the 4-track broadcast audio mix in FilmCraft MCP, exports clean 4K MP4, generates composite thumbnail, metadata & facebook_promo.md, and pauses for review before YouTube upload.
+description: Interactive & one-command 4K timeline builder (AGVS v3 / agvs_core). Presents an in-chat clickable alignment card (Primary Language, Music Selection with 10s audio preview, Publishing Mode), writes choices to Storyboard.md automatically, downloads linked YouTube flashbacks, renders GPX corner maps & telemetry HUD, generates standard Google Gemini TTS voice-over (EN/UA/RU), builds the 4-track broadcast audio mix in FilmCraft MCP, exports clean 4K MP4, generates composite thumbnail, metadata & facebook_promo.md, and pauses for review before YouTube upload.
 ---
 
 # Stage 1: Interactive & Unified Timeline Assembly (`/build-timeline`)

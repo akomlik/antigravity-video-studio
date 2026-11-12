@@ -49,7 +49,7 @@ Uploads the 4K English Master (`unlisted` default), sets localized `EN`/`UA`/`RU
 *(Idempotent on partial resume; to update metadata/captions/thumbnail on an already-uploaded video without re-uploading the MP4, add `--update-video-id <VIDEO_ID>`).*
 
 ### Mode 2: Full 3-Edition Multi-Language Upload (`option_b` — Special Occasions & Family Stories)
-Uploads the 4K **🇺🇦 Ukrainian Edition** (`_UA.mp4`, **Unlisted**, with `thumbnail_ua.jpg`) and **🇷🇺 Russian Edition** (`_RU.mp4`, **Unlisted**, with `thumbnail_ru.jpg`) with their native replicated voice-over tracks and `.srt` captions, then uploads/updates the 4K **🇺🇸 English Master** (**Unlisted**, with `thumbnail.jpg`) with clickable links and a pinned language-switcher comment:
+Uploads the 4K **🇺🇦 Ukrainian Edition** (`_UA.mp4`, **Unlisted**, with `thumbnail_ua.jpg`) and **🇷🇺 Russian Edition** (`_RU.mp4`, **Unlisted**, with `thumbnail_ru.jpg`) with their native Google Gemini TTS voice-over tracks and `.srt` captions, then uploads/updates the 4K **🇺🇸 English Master** (**Unlisted**, with `thumbnail.jpg`) with clickable links and a pinned language-switcher comment:
 ```bash
 ./.venv/bin/python ./.agents/skills/publish-youtube/scripts/upload_youtube_api.py \
   --metadata "./04_Project_Catalog/YEAR/<project_name>/youtube_metadata.json" \

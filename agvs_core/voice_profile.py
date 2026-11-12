@@ -112,8 +112,16 @@ def store_voice_id_securely(new_voice_id: str, project_dir: Optional[Path] = Non
         sb_file.write_text(text, encoding="utf-8")
 
 
-def ensure_custom_voice(client: Any) -> str:
-    """Returns a cached stateful `voice_...` ID or creates one from Alexander's reference audio."""
+DEFAULT_STANDARD_VOICE = "Charon"
+
+
+def ensure_custom_voice(client: Any, use_replicated: bool = False) -> str:
+    """
+    Returns the configured Gemini TTS voice (`$GEMINI_VOICE_ID`, e.g. standard voice `Charon` / `Orus`
+    or a prompted/studio voice persona), defaulting to Google's clean standard baritone (`Charon`)
+    unless `use_replicated=True` is explicitly requested (replicated voice cloning was retired as
+    inaudible/unreliable and burned API quota).
+    """
     resolved = get_gemini_voice_id()
     if resolved:
         return resolved
@@ -123,6 +131,9 @@ def ensure_custom_voice(client: Any) -> str:
         data = json.loads(voice_id_file.read_text(encoding="utf-8"))
         if data.get("voice_id"):
             return str(data["voice_id"])
+
+    if not use_replicated:
+        return DEFAULT_STANDARD_VOICE
 
     voice_dir = get_studio_root() / "03_Audio_Library/03_Voice_Profile"
     ref_wav = voice_dir / "alexander_komlik_reference_24k.wav"
