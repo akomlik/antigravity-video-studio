@@ -439,7 +439,7 @@ def cross_link_flickr_on_youtube(entry: dict[str, Any], flickr_url: str) -> None
             if flickr_url in txt or "flickr.com" in txt:
                 return
         comment_text = (
-            f"🔊 Русская версия (с русской озвучкой и без блокировок) на Flickr:\n"
+            f"🔊 Русская версия (с русской озвучкой) на Flickr:\n"
             f"👉 {flickr_url}\n\n"
             f"💬 Subtitles [CC] available on this video in English, Українська & Русский."
         )

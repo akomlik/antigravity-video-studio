@@ -3,10 +3,10 @@ name: publish-flickr
 description: Uploads video editions (defaulting to Russian-voiced _RU.mp4 or English master) to Flickr via the Flickr API, sets localized Russian/English titles, descriptions, and geodata, adds to albums, and generates WhatsApp/family sharing links.
 ---
 
-# Flickr Publishing & Censorship Bypass (`/publish-flickr`)
+# Flickr Publishing (`/publish-flickr`)
 
 ## Purpose
-Because YouTube is heavily throttled or blocked in Russia and occupied Crimea, Alexander's family (Nina's brother in Russia, Alexander's sister in Sevastopol) and Institute classmates on WhatsApp rely on Alexander's **Flickr feed (`apkom`)** and WhatsApp channels to watch new cycling videos, family gatherings, and travel movies.
+Alexander shares Russian-voiced video editions (`_RU.mp4`) via his **Flickr feed (`apkom`)** and WhatsApp channels for family (including Nina's brother **Victor** in Russia and Alexander's sister **Natasha** in Sevastopol) and Institute classmates. *(Note: Never claim Flickr works "without VPN / without blocks" in generated messages or comments, as Victor confirmed Flickr is also blocked in Russia without VPN.)*
 
 `/publish-flickr` automates uploading the 4K Russian-voiced video (`_RU.mp4`), sets date-prefixed titles with mile/km summaries, syncs GPS coordinates from `Storyboard.md`, assigns the upload to the target Flickr Album (e.g. `2026 Fall Mallorca Cycling`), and outputs a copy-ready WhatsApp sharing snippet.
 
@@ -90,7 +90,7 @@ When the upload finishes, the tool prints the live Flickr video URL and a copy-r
 Привет! Новое видео с осенней Майорки:
 2026-10-27 · Вместо группы: выпечка в Буже и «VIP»-кофе (40.1 мили / 64.5 км)
 
-Посмотреть на Flickr (без блокировок YouTube):
+Смотреть с русской озвучкой на Flickr:
 https://www.flickr.com/photos/apkom/55635551068/
 ================================================================================
 ```
