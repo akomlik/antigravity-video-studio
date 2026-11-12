@@ -154,6 +154,24 @@ def measure_mean_volume_db(audio_path: Path, highpass_hz: int | None = 180) -> f
     return measure_volume_stats(audio_path, highpass_hz=highpass_hz)["mean_volume"]
 
 
+def measure_integrated_lufs(audio_path: Path) -> float | None:
+    """Measure EBU R128 integrated loudness (LUFS) via ffmpeg `ebur128`."""
+    ffmpeg_bin = find_binary("ffmpeg") or "ffmpeg"
+    try:
+        out = subprocess.check_output(
+            [ffmpeg_bin, "-i", str(audio_path), "-af", "ebur128", "-f", "null", "-"],
+            stderr=subprocess.STDOUT,
+        ).decode("utf-8", errors="replace")
+        summary_lines = [ln.strip() for ln in out.splitlines() if "I:" in ln and "LUFS" in ln]
+        if summary_lines:
+            val = float(summary_lines[-1].split("I:")[1].split("LUFS")[0].strip())
+            if -70.0 < val <= 0.0:
+                return val
+    except Exception:
+        pass
+    return None
+
+
 def is_mellow_bgm_track(bgm_path: Path) -> bool:
     """Detect mellow/chillhop/ambient tracks via keywords or BPM < 95."""
     s = str(bgm_path).lower()
@@ -176,17 +194,23 @@ def calculate_bgm_gains(
     target_ducked_db: float | None = None,
     max_peak_headroom_db: float = -1.5,
     base_riding_db: float = -17.5,
-    duck_amount_db: float = 6.5,
+    duck_amount_db: float = 11.5,
     mellow_boost_db: float = 1.5,
+    max_riding_lufs: float = -15.5,
+    max_ducked_lufs: float = -26.5,
 ) -> dict[str, Any]:
     """
-    Calculate ear-tested BGM fader gains, 180Hz midrange RMS, 1.8kHz presence EQ, and peak headroom guard.
-    - Measures midrange loudness behind a 180 Hz high-pass filter so sub-bass does not starve mellow tracks.
-    - Applies +1.5 dB mellow offset (-17.5 -> -16.0 dB open riding) and smooth 6.5 dB duck (-22.5 dB mellow / -24.0 dB energetic),
-      never crushing ducked BGM into the -28.5..-30 dB floor where mobile speakers lose the track.
+    Calculate broadcast-balanced BGM fader gains, 180Hz midrange RMS, EBU R128 LUFS ceiling,
+    1.8kHz presence EQ, and peak headroom guard:
+    - Measures midrange loudness behind a 180 Hz high-pass filter so sub-bass does not starve sparse mellow tracks.
+    - Enforces an EBU R128 integrated loudness ceiling (`max_riding_lufs = -15.5 LUFS`, `max_ducked_lufs = -26.5 LUFS`)
+      so modern Brickwall-mastered chillhop/pop tracks (`-10 LUFS` raw, like "Indigo") NEVER overpower `-16 LUFS` narration!
+    - Ducks smoothly by `11.5 dB` (`duck_amount_db`) under narration and live speech, guaranteeing `>= 10.5 LU`
+      broadcast separation below `-16 LUFS` voice-over while remaining warmly audible on speakers.
     """
     raw_stats = measure_volume_stats(bgm_path, highpass_hz=None)
     mid_stats = measure_volume_stats(bgm_path, highpass_hz=180)
+    raw_lufs = measure_integrated_lufs(bgm_path)
     raw_mean_db = raw_stats["mean_volume"]
     raw_max_db = raw_stats["max_volume"]
     midrange_mean_db = mid_stats["mean_volume"]
@@ -211,12 +235,25 @@ def calculate_bgm_gains(
 
     desired_riding_gain_db = round(eff_riding_db - midrange_mean_db, 1)
     riding_gain_db = min(desired_riding_gain_db, max_allowed_gain_db)
+
+    # EBU R128 LUFS Ceiling Guard: prevent hot-mastered tracks (-8..-11 LUFS) from overpowering narration
+    eq_lufs_bump = 0.8 if is_mellow else 0.0
+    if raw_lufs is not None and target_riding_db is None:
+        lufs_riding_cap_gain = round(float(max_riding_lufs) - (raw_lufs + eq_lufs_bump), 1)
+        riding_gain_db = min(riding_gain_db, lufs_riding_cap_gain)
+
     actual_duck_db = round(eff_riding_db - eff_ducked_db, 1)
     ducked_gain_db = round(riding_gain_db - actual_duck_db, 1)
+
+    if raw_lufs is not None and target_ducked_db is None:
+        lufs_ducked_cap_gain = round(float(max_ducked_lufs) - (raw_lufs + eq_lufs_bump), 1)
+        ducked_gain_db = min(ducked_gain_db, lufs_ducked_cap_gain)
+
     swell_boost_db = round(riding_gain_db - ducked_gain_db, 1)
 
     return {
         "raw_mean_db": raw_mean_db,
+        "raw_lufs": raw_lufs,
         "midrange_mean_db": midrange_mean_db,
         "raw_max_db": raw_max_db,
         "is_mellow": is_mellow,
@@ -255,7 +292,7 @@ def merge_speech_windows(windows: list[tuple[float, float]], min_gap_s: float = 
 
 def build_bgm_ducking_volume_expr(
     speech_windows: list[tuple[float, float]],
-    duck_db: float = 6.5,
+    duck_db: float = 11.5,
     ramp_s: float = 0.35,
 ) -> str:
     """

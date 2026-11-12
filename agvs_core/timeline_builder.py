@@ -1181,7 +1181,7 @@ def apply_v017_essential_sound_via_cli(cli_bin: str, fcproj_path: Path, seq: dic
         commands.append({"id": "essentialSound.setType", "params": {"clips": music_ids, "type": "music"}})
         commands.append({
             "id": "essentialSound.set",
-            "params": {"clips": music_ids, "values": {"ducking.enabled": True, "ducking.reduceDb": -6.5, "ducking.fadeS": 0.35, "ducking.sensitivity": 6.0}},
+            "params": {"clips": music_ids, "values": {"ducking.enabled": True, "ducking.reduceDb": -11.5, "ducking.fadeS": 0.35, "ducking.sensitivity": 6.0}},
         })
         if dialogue_ids:
             commands.append({"id": "essentialSound.generateDucking", "params": {"clips": music_ids}})
