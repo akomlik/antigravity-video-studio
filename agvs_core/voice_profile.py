@@ -200,7 +200,11 @@ def ensure_custom_voice(client: Any, use_replicated: bool = False) -> str:
 
 
 def synthesize_narration(text: str, out_wav: Path, voice_id: str, client: Any, lang: str = "en") -> Path:
-    """Synthesizes warm conversational narration via Gemini TTS and normalizes once with Studio-Dry Anti-Reverb."""
+    """
+    Synthesizes warm conversational narration via Gemini TTS and writes the clean raw PCM WAV
+    so `agvs_core.audio_dsp.pace_and_normalize_vo_cue` executes a true single-pass `-16 LUFS`
+    `STUDIO_DRY_VO_FILTER` (silence trim + anti-reverb + loudnorm) in one integrated stage.
+    """
     out_wav.parent.mkdir(parents=True, exist_ok=True)
     raw_wav = out_wav.with_suffix(".raw24k.wav")
 
@@ -243,30 +247,8 @@ def synthesize_narration(text: str, out_wav: Path, voice_id: str, client: Any, l
     if last_err is not None:
         raise RuntimeError(f"Gemini TTS failed after 3 attempts: {last_err}")
 
-    ffmpeg_bin = find_binary("ffmpeg")
-    subprocess.run(
-        [
-            ffmpeg_bin,
-            "-y",
-            "-i",
-            str(raw_wav),
-            "-af",
-            STUDIO_DRY_CORE_FILTER,
-            "-ar",
-            "48000",
-            "-ac",
-            "2",
-            "-c:a",
-            "pcm_s16le",
-            "-metadata",
-            "comment=agvs_studio_dry=1",
-            str(out_wav),
-        ],
-        check=True,
-        capture_output=True,
-    )
-    raw_wav.unlink(missing_ok=True)
-    print(f"Synthesized voice-over -> {out_wav} ({out_wav.stat().st_size // 1024} KB)", flush=True)
+    raw_wav.replace(out_wav)
+    print(f"Synthesized raw voice-over take -> {out_wav} ({out_wav.stat().st_size // 1024} KB)", flush=True)
     return out_wav
 
 

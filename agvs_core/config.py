@@ -285,21 +285,58 @@ def get_local_secret_voice_cache_file() -> Path:
     return Path("~/.config/antigravity_studio/voice_id.json").expanduser()
 
 
-def get_gemini_voice_id() -> Optional[str]:
+def mask_secret(secret: Optional[str]) -> str:
+    """Masks a secret key or voice_* identifier for safe console logging."""
+    if not secret:
+        return "<empty>"
+    s = str(secret).strip()
+    if len(s) <= 8:
+        return "***"
+    return f"{s[:7]}...{s[-3:]}"
+
+
+def get_gemini_voice_id(prefer_1password: bool = False) -> Optional[str]:
     """
     Resolves Alexander's Gemini TTS Voice ID securely without checking secrets into Git or cloud folders.
     Precedence:
-    1. os.environ.get("GEMINI_VOICE_ID") (direnv / 1Password shell export)
-    2. Local 0o600 cache outside Google Drive (~/.config/antigravity_studio/voice_id.json)
+    0. If `prefer_1password=True`, query 1Password CLI (`envvar:GEMINI_VOICE_ID`) first so freshly rotated secrets win.
+    1. Local 0o600 cache outside Google Drive (~/.config/antigravity_studio/voice_id.json)
+    2. os.environ.get("GEMINI_VOICE_ID") (direnv / 1Password shell export)
     3. Legacy git-ignored local overrides (.env or 03_Audio_Library/03_Voice_Profile/voice_id.json)
-    4. 1Password CLI: `op item get "envvar:GEMINI_VOICE_ID" --vault Private --fields credential --reveal`
+    4. 1Password CLI fallback: `op item get "envvar:GEMINI_VOICE_ID" --vault Private --fields credential --reveal`
     """
+    op_bin = find_binary("op", required=False)
+    if prefer_1password and op_bin:
+        try:
+            res = subprocess.run(
+                [op_bin, "item", "get", "envvar:GEMINI_VOICE_ID", "--vault", "Private", "--fields", "credential", "--reveal"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if res.returncode == 0 and res.stdout.strip():
+                val = res.stdout.strip()
+                os.environ["GEMINI_VOICE_ID"] = val
+                return val
+        except Exception:
+            pass
+
+    local_cache = get_local_secret_voice_cache_file()
+    if local_cache.exists():
+        try:
+            data = json.loads(local_cache.read_text(encoding="utf-8"))
+            val = data.get("voice_id")
+            if val:
+                os.environ["GEMINI_VOICE_ID"] = val
+                return val
+        except Exception:
+            pass
+
     v = os.environ.get("GEMINI_VOICE_ID")
     if v and v.strip() and v.strip() != "$GEMINI_VOICE_ID":
         return v.strip()
 
     for voice_json in (
-        get_local_secret_voice_cache_file(),
         STUDIO_ROOT / "03_Audio_Library/03_Voice_Profile/voice_id.json",
     ):
         if voice_json.exists():
