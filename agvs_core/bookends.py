@@ -771,7 +771,8 @@ def render_outro_canvas_4k(spec: dict[str, Any], out_png: Path) -> Path:
         if is_ru
         else "• BleeqUP Ranger AI Glasses (100% Organic Head-Turns) • iPhone 15 Pro"
     )
-    tech_line2 = "• Garmin Edge 840 • my_digital_brain.md • AGVS Engine v3.0"
+    garmin_unit = spec.get("garmin_model", "Garmin Edge 1040")
+    tech_line2 = f"• {garmin_unit} • my_digital_brain.md • AGVS Engine v3.0"
     cur_y = draw_wrapped_line(rx0 + 76, cur_y, tech_line1, f_item, COLOR_ESPRESSO_INK, line_h=58)
     cur_y = draw_wrapped_line(rx0 + 76, cur_y, tech_line2, f_item, COLOR_ESPRESSO_INK, line_h=58)
     cur_y += 32

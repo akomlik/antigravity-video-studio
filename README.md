@@ -170,7 +170,7 @@ AGVS v2 introduces a signature, data-driven bookend identity generated determini
      - **THE CREW / PELOTON:** Cast with humorous roles.
      - **LEAD STEED:** Bike with authentic personal history (e.g. personal build on 2016 Craigslist frame, stationed in Mallorca since June 2022).
      - **CAMERA & GIMBAL:** BleeqUP Ranger AI Glasses & iPhone 15 Pro.
-     - **TELEMETRY & MEMORY BANK:** Garmin Edge 840 & `my_digital_brain.md`.
+     - **TELEMETRY & MEMORY BANK:** Garmin Edge 1040 (Edge 840 backup) & `my_digital_brain.md`.
      - **STUDIO ENGINE & MAIN HERO:** Antigravity Video Studio (AGVS v2.0) with open-source GitHub link ([`akomlik/antigravity-video-studio`](https://github.com/akomlik/antigravity-video-studio)).
      - **FUEL & SPONSORS:** Local cafes, bodegas, and nutrition.
      - **FOOTER STAMP:** Witty disclaimers (*"⚠️ 0% Gravity Guaranteed on Descents Only • No Argon Quotas Were Harmed in This Render"*).
