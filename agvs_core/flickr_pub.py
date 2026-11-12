@@ -181,6 +181,64 @@ def extract_gpx_coordinates(project_dir: Path) -> tuple[float | None, float | No
         return None, None
 
 
+def extract_date_taken(project_dir: Path, fallback_date_str: str = "") -> str | None:
+    """Resolve `YYYY-MM-DD HH:MM:SS` recording timestamp from GPX track or `YYYY-MM-DD` project folder."""
+    candidate_dirs = [project_dir]
+    manifest_p = project_dir / "project_manifest.json"
+    gpx_candidates: list[str] = []
+    if manifest_p.exists():
+        try:
+            m_data = json.loads(manifest_p.read_text(encoding="utf-8"))
+            if m_data.get("gpx_file"):
+                gpx_candidates.append(m_data["gpx_file"])
+            if m_data.get("raw_media_folder"):
+                raw_p = resolve_media_path(m_data["raw_media_folder"])
+                if raw_p.exists() and raw_p not in candidate_dirs:
+                    candidate_dirs.append(raw_p)
+        except Exception:
+            pass
+
+    date_m = re.search(r"(\d{4}-\d{2}-\d{2})", project_dir.name)
+    d_str = date_m.group(1) if date_m else fallback_date_str
+    year = d_str.split("-")[0] if d_str else "2026"
+    fallback_raw = get_hot_media_dir() / year / project_dir.name
+    if fallback_raw.exists() and fallback_raw not in candidate_dirs:
+        candidate_dirs.append(fallback_raw)
+
+    found_gpx: Path | None = None
+    for c_name in gpx_candidates:
+        for c_dir in candidate_dirs:
+            p = c_dir / c_name
+            if p.exists():
+                found_gpx = p
+                break
+        if found_gpx:
+            break
+    if not found_gpx:
+        for c_dir in candidate_dirs:
+            gpxs = list(c_dir.glob("*.gpx"))
+            if gpxs:
+                found_gpx = gpxs[0]
+                break
+
+    if found_gpx:
+        try:
+            root = ET.parse(found_gpx).getroot()
+            for el in root.iter():
+                if el.tag.endswith("time") and el.text:
+                    iso = el.text.strip().replace("Z", "+00:00")
+                    dt_utc = datetime.datetime.fromisoformat(iso)
+                    dt_local = dt_utc.astimezone()
+                    if not d_str or dt_local.strftime("%Y-%m-%d") == d_str:
+                        return dt_local.strftime("%Y-%m-%d %H:%M:%S")
+        except Exception:
+            pass
+
+    if d_str:
+        return f"{d_str} 12:00:00"
+    return None
+
+
 def extract_project_metadata(project_dir: Path, edition: str | Path = "ru") -> dict[str, Any]:
     """
     Extract Flickr title, description, tags, GPS coordinates, and `cat_dir` (fixing Commit 9 bug
@@ -254,6 +312,7 @@ def extract_project_metadata(project_dir: Path, edition: str | Path = "ru") -> d
             tags.append(f'"{t_clean}"' if " " in t_clean else t_clean)
 
     lat, lon = extract_gpx_coordinates(project_dir)
+    date_taken = extract_date_taken(project_dir, date_str)
 
     return {
         "project_name": project_name,
@@ -264,6 +323,7 @@ def extract_project_metadata(project_dir: Path, edition: str | Path = "ru") -> d
         "tags": " ".join(tags),
         "lat": lat,
         "lon": lon,
+        "date_taken": date_taken,
         "album": "2026 Fall Mallorca Cycling",
     }
 
@@ -343,6 +403,25 @@ def upload_video_to_flickr(
     if photoid_el is None or not photoid_el.text:
         raise RuntimeError(f"Failed to parse Flickr photo ID: {res.text}")
     return photoid_el.text.strip()
+
+
+def set_photo_date_taken(session: Any, photo_id: str, date_taken: str) -> None:
+    """Set Flickr `date_taken` (`YYYY-MM-DD HH:MM:SS`) via `flickr.photos.setDates` (`write` perm)."""
+    rest_url = "https://api.flickr.com/services/rest/"
+    try:
+        session.post(
+            rest_url,
+            data={
+                "method": "flickr.photos.setDates",
+                "photo_id": photo_id,
+                "date_taken": date_taken,
+                "date_taken_granularity": "0",
+                "format": "json",
+                "nojsoncallback": "1",
+            },
+        )
+    except Exception:
+        pass
 
 
 def set_photo_geolocation(session: Any, photo_id: str, lat: float, lon: float) -> None:
@@ -501,6 +580,8 @@ def main(argv: list[str] | None = None) -> int:
         is_public=is_public,
         is_family=is_family,
     )
+    if meta.get("date_taken"):
+        set_photo_date_taken(session, photo_id, meta["date_taken"])
     if lat and lon:
         set_photo_geolocation(session, photo_id, lat, lon)
     if album:
