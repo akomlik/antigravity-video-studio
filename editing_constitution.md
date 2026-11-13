@@ -252,15 +252,18 @@ No human editor wants to proofread hundreds of rows of numerical timecodes in a 
         - **Tags:** `Mallorca, cycling, roadbike, BleeqUP, video, <Village>` (comma-separated for one-click Flickr tagging).
         - **Recommended Album:** e.g., `2026 Fall Mallorca Cycling` in Lightroom Publishing Service / Flickr.
 
-### ARTICLE XI: SOCIAL MEDIA & COMMUNITY PROMOTION (FACEBOOK "MALLORCA CYCLING" STANDARD)
+### ARTICLE XI: SOCIAL MEDIA, YOUTUBE CTR & COMMUNITY PROMOTION ("MALLORCA CYCLING" EMPIRICAL STANDARD)
 
-- **The Mallorca Cycling Group Ecosystem (73.4K Members — Rules & Culture):**
-    - **Strict Anti-Advertising Rule:** The group rule explicitly states: *"PLEASE DON'T ADVERTISE ANYTHING HERE. Set up for people that love cycling and live in or visit Mallorca."* Commercial promotion, spammy channel promotion, or generic video dumps get flagged or ignored.
-    - **Community Currency = Authentic Local Road Knowledge & Route Lore:** Posts that generate massive engagement (e.g., lesser-known climbs like Coll de Sant Llorenç / Cala Tuent, hotel and seasonal closures, bakery stops, quiet rural *camís*) share **practical road intel, surface conditions, cafe/bakery gems, and seasonal reality (morning temperature, wind, autumn calm)**.
-    - **Conversational Peer Tone:** Write as a fellow rider based on the island sharing a discovery or a good ride, never as a self-promoting influencer. Ask an engaging question at the end (e.g., favorite cafe stop in the area, hidden alternative lanes).
-    - **Facebook Algorithm Best Practice:** Attach 1–3 authentic photos (e.g., the bakery display, the village fountain, the bike at the cafe), share the route story with distance/elevation, and put the YouTube link in the **First Comment** (`link in first comment 👇`) so Facebook doesn't penalize post reach.
-- **Dedicated FB Promo Generator Option 4 (`mallorca_community`):**
-    - Every cycling project located on Mallorca (`GPX` coordinates in Mallorca bounding box) MUST generate a dedicated **Option 4: Mallorca Cycling Facebook Group Edition** in `facebook_promo.md` alongside Options 1–3.
+- **The Mallorca Cycling Group Ecosystem (73.5K Members — Empirical Moderation & Engagement Law):**
+    - **Strict Anti-Advertising & Anti-Link-Drop Rule:** Group rules explicitly state: *"PLEASE DON'T ADVERTISE ANYTHING HERE ... Let’s keep the group engaging by limiting Instagram, TikTok, and YouTube posts to avoid influencer overload."*
+    - **Zero Commercial Hashtags & Zero Boilerplate One-Liners:** NEVER include `#procyclehire` or repetitive `"Awesome morning ride on the island today!"` link-drop one-liners in group posts (which look like automated shop ads and get removed by group admins).
+    - **What Earns 30–50+ Group Likes (`Sa Batalla` 47 likes / `Búger` 28 likes):** Lead with 2–3 paragraphs of **authentic local road intel, village bakery/café gems (e.g., *Forn Can Rafel*, *Sa Ruta Verda*), wind/surface conditions, and personal Mallorca memories**, end with a friendly question to fellow island riders, post **at most 1–2x per week**, and either attach 2–3 authentic ride photos with the YouTube URL in the **First Comment** (`👇`) or append the link cleanly after a full story report.
+- **YouTube Cold-Viewer CTR & Search Optimization Law (`55–64` Cycling Demographic):**
+    - **Concrete Tactical Hooks + Searchable Mallorca Landmarks:** Because `81%` of monthly YouTube impressions go to **cold 55–64-year-old cyclists on Home Browse & Suggested Videos**, never rely on vague lifestyle titles alone (`"Another Day in Paradise"`). Pair a **tactical/curiosity cycling hook** (`568W Harley Draft`, `Passing Bruce on Sa Batalla`, `The 140 BPM Peloton Rule`) with **high-intent Mallorca search landmarks** (`Mallorca`, `Crocodile Beach`, `Bonaire`, `Alcúdia`, `Coll de Femenia`).
+    - **3–4 Word Context-Rich Thumbnail Headlines:** Thumbnail text must instantly signal **Mallorca + Stakes/Action** to a stranger in `0.3s` (e.g. `568W HARLEY DRAFT`, `MALLORCA · 140 BPM`, `PASSING THE PRO`), avoiding generic greeting-card phrases.
+    - **Single-URL Velocity Rule (`unlisted` $\rightarrow$ `public` Flip):** Never split views across separate `unlisted` and `public` uploads of the same edit; review on the `unlisted` upload and flip that exact `video_id` to `public` so 100% of early watch-time velocity compounds into YouTube's Browse/Suggested engine.
+- **Dedicated FB Promo Generator Option 4 (`option_4_mallorca_cycling_group`):**
+    - Every cycling project located on Mallorca MUST generate an admin-safe, story-first **Option 4: Mallorca Cycling Facebook Group Edition** (plus First Comment snippet) in `facebook_promo.md` alongside Options 1–3.
 
 ### ARTICLE XII: NATIVE AI CREATIVE ARTIFACTS & LIVING MEMORIES (ZERO BLEEQUP DEPENDENCY)
 

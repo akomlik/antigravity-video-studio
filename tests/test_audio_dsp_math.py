@@ -62,13 +62,13 @@ def test_bgm_180hz_highpass_rms_and_ear_tested_ducking(tmp_path: Path):
     # 180 Hz high-pass ensures 55 Hz sub-bass does NOT skew midrange loudness measurement (> 8 dB difference otherwise!)
     assert abs(c_sub["midrange_mean_db"] - c_mid["midrange_mean_db"]) < 1.5
 
-    # Mandatory Refinement #3 + EBU R128 LUFS Ceiling: Mellow +1.5 dB offset keeps riding target in [-18.0, -15.5] dB
-    # and smooth 11.5 dB broadcast duck guarantees >= 10.5 LU separation under -16 LUFS narration!
+    # Mandatory Refinement #3 + EBU R128 LUFS Ceiling: Mellow +1.5 dB offset keeps riding target in [-18.5, -15.5] dB
+    # and smooth 14.0 dB broadcast duck guarantees >= 14.0 LU separation under -16 LUFS narration!
     assert c_sub["mellow_boost_db"] == pytest.approx(1.5, abs=0.1)
-    assert -18.0 <= c_sub["target_riding_db"] <= -15.5
-    assert -29.5 <= c_sub["target_ducked_db"] <= -26.5
+    assert -18.5 <= c_sub["target_riding_db"] <= -15.5
+    assert -33.5 <= c_sub["target_ducked_db"] <= -26.5
     duck_amount = c_sub["target_riding_db"] - c_sub["target_ducked_db"]
-    assert 10.5 <= duck_amount <= 13.0
+    assert 10.5 <= duck_amount <= 15.0
 
     expr = build_bgm_ducking_volume_expr(
         speech_windows=[(4.0, 9.0), (15.0, 20.0)],

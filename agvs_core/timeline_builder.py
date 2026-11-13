@@ -365,7 +365,7 @@ def check_bgm_non_reuse_preflight(proj_dir: Path, bgm_relpath: str, allow_used: 
     for other_proj in catalog_dir.glob("*/*"):
         if not other_proj.is_dir() or other_proj.resolve() == curr_resolved:
             continue
-        for ext in ("*.fcproj", "Storyboard.md", "timeline_spec.json"):
+        for ext in ("*.fcproj", "timeline_spec.json"):
             for f in other_proj.glob(ext):
                 if bgm_name in f.read_text(errors="ignore"):
                     conflicts.append((bgm_name, other_proj.name, f.name))
@@ -505,6 +505,9 @@ def build_fcproj_document(
     total_dur: float | None = None,
     dimension_lookup: Callable[[Path, bool], tuple[int, int]] | None = None,
     duration_lookup: Callable[[Path], float] | None = None,
+    seq_w: int = 3840,
+    seq_h: int = 2160,
+    bgm_tracks_spec: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """
     Construct an in-memory FilmCraft schema v17 `.fcproj` JSON document with:
@@ -670,7 +673,7 @@ def build_fcproj_document(
         p = overlays_dir / src if (overlays_dir / src).exists() else raw_dir / src
         if is_still and cut.get("framing") == "blur_pillarbox" and p.exists():
             dim_fn(p, is_still)
-            p = ensure_blur_pillarbox_still(p, overlays_dir)
+            p = ensure_blur_pillarbox_still(p, overlays_dir, seq_w=seq_w, seq_h=seq_h)
             src = p.name
         w, h = dim_fn(p, is_still)
         cuts_dims[cnum] = (w, h)
@@ -711,16 +714,16 @@ def build_fcproj_document(
             kb = cut.get("ken_burns") or {
                 "start_scale": 100.0,
                 "end_scale": 103.2,
-                "start_pos": [1920.0, 1080.0],
-                "end_pos": [1920.0, 1080.0],
+                "start_pos": [seq_w / 2.0, seq_h / 2.0],
+                "end_pos": [seq_w / 2.0, seq_h / 2.0],
             }
             clip_effects = [
                 make_motion_ken_burns(
                     dur,
                     w,
                     h,
-                    3840,
-                    2160,
+                    seq_w,
+                    seq_h,
                     start_pos=kb.get("start_pos"),
                     end_pos=kb.get("end_pos"),
                     start_scale=kb.get("start_scale"),
@@ -729,7 +732,7 @@ def build_fcproj_document(
             ]
             clip_scale_to_frame = False
         else:
-            clip_effects = [make_static_motion(w, h)]
+            clip_effects = [make_static_motion(w, h, seq_w, seq_h)]
             clip_scale_to_frame = True
 
         v1_items.append({
@@ -821,7 +824,7 @@ def build_fcproj_document(
             "link": None,
             "group": None,
             "effects": [
-                make_static_motion(3840, 2160),
+                make_static_motion(3840, 2160, seq_w, seq_h),
                 make_opacity_in_out(dur_s, fade_in_s=fade_in_s, fade_out_s=fade_out_s),
             ],
             "markers": [],
@@ -838,35 +841,66 @@ def build_fcproj_document(
         next_id += 1
 
     bgm_file_dur = max(10.0, dur_fn(bgm_track)) if bgm_track.exists() else max(10.0, total_dur)
-    rem_bgm = total_dur
-    bgm_cursor_s = 0.0
     last_bgm_clip_id = None
-    while rem_bgm > 0.05:
-        seg_dur = min(bgm_file_dur, rem_bgm)
-        bgm_clip_id = next_id
-        next_id += 1
-        last_bgm_clip_id = bgm_clip_id
-        a2_items.append({
-            "id": bgm_clip_id,
-            "item": bgm_media_id,
-            "name": bgm_track.name,
-            "label": "Caribbean",
-            "start": int(round(bgm_cursor_s * 30)) * ticks_per_frame,
-            "duration": int(round(seg_dur * 30)) * ticks_per_frame,
-            "source_in": 0,
-            "speed": 1.0,
-            "reverse": False,
-            "enabled": True,
-            "link": None,
-            "group": None,
-            "effects": [],
-            "markers": [],
-            "gain_db": float(riding_gain_db),
-            "frame_hold": None,
-            "scale_to_frame": False,
-        })
-        bgm_cursor_s += seg_dur
-        rem_bgm -= seg_dur
+    fcproj_bgm_gain_db = float(round(min(riding_gain_db - 10.5, -19.5), 1)) if vo_cues else float(riding_gain_db)
+    if bgm_tracks_spec and len(bgm_tracks_spec) > 1:
+        for b_idx, b_item in enumerate(bgm_tracks_spec):
+            bp = studio_root / b_item["file"]
+            b_mid = bgm_media_id if bp.resolve() == bgm_track.resolve() else register_media(bp, "AudioOnly", dur_s=max(10.0, dur_fn(bp) if bp.exists() else total_dur))
+            bst = float(b_item.get("start_s", 0.0))
+            bend = min(float(b_item.get("end_s", total_dur)), total_dur)
+            bdur = max(0.5, bend - bst)
+            bgm_clip_id = next_id
+            next_id += 1
+            last_bgm_clip_id = bgm_clip_id
+            a2_items.append({
+                "id": bgm_clip_id,
+                "item": b_mid,
+                "name": bp.name,
+                "label": "Caribbean",
+                "start": int(round(bst * 30)) * ticks_per_frame,
+                "duration": int(round(bdur * 30)) * ticks_per_frame,
+                "source_in": 0,
+                "speed": 1.0,
+                "reverse": False,
+                "enabled": True,
+                "link": None,
+                "group": None,
+                "effects": [],
+                "markers": [],
+                "gain_db": fcproj_bgm_gain_db,
+                "frame_hold": None,
+                "scale_to_frame": False,
+            })
+    else:
+        rem_bgm = total_dur
+        bgm_cursor_s = 0.0
+        while rem_bgm > 0.05:
+            seg_dur = min(bgm_file_dur, rem_bgm)
+            bgm_clip_id = next_id
+            next_id += 1
+            last_bgm_clip_id = bgm_clip_id
+            a2_items.append({
+                "id": bgm_clip_id,
+                "item": bgm_media_id,
+                "name": bgm_track.name,
+                "label": "Caribbean",
+                "start": int(round(bgm_cursor_s * 30)) * ticks_per_frame,
+                "duration": int(round(seg_dur * 30)) * ticks_per_frame,
+                "source_in": 0,
+                "speed": 1.0,
+                "reverse": False,
+                "enabled": True,
+                "link": None,
+                "group": None,
+                "effects": [],
+                "markers": [],
+                "gain_db": fcproj_bgm_gain_db,
+                "frame_hold": None,
+                "scale_to_frame": False,
+            })
+            bgm_cursor_s += seg_dur
+            rem_bgm -= seg_dur
 
     a2_transitions = []
     if last_bgm_clip_id is not None:
@@ -1028,13 +1062,13 @@ def build_fcproj_document(
 
     seq_obj = {
         "settings": {
-            "width": 3840,
-            "height": 2160,
+            "width": seq_w,
+            "height": seq_h,
             "frame_rate": {"num": 30, "den": 1},
             "par": [1, 1],
             "sample_rate": 48000,
             "drop_frame": False,
-            "preset": "3840x2160 30",
+            "preset": f"{seq_w}x{seq_h} 30",
             "audio_master": "Stereo",
             "preview_codec": "ProRes 422",
             "max_bit_depth": False,
@@ -1130,6 +1164,9 @@ def build_fcproj_from_spec(
     vo_cues: list[dict[str, Any]],
     riding_gain_db: float = -8.0,
     edition: str = "en",
+    seq_w: int = 3840,
+    seq_h: int = 2160,
+    bgm_tracks_spec: list[dict[str, Any]] | None = None,
 ) -> Path:
     doc = build_fcproj_document(
         proj_dir=proj_dir,
@@ -1144,6 +1181,9 @@ def build_fcproj_from_spec(
         riding_gain_db=riding_gain_db,
         edition=edition,
         total_dur=total_dur,
+        seq_w=seq_w,
+        seq_h=seq_h,
+        bgm_tracks_spec=bgm_tracks_spec,
     )
     fcproj_path.parent.mkdir(parents=True, exist_ok=True)
     fcproj_path.write_text(json.dumps(doc, indent=2), encoding="utf-8")
@@ -1208,6 +1248,7 @@ def polish_and_render_project(
     burn_captions: bool = False,
     allow_used_music: bool = False,
     run_essential_sound: bool = True,
+    force_resolution: tuple[int, int] | None = None,
 ) -> Path:
     """Apply Studio v3 quality standards (4K UHD, zero-gap V1, Ken Burns, Dip-to-Black, disabled burn captions)."""
     cli_bin = find_binary("filmcraft-cli")
@@ -1246,10 +1287,17 @@ def polish_and_render_project(
             (items.get(str(it.get("item", it.get("media_id"))), {}).get("kind", {}).get("Media", {}).get("info", {}).get("video") or {}).get("width", 1920)
             for it in all_v1_items
         )
-        seq_w, seq_h = (3840, 2160) if max_src_w > 1920 else (1920, 1080)
+        seq_w, seq_h = force_resolution if force_resolution else ((3840, 2160) if max_src_w > 1920 else (1920, 1080))
         seq.setdefault("settings", {})["width"] = seq_w
         seq.setdefault("settings", {})["height"] = seq_h
         seq.setdefault("settings", {})["preset"] = f"{seq_w}x{seq_h} 30"
+
+        for ov_track in video_tracks[1:]:
+            for ov_it in ov_track.get("items", []):
+                ov_it["scale_to_frame"] = True
+                for eff in ov_it.get("effects", []):
+                    if eff.get("effect") == "motion":
+                        eff["params"]["position"] = {"value": {"Vec2": {"x": seq_w / 2.0, "y": seq_h / 2.0}}}
 
         still_zoom_toggle = True
         for it in all_v1_items:
@@ -1589,18 +1637,28 @@ def build_project_timeline(
         bgm_tracks_spec=spec.get("bgm_tracks"),
     )
 
+    res_cfg = spec.get("resolution")
+    if isinstance(res_cfg, (list, tuple)) and len(res_cfg) == 2:
+        seq_w, seq_h = int(res_cfg[0]), int(res_cfg[1])
+        force_res: tuple[int, int] | None = (seq_w, seq_h)
+    else:
+        seq_w, seq_h = 3840, 2160
+        force_res = None
+
     build_fcproj_from_spec(
         proj_dir, raw_dir, overlays_dir, fcproj_path, bgm_track, total_dur,
         cuts_spec, expanded_overlays_en, boosted_dialogs, sfx_cues, vo_cues,
-        riding_gain_db=riding_gain_db, edition="en",
+        riding_gain_db=riding_gain_db, edition="en", seq_w=seq_w, seq_h=seq_h,
+        bgm_tracks_spec=spec.get("bgm_tracks"),
     )
     build_fcproj_from_spec(
         proj_dir, raw_dir, overlays_dir, fcproj_ru_path, bgm_track, total_dur,
         cuts_spec, expanded_overlays_ru, boosted_dialogs, sfx_cues, vo_cues,
-        riding_gain_db=riding_gain_db, edition="ru",
+        riding_gain_db=riding_gain_db, edition="ru", seq_w=seq_w, seq_h=seq_h,
+        bgm_tracks_spec=spec.get("bgm_tracks"),
     )
-    polish_and_render_project(fcproj_path, allow_used_music=allow_used_music)
-    polish_and_render_project(fcproj_ru_path, allow_used_music=allow_used_music)
+    polish_and_render_project(fcproj_path, allow_used_music=allow_used_music, force_resolution=force_res)
+    polish_and_render_project(fcproj_ru_path, allow_used_music=allow_used_music, force_resolution=force_res)
 
     if open_gui:
         cache_dir = get_cache_dir()

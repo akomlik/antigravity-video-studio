@@ -80,3 +80,23 @@ def test_youtube_default_privacy_unlisted_and_storyboard_headline_and_flickr_cat
     # 4. Flickr metadata extractor sets cat_dir so cross_link_flickr_on_youtube() actually runs!
     fmeta = extract_project_metadata(femenia_dir, tmp_path / "2026-11-05_Femenia_Climbing_RU.mp4")
     assert fmeta.get("cat_dir") == str(femenia_dir)
+
+    # 5. Option 4 Mallorca Cycling group promo never emits #procyclehire or 1-line link-drop boilerplate
+    from agvs_core.youtube_pub import build_facebook_promo
+
+    promo = build_facebook_promo(
+        tmp_path,
+        meta={
+            "project_name": "2026-11-10_Test_Mallorca",
+            "title": "568W Harley Draft & Crocodile Beach Swim in Mallorca (32.6 mi)",
+            "description": "Morning spin along the Bay of Pollença past Pro Cycle Hire and stone walls.\n\nFinished with garlic prawns at Cocodrilo and a 72°F swim.",
+            "chapters": [],
+            "localizations": {},
+            "tags": ["Mallorca", "Crocodile Beach"],
+        },
+        live_url="https://www.youtube.com/watch?v=ngs-_Xc92_k",
+    )
+    opt4 = promo["options"]["option_4_mallorca_cycling_group"]
+    assert "#procyclehire" not in opt4["post_text"].lower()
+    assert "awesome morning ride on the island today" not in opt4["post_text"].lower()
+    assert "first_comment" in opt4

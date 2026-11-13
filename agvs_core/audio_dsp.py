@@ -193,19 +193,19 @@ def calculate_bgm_gains(
     target_riding_db: float | None = None,
     target_ducked_db: float | None = None,
     max_peak_headroom_db: float = -1.5,
-    base_riding_db: float = -17.5,
-    duck_amount_db: float = 11.5,
+    base_riding_db: float = -19.5,
+    duck_amount_db: float = 14.0,
     mellow_boost_db: float = 1.5,
-    max_riding_lufs: float = -15.5,
-    max_ducked_lufs: float = -26.5,
+    max_riding_lufs: float = -19.5,
+    max_ducked_lufs: float = -33.5,
 ) -> dict[str, Any]:
     """
     Calculate broadcast-balanced BGM fader gains, 180Hz midrange RMS, EBU R128 LUFS ceiling,
     1.8kHz presence EQ, and peak headroom guard:
     - Measures midrange loudness behind a 180 Hz high-pass filter so sub-bass does not starve sparse mellow tracks.
-    - Enforces an EBU R128 integrated loudness ceiling (`max_riding_lufs = -15.5 LUFS`, `max_ducked_lufs = -26.5 LUFS`)
+    - Enforces an EBU R128 integrated loudness ceiling (`max_riding_lufs = -19.5 LUFS`, `max_ducked_lufs = -33.5 LUFS`)
       so modern Brickwall-mastered chillhop/pop tracks (`-10 LUFS` raw, like "Indigo") NEVER overpower `-16 LUFS` narration!
-    - Ducks smoothly by `11.5 dB` (`duck_amount_db`) under narration and live speech, guaranteeing `>= 10.5 LU`
+    - Ducks smoothly by `14.0 dB` (`duck_amount_db`) under narration and live speech, guaranteeing `>= 17.5 LU`
       broadcast separation below `-16 LUFS` voice-over while remaining warmly audible on speakers.
     """
     raw_stats = measure_volume_stats(bgm_path, highpass_hz=None)

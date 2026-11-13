@@ -357,13 +357,22 @@ def build_facebook_promo(
     }
 
     is_mallorca = "Mallorca" in title or "mallorca" in str(project_dir).lower() or any(
-        kw in desc.lower() for kw in ("mallorca", "alcúdia", "alcudia", "pollença", "pollenca", "buger", "sa pobla", "caimari", "lluc")
+        kw in desc.lower() for kw in ("mallorca", "alcúdia", "alcudia", "pollença", "pollenca", "buger", "sa pobla", "caimari", "lluc", "bonaire")
     )
     opt4_body = ""
+    opt4_first_comment = ""
     if is_mallorca:
-        has_pch = "pro cycle" in desc.lower() or "pch" in project_name.lower()
-        pch_tag = " with #procyclehire" if has_pch else ""
-        opt4_body = f"Awesome morning ride on the island today{pch_tag}! 🚴💪👍 — {title}\n\n{yt_url}"
+        # Strip commercial-looking hashtags (#procyclehire, etc.) and build an authentic peer rider report
+        # (modeled on the 47-like Sa Batalla & 28-like Búger Forn Can Rafel posts; zero link-drop boilerplate).
+        clean_lead = re.sub(r"#\w+", "", lead_summary).strip()
+        clean_second = re.sub(r"#\w+", "", second_summary).strip()
+        story_block = f"{clean_lead}\n\n{clean_second}" if clean_second else clean_lead
+        opt4_body = (
+            f"{story_block}\n\n"
+            f"Anyone else riding around this corner of the island this week — what's your favorite quiet lane or café stop nearby? 🚴‍♂️\n"
+            f"(4K ride film in the first comment 👇 — or paste {yt_url} directly here if not attaching photos)"
+        )
+        opt4_first_comment = f"Full 4K ride & route highlights: {yt_url}"
 
     promo_data: dict[str, Any] = {
         "project_name": project_name,
@@ -389,9 +398,10 @@ def build_facebook_promo(
     }
     if opt4_body:
         promo_data["options"]["option_4_mallorca_cycling_group"] = {
-            "name": "Option 4: Mallorca Cycling Facebook Group (Direct YouTube Preview Card)",
-            "description": "Short rider note + #procyclehire + direct YouTube URL.",
+            "name": "Option 4: Mallorca Cycling Facebook Group (Authentic Route & Café Story — Zero Hashtags)",
+            "description": "Peer rider story + local road/café intel + community question (attach 2–3 ride photos and drop YouTube link in First Comment, max 1–2x/week to honor group rules).",
             "post_text": opt4_body,
+            "first_comment": opt4_first_comment,
         }
 
     md_content = (
@@ -402,7 +412,11 @@ def build_facebook_promo(
         f"## 🌍 Option 3: Bilingual / Classmates\n```text\n{opt3_body}\n```\n"
     )
     if opt4_body:
-        md_content += f"\n## 🚴 Option 4: Mallorca Cycling Facebook Group\n```text\n{opt4_body}\n```\n"
+        md_content += (
+            f"\n## 🚴 Option 4: Mallorca Cycling Facebook Group (Zero Hashtags · Max 1–2x/Week)\n"
+            f"```text\n{opt4_body}\n```\n"
+            f"**First Comment (if attaching 2–3 ride photos):**\n```text\n{opt4_first_comment}\n```\n"
+        )
     md_content += (
         f"\n## 📸 Flickr Video Upload (RU Edition)\n"
         f"- **Target File:** `{ru_video_file}`\n"
